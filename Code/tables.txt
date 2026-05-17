@@ -1,0 +1,4 @@
+1 2 Couple Available
+2 4 Family Available
+3 6 VIP Available
+5 2 Couple Available
