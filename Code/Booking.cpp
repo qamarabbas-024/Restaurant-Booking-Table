@@ -1,5 +1,4 @@
 #include "Booking.h"
-
 Booking::Booking(
     int bookingId,
     int tableId,

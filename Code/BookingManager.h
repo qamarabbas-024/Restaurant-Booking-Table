@@ -2,9 +2,7 @@
 #include <vector>
 #include "Table.h"
 #include "Booking.h"
-
 using namespace std;
-
 class BookingManager
 {
 
