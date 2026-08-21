@@ -10,7 +10,7 @@
 
 void testTableEntity()
 {
-    std::cout << "[TEST] Table Entity & Invariants...\n";
+    std::cout << "[TEST 1/6] Table Entity & Invariants...\n";
     Table t1(1, 4, "Family Booth", "Available");
     assert(t1.getId() == 1);
     assert(t1.getCapacity() == 4);
@@ -34,7 +34,7 @@ void testTableEntity()
 
 void testBookingEntity()
 {
-    std::cout << "[TEST] Booking Entity & Query Matching...\n";
+    std::cout << "[TEST 2/6] Booking Entity & Query Matching...\n";
     Booking b1(101, 2, "Qamar Abbas", 4, "24/05/2026", "8:00 PM");
     assert(b1.getBookingId() == 101);
     assert(b1.getTableId() == 2);
@@ -58,7 +58,7 @@ void testBookingEntity()
 
 void testConflictAndSmartAllocation()
 {
-    std::cout << "[TEST] Conflict Detection & Smart Best-Fit Allocation...\n";
+    std::cout << "[TEST 3/6] Conflict Detection & Smart Best-Fit Allocation...\n";
     
     // Clear test files
     {
@@ -120,9 +120,76 @@ void testConflictAndSmartAllocation()
     std::cout << "  -> Conflict, Smart Allocation & Programmatic API tests PASSED.\n";
 }
 
+void testSpecificTableBooking()
+{
+    std::cout << "[TEST 4/6] Specific Table Request & Guard Rails...\n";
+
+    {
+        std::ofstream tfile("tables.txt");
+        tfile << "1|2|Couple Table|Available\n";
+        tfile << "2|4|Family Table|Maintenance\n";
+        tfile << "3|6|VIP Table|Available\n";
+        
+        std::ofstream bfile("bookings.txt");
+        bfile << "1|1|Alice|2|24/05/2026|8:00 PM\n";
+    }
+
+    BookingManager bm;
+    bm.loadData();
+
+    std::vector<std::string> trace;
+    Booking created;
+    std::string errorMsg;
+
+    // 1. Request non-existent table 99
+    bool ok = bm.createBookingProgrammatic("User A", 2, "24/05/2026", "8:00 PM", trace, created, errorMsg, 99);
+    assert(ok == false);
+
+    // 2. Request Table 2 (Maintenance)
+    ok = bm.createBookingProgrammatic("User B", 2, "24/05/2026", "8:00 PM", trace, created, errorMsg, 2);
+    assert(ok == false);
+
+    // 3. Request Table 1 (Already booked for this slot)
+    ok = bm.createBookingProgrammatic("User C", 2, "24/05/2026", "8:00 PM", trace, created, errorMsg, 1);
+    assert(ok == false);
+
+    // 4. Request Table 3 with party of 8 (Table 3 capacity is 6)
+    ok = bm.createBookingProgrammatic("User D", 8, "24/05/2026", "8:00 PM", trace, created, errorMsg, 3);
+    assert(ok == false);
+
+    // 5. Request Table 3 with party of 4 (Valid!)
+    ok = bm.createBookingProgrammatic("User E", 4, "24/05/2026", "8:00 PM", trace, created, errorMsg, 3);
+    assert(ok == true);
+    assert(created.getTableId() == 3);
+
+    std::cout << "  -> Specific Table Request tests PASSED.\n";
+}
+
+void testActivityLogBuffer()
+{
+    std::cout << "[TEST 5/6] Activity Log Buffer & Event Stream...\n";
+
+    BookingManager bm;
+    bm.loadData();
+
+    // Verify initial logs
+    const auto &logs = bm.getActivityLogs();
+    assert(!logs.empty());
+
+    // Add a table programmatically
+    std::string err;
+    bool ok = bm.addTableProgrammatic(10, 4, "Terrace Table", err);
+    assert(ok == true);
+
+    const auto &updatedLogs = bm.getActivityLogs();
+    assert(updatedLogs.back().type == "TABLE_ADDED");
+
+    std::cout << "  -> Activity Log Buffer tests PASSED.\n";
+}
+
 void testFileHandlerRobustness()
 {
-    std::cout << "[TEST] FileHandler Corrupted Data & Exception Safety...\n";
+    std::cout << "[TEST 6/6] FileHandler Corrupted Data & Exception Safety...\n";
     {
         std::ofstream bfile("bookings.txt");
         bfile << "1|2|Valid Guest|4|24/05/2026|8:00 PM\n";
@@ -151,6 +218,8 @@ int main()
     testTableEntity();
     testBookingEntity();
     testConflictAndSmartAllocation();
+    testSpecificTableBooking();
+    testActivityLogBuffer();
     testFileHandlerRobustness();
 
     std::cout << "\n>>> ALL AUTOMATED TESTS PASSED SUCCESSFULLY! <<<\n";

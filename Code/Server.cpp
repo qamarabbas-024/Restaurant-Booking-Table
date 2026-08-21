@@ -227,6 +227,18 @@ void Server::startCompanionServer(BookingManager &manager, int port)
             break;
         }
 
+#ifdef _WIN32
+        DWORD timeoutMs = 2500;
+        setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeoutMs, sizeof(timeoutMs));
+        setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeoutMs, sizeof(timeoutMs));
+#else
+        struct timeval tv;
+        tv.tv_sec = 2;
+        tv.tv_usec = 500000;
+        setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+        setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(tv));
+#endif
+
         char buffer[8192];
         int bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0)
@@ -406,6 +418,11 @@ void Server::startCompanionServer(BookingManager &manager, int port)
 
             std::string filePath = "web" + relPath;
             std::ifstream file(filePath.c_str(), std::ios::binary);
+            if (!file.is_open())
+            {
+                filePath = "Code/web" + relPath;
+                file.open(filePath.c_str(), std::ios::binary);
+            }
 
             if (file.is_open())
             {

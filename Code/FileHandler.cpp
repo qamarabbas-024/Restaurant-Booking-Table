@@ -4,9 +4,27 @@
 #include <sstream>
 #include <iostream>
 
+static std::string getTablesPath()
+{
+    std::ifstream f("tables.txt");
+    if (f.good()) return "tables.txt";
+    std::ifstream f2("Code/tables.txt");
+    if (f2.good()) return "Code/tables.txt";
+    return "tables.txt";
+}
+
+static std::string getBookingsPath()
+{
+    std::ifstream f("bookings.txt");
+    if (f.good()) return "bookings.txt";
+    std::ifstream f2("Code/bookings.txt");
+    if (f2.good()) return "Code/bookings.txt";
+    return "bookings.txt";
+}
+
 void FileHandler::saveTables(const std::vector<Table> &tables)
 {
-    std::ofstream file("tables.txt");
+    std::ofstream file(getTablesPath().c_str());
     if (!file.is_open())
     {
         return;
@@ -23,7 +41,7 @@ void FileHandler::saveTables(const std::vector<Table> &tables)
 
 void FileHandler::saveBookings(const std::vector<Booking> &bookings)
 {
-    std::ofstream file("bookings.txt");
+    std::ofstream file(getBookingsPath().c_str());
     if (!file.is_open())
     {
         return;
@@ -42,7 +60,7 @@ void FileHandler::saveBookings(const std::vector<Booking> &bookings)
 
 void FileHandler::loadTables(std::vector<Table> &tables)
 {
-    std::ifstream file("tables.txt");
+    std::ifstream file(getTablesPath().c_str());
     if (!file.is_open())
     {
         return;
@@ -99,7 +117,7 @@ void FileHandler::loadTables(std::vector<Table> &tables)
 
 void FileHandler::loadBookings(std::vector<Booking> &bookings, int &nextBookingId)
 {
-    std::ifstream file("bookings.txt");
+    std::ifstream file(getBookingsPath().c_str());
     if (!file.is_open())
     {
         return;
