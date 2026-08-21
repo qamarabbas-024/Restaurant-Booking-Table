@@ -1,4 +1,4 @@
-1 2 Couple Available
-2 4 Family Reserved
-3 6 VIP Available
-4 4 VIP Reserved
+1|2|Couple Table|Available
+2|4|Family Booth|Available
+3|6|VIP Suite|Available
+4|8|Banquet Table|Available

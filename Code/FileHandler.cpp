@@ -1,116 +1,153 @@
 #include "FileHandler.h"
+#include "Utils.h"
 #include <fstream>
-using namespace std;
- 
-void FileHandler::saveTables(
-    vector<Table> &tables)
+#include <sstream>
+#include <iostream>
+
+void FileHandler::saveTables(const std::vector<Table> &tables)
 {
-    ofstream file("tables.txt");
- 
-    for (auto &t : tables)
+    std::ofstream file("tables.txt");
+    if (!file.is_open())
     {
-        file
-            << t.id << " "
-            << t.capacity << " "
-            << t.type << " "
-            << t.status << endl;
+        return;
+    }
+
+    for (const auto &t : tables)
+    {
+        file << t.getId() << "|"
+             << t.getCapacity() << "|"
+             << t.getType() << "|"
+             << t.getStatus() << "\n";
     }
 }
- 
-void FileHandler::saveBookings(
-    vector<Booking> &bookings)
+
+void FileHandler::saveBookings(const std::vector<Booking> &bookings)
 {
-    ofstream file("bookings.txt");
- 
-    // FIX 1: pipe | delimiter so guest names with spaces save correctly
-    for (auto &b : bookings)
+    std::ofstream file("bookings.txt");
+    if (!file.is_open())
     {
-        file
-            << b.bookingId << "|"
-            << b.tableId << "|"
-            << b.guestName << "|"
-            << b.guests << "|"
-            << b.date << "|"
-            << b.time << "\n";
+        return;
+    }
+
+    for (const auto &b : bookings)
+    {
+        file << b.getBookingId() << "|"
+             << b.getTableId() << "|"
+             << b.getGuestName() << "|"
+             << b.getGuests() << "|"
+             << b.getDate() << "|"
+             << b.getTime() << "\n";
     }
 }
- 
-void FileHandler::loadTables(
-    vector<Table> &tables)
+
+void FileHandler::loadTables(std::vector<Table> &tables)
 {
-    ifstream file("tables.txt");
+    std::ifstream file("tables.txt");
+    if (!file.is_open())
+    {
+        return;
+    }
+
     tables.clear();
- 
-    int id;
-    int capacity;
-    string type;
-    string status;
- 
-    while (file >> id >> capacity >> type >> status)
+    std::string line;
+
+    while (std::getline(file, line))
     {
-        Table t(id, capacity, type);
-        t.status = status;
-        tables.push_back(t);
-    }
-}
- 
-void FileHandler::loadBookings(
-    vector<Booking> &bookings,
-    int &nextBookingId)
-{
-    ifstream file("bookings.txt");
-    bookings.clear();
- 
-    string line;
- 
-    // FIX 1: Read line by line, split by | delimiter
-    while (getline(file, line))
-    {
-        if (line.empty()) continue;
- 
-        int pos = 0;
- 
-        auto nextToken = [&](string &out) {
-            int found = line.find('|', pos);
-            if (found == (int)string::npos)
+        line = trim(line);
+        if (line.empty())
+        {
+            continue;
+        }
+
+        try
+        {
+            if (line.find('|') != std::string::npos)
             {
-                out = line.substr(pos);
-                pos = line.size();
+                // Pipe delimited format: id|capacity|type|status
+                std::stringstream ss(line);
+                std::string sId, sCap, type, status;
+
+                std::getline(ss, sId, '|');
+                std::getline(ss, sCap, '|');
+                std::getline(ss, type, '|');
+                std::getline(ss, status, '|');
+
+                int id = std::stoi(trim(sId));
+                int cap = std::stoi(trim(sCap));
+                tables.push_back(Table(id, cap, trim(type), trim(status)));
             }
             else
             {
-                out = line.substr(pos, found - pos);
-                pos = found + 1;
+                // Space delimited format: id capacity type status
+                std::stringstream ss(line);
+                int id, capacity;
+                std::string type, status;
+
+                if (ss >> id >> capacity >> type >> status)
+                {
+                    tables.push_back(Table(id, capacity, type, status));
+                }
             }
-        };
- 
-        string sBookingId, sTableId, guestName, sGuests, date, time;
- 
-        nextToken(sBookingId);
-        nextToken(sTableId);
-        nextToken(guestName);
-        nextToken(sGuests);
-        nextToken(date);
-        nextToken(time);
- 
-        if (sBookingId.empty()) continue;
- 
-        int bookingId = stoi(sBookingId);
-        int tableId   = stoi(sTableId);
-        int guests    = stoi(sGuests);
- 
-        bookings.push_back(
-            Booking(
-                bookingId,
-                tableId,
-                guestName,
-                guests,
-                date,
-                time));
- 
-        if (bookingId >= nextBookingId)
+        }
+        catch (const std::exception &)
         {
-            nextBookingId = bookingId + 1;
+            // Skip corrupted line safely
+            continue;
+        }
+    }
+}
+
+void FileHandler::loadBookings(std::vector<Booking> &bookings, int &nextBookingId)
+{
+    std::ifstream file("bookings.txt");
+    if (!file.is_open())
+    {
+        return;
+    }
+
+    bookings.clear();
+    std::string line;
+
+    while (std::getline(file, line))
+    {
+        line = trim(line);
+        if (line.empty())
+        {
+            continue;
+        }
+
+        try
+        {
+            std::stringstream ss(line);
+            std::string sBookingId, sTableId, guestName, sGuests, date, time;
+
+            std::getline(ss, sBookingId, '|');
+            std::getline(ss, sTableId, '|');
+            std::getline(ss, guestName, '|');
+            std::getline(ss, sGuests, '|');
+            std::getline(ss, date, '|');
+            std::getline(ss, time, '|');
+
+            if (sBookingId.empty() || sTableId.empty())
+            {
+                continue;
+            }
+
+            int bookingId = std::stoi(trim(sBookingId));
+            int tableId = std::stoi(trim(sTableId));
+            int guests = std::stoi(trim(sGuests));
+
+            bookings.push_back(Booking(bookingId, tableId, trim(guestName), guests, trim(date), trim(time)));
+
+            if (bookingId >= nextBookingId)
+            {
+                nextBookingId = bookingId + 1;
+            }
+        }
+        catch (const std::exception &)
+        {
+            // Skip corrupted record safely
+            continue;
         }
     }
 }
