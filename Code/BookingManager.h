@@ -60,7 +60,8 @@ public:
                                    const std::string &date, const std::string &time,
                                    std::vector<std::string> &trace,
                                    Booking &createdBooking,
-                                   std::string &errorMsg);
+                                   std::string &errorMsg,
+                                   int requestedTableId = 0);
     
     bool cancelBookingProgrammatic(int bookingId, std::string &errorMsg);
     

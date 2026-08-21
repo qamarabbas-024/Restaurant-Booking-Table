@@ -536,7 +536,8 @@ bool BookingManager::createBookingProgrammatic(const std::string &guestName, int
                                               const std::string &date, const std::string &time,
                                               std::vector<std::string> &trace,
                                               Booking &createdBooking,
-                                              std::string &errorMsg)
+                                              std::string &errorMsg,
+                                              int requestedTableId)
 {
     trace.push_back("Input validated: Guest '" + guestName + "', " + std::to_string(guests) + " guests.");
     trace.push_back("Checking slot: " + date + " at " + time);
@@ -555,28 +556,70 @@ bool BookingManager::createBookingProgrammatic(const std::string &guestName, int
         return false;
     }
 
-    trace.push_back("Scanning " + std::to_string(m_tables.size()) + " tables for capacity >= " + std::to_string(guests) + " and slot availability.");
+    const Table *assignedTable = nullptr;
 
-    const Table *bestTable = findBestTable(guests, date, time);
-
-    if (bestTable == nullptr)
+    if (requestedTableId > 0)
     {
-        errorMsg = "No available table found matching " + std::to_string(guests) +
-                   " guest(s) on " + date + " at " + time + ".";
-        trace.push_back("Allocation failed: All candidate tables occupied or insufficient capacity.");
-        logActivity("CONFLICT_DETECTED", "No table available for " + std::to_string(guests) + " guests on " + date + " at " + time);
-        return false;
+        trace.push_back("Evaluating requested specific Table #" + std::to_string(requestedTableId) + ".");
+        const Table *target = findTableById(requestedTableId);
+        if (target == nullptr)
+        {
+            errorMsg = "Requested Table #" + std::to_string(requestedTableId) + " does not exist.";
+            trace.push_back("Table lookup failed: Table not found.");
+            return false;
+        }
+
+        if (!target->isOperational())
+        {
+            errorMsg = "Table #" + std::to_string(requestedTableId) + " is under maintenance.";
+            trace.push_back("Status check failed: Table out of service.");
+            return false;
+        }
+
+        if (target->getCapacity() < guests)
+        {
+            errorMsg = "Table #" + std::to_string(requestedTableId) + " capacity (" +
+                       std::to_string(target->getCapacity()) + ") is smaller than party size (" +
+                       std::to_string(guests) + ").";
+            trace.push_back("Capacity check failed: Table too small.");
+            return false;
+        }
+
+        if (isConflict(requestedTableId, date, time))
+        {
+            errorMsg = "Table #" + std::to_string(requestedTableId) + " is already reserved on " + date + " at " + time + ".";
+            trace.push_back("Conflict check failed: Slot already booked.");
+            return false;
+        }
+
+        assignedTable = target;
+        trace.push_back("Specific Table #" + std::to_string(assignedTable->getId()) + " verified and assigned.");
+    }
+    else
+    {
+        trace.push_back("Scanning " + std::to_string(m_tables.size()) + " tables for capacity >= " + std::to_string(guests) + " and slot availability.");
+
+        assignedTable = findBestTable(guests, date, time);
+
+        if (assignedTable == nullptr)
+        {
+            errorMsg = "No available table found matching " + std::to_string(guests) +
+                       " guest(s) on " + date + " at " + time + ".";
+            trace.push_back("Allocation failed: All candidate tables occupied or insufficient capacity.");
+            logActivity("CONFLICT_DETECTED", "No table available for " + std::to_string(guests) + " guests on " + date + " at " + time);
+            return false;
+        }
+
+        trace.push_back("Matched optimal Table #" + std::to_string(assignedTable->getId()) + " (" + assignedTable->getType() + ", " + std::to_string(assignedTable->getCapacity()) + " capacity).");
     }
 
-    trace.push_back("Matched optimal Table #" + std::to_string(bestTable->getId()) + " (" + bestTable->getType() + ", " + std::to_string(bestTable->getCapacity()) + " capacity).");
-
-    createdBooking = Booking(m_nextBookingId++, bestTable->getId(), guestName, guests, date, time);
+    createdBooking = Booking(m_nextBookingId++, assignedTable->getId(), guestName, guests, date, time);
     m_bookings.push_back(createdBooking);
 
     trace.push_back("Created Reservation #" + std::to_string(createdBooking.getBookingId()) + ".");
     trace.push_back("Data persisted to disk (bookings.txt).");
 
-    logActivity("BOOKING_CREATED", "Booking #" + std::to_string(createdBooking.getBookingId()) + " created for " + guestName + " (Table #" + std::to_string(bestTable->getId()) + ", " + date + " " + time + ").");
+    logActivity("BOOKING_CREATED", "Booking #" + std::to_string(createdBooking.getBookingId()) + " created for " + guestName + " (Table #" + std::to_string(assignedTable->getId()) + ", " + date + " " + time + ").");
 
     saveData();
     return true;

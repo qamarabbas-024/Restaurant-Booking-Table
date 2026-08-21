@@ -313,12 +313,13 @@ void Server::startCompanionServer(BookingManager &manager, int port)
             int guests = extractJsonInt(body, "guests");
             std::string date = extractJsonString(body, "date");
             std::string time = extractJsonString(body, "time");
+            int requestedTableId = extractJsonInt(body, "tableId");
 
             std::vector<std::string> trace;
             Booking createdBooking;
             std::string errorMsg;
 
-            bool ok = manager.createBookingProgrammatic(guestName, guests, date, time, trace, createdBooking, errorMsg);
+            bool ok = manager.createBookingProgrammatic(guestName, guests, date, time, trace, createdBooking, errorMsg, requestedTableId);
 
             std::ostringstream resp;
             resp << "{\n";
