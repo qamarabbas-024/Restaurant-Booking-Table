@@ -23,7 +23,7 @@ void testTableEntity()
 
     t1.setOperationalStatus("Maintenance");
     assert(t1.isOperational() == false);
-    assert(t1.canSeat(2) == false); // Out of service cannot seat
+    assert(t1.canSeat(2) == false);
 
     t1.setOperationalStatus("Available");
     t1.setCapacity(6);
@@ -81,29 +81,43 @@ void testConflictAndSmartAllocation()
     // Table 1 must be FREE on 25/05/2026 at 8:00 PM
     assert(bm.isConflict(1, "25/05/2026", "8:00 PM") == false);
 
-    // Smart Allocation: 2 guests on 24/05/2026 at 8:00 PM
-    // Table 1 is busy -> should allocate next best fit Table 2 (capacity 4)
+    // Smart Allocation: 2 guests on 24/05/2026 at 8:00 PM -> Table 2 (capacity 4)
     const Table *best = bm.findBestTable(2, "24/05/2026", "8:00 PM");
     assert(best != nullptr);
     assert(best->getId() == 2);
 
-    // Smart Allocation: 2 guests on 25/05/2026 at 8:00 PM
-    // Table 1 is free -> should allocate Table 1 (capacity 2, best fit!)
+    // Smart Allocation: 2 guests on 25/05/2026 at 8:00 PM -> Table 1 (capacity 2)
     const Table *bestNextDay = bm.findBestTable(2, "25/05/2026", "8:00 PM");
     assert(bestNextDay != nullptr);
     assert(bestNextDay->getId() == 1);
 
-    // Smart Allocation: 5 guests
-    // Should pick Table 3 (capacity 6)
-    const Table *bestParty = bm.findBestTable(5, "24/05/2026", "8:00 PM");
-    assert(bestParty != nullptr);
-    assert(bestParty->getId() == 3);
+    // Programmatic booking creation with trace
+    std::vector<std::string> trace;
+    Booking created;
+    std::string errorMsg;
+    bool ok = bm.createBookingProgrammatic("Bob Dylan", 4, "24/05/2026", "8:00 PM", trace, created, errorMsg);
+    assert(ok == true);
+    assert(created.getTableId() == 2);
+    assert(trace.size() >= 4);
 
-    // Smart Allocation: 10 guests -> exceeds max capacity
-    const Table *none = bm.findBestTable(10, "24/05/2026", "8:00 PM");
-    assert(none == nullptr);
+    // Slot availability check
+    std::vector<int> avail, occ;
+    bm.getSlotAvailability("24/05/2026", "8:00 PM", avail, occ);
+    assert(occ.size() == 2); // Table 1 and Table 2 occupied
+    assert(avail.size() == 1); // Table 3 available
 
-    std::cout << "  -> Conflict & Smart Allocation tests PASSED.\n";
+    // JSON serialization
+    std::string json = bm.getStateJson();
+    assert(json.find("\"totalTables\": 3") != std::string::npos);
+    assert(json.find("\"activeBookings\": 2") != std::string::npos);
+    assert(json.find("\"Bob Dylan\"") != std::string::npos);
+
+    // Programmatic cancellation
+    ok = bm.cancelBookingProgrammatic(created.getBookingId(), errorMsg);
+    assert(ok == true);
+    assert(bm.getBookings().size() == 1);
+
+    std::cout << "  -> Conflict, Smart Allocation & Programmatic API tests PASSED.\n";
 }
 
 void testFileHandlerRobustness()

@@ -1,25 +1,33 @@
-# Technical Architecture & System Design
+# Technical Architecture & System Design — Core & Visual Companion
 
-## 1. Architectural Overview
-
-The **Restaurant Booking Table System** is structured as a modular 3-tier console architecture adhering to clean Object-Oriented C++ principles.
+## 1. System Architecture Diagram
 
 ```
 +-------------------------------------------------------------------------+
-|                              PRESENTATION TIER                          |
-|                       main.cpp  |  Utils.h / Utils.cpp                  |
-|  - Console Menus & User Interaction                                     |
-|  - Stream Sanitization & Tabular ASCII Rendering                        |
+|                               INTERFACES                                |
+|   +-----------------------------+     +-------------------------------+ |
+|   |     C++ CONSOLE INTERFACE   |     |    VISUAL COMPANION (WEB)     | |
+|   |   (main.cpp / Utils.cpp)    |     | (HTML5/CSS3/Vanilla JS in web)| |
+|   +-----------------------------+     +-------------------------------+ |
++-------------------------------------------------------------------------+
+                 |                                      | HTTP / REST (JSON)
+                 v                                      v
++-------------------------------------------------------------------------+
+|                         EMBEDDED BRIDGE LAYER                           |
+|                       Server.h / Server.cpp                             |
+|  - Lightweight multi-threaded local HTTP server (Winsock2 / POSIX)      |
+|  - Static asset server (serves web/index.html, style.css, app.js)       |
+|  - REST API endpoint router & JSON serializer                           |
 +-------------------------------------------------------------------------+
                                     |
                                     v
 +-------------------------------------------------------------------------+
-|                            BUSINESS LOGIC TIER                          |
+|                            SHARED CORE LOGIC                            |
 |                   BookingManager.h / BookingManager.cpp                 |
-|  - In-memory collection management (vector<Table>, vector<Booking>)     |
-|  - Smart Table Allocation (Best-fit capacity matching)                  |
-|  - Dynamic Slot-Based Conflict Detection (isConflict by date & time)    |
-|  - Query Routing & Business Invariant Enforcement                       |
+|  - In-memory collections: vector<Table>, vector<Booking>                |
+|  - Scheduling & Conflict Detection: isConflict(tableId, date, time)     |
+|  - Smart Table Allocation: findBestTable(guests, date, time)            |
+|  - Audit Activity Log: vector<ActivityLog>                              |
 +-------------------------------------------------------------------------+
          |                                                 |
          v (Composes)                                      v (Composes)
@@ -34,63 +42,51 @@ The **Restaurant Booking Table System** is structured as a modular 3-tier consol
 
 ---
 
-## 2. Core Domain Modeling & State Distinction
+## 2. Shared C++ Core Design
 
-### Operational Status vs. Dynamic Reservation Availability
-A key design principle in this system is the clear separation of concerns between two distinct concepts:
-1. **Operational Status** (stored in `Table::status`):
-   - Represents the physical operational state of the table (e.g., `"Available"`, `"Maintenance"`, or `"Out of Service"`).
-   - If a table is under maintenance, it cannot be booked for any date or time.
-2. **Reservation Availability** (derived dynamically):
-   - Represents whether an operational table is free at a specific `(tableId, date, time)`.
-   - Derived on demand by querying `BookingManager::isConflict(tableId, date, time)` against active bookings.
-   - **Crucial Rule**: Booking a table for a specific time slot does *not* mutate the table's persistent operational status to `"Reserved"`.
+The core scheduling engine and data models remain 100% written in C++. No business rules or allocation logic exist in the frontend layer.
+
+### Activity Log Model (`ActivityLog`)
+Tracks timestamped operational activity for both console and visual interfaces:
+```cpp
+struct ActivityLog {
+    std::string timestamp;
+    std::string type; // "BOOKING_CREATED", "BOOKING_CANCELLED", "TABLE_ADDED", "CONFLICT_CHECK"
+    std::string message;
+};
+```
 
 ---
 
-## 3. Class Design & OOP Responsibilities
+## 3. Embedded Local HTTP Server (`Server.h` / `Server.cpp`)
 
-### 3.1 `Table` Class (`Table.h` / `Table.cpp`)
-- **Encapsulated State**:
-  - `m_id: int` — Unique identifier (> 0).
-  - `m_capacity: int` — Seating capacity (> 0).
-  - `m_type: std::string` — Description (e.g. "Couple", "Family", "VIP").
-  - `m_status: std::string` — Operational status ("Available" / "Maintenance").
-- **Domain Methods**:
-  - `bool isOperational() const`: Returns `true` if table status is `"Available"`.
-  - `bool canSeat(int guests) const`: Validates `isOperational() && m_capacity >= guests`.
-  - `void setOperationalStatus(const std::string &status)`: Validates and sets operational status.
-  - `void updateDetails(int capacity, const std::string &type)`: Domain method to modify table specs.
-  - `void displayRow() const`: Formats table row for console grids.
+To avoid external runtimes (like Node.js, Python, or external frameworks), an embedded HTTP server is implemented directly in C++ using standard Windows Sockets (`winsock2.h`) and standard POSIX socket abstractions.
 
-### 3.2 `Booking` Class (`Booking.h` / `Booking.cpp`)
-- **Encapsulated State**:
-  - `m_bookingId: int` — Unique sequential identifier (> 0).
-  - `m_tableId: int` — Referenced table ID.
-  - `m_guestName: std::string` — Non-empty guest name.
-  - `m_guests: int` — Party size (> 0).
-  - `m_date: std::string` — Formatted date.
-  - `m_time: std::string` — Formatted time slot.
-- **Domain Methods**:
-  - `bool conflictsWith(int tableId, const std::string &date, const std::string &time) const`: Checks if booking collides with the requested slot.
-  - `bool matchesGuestName(const std::string &query) const`: Case-insensitive substring matching.
-  - `bool matchesDate(const std::string &date) const`: Checks date equality.
-  - `void displayRow() const`: Formats booking row for console grids.
-  - `void printReceipt() const`: Outputs a structured confirmation receipt.
+### 3.1 Server Responsibilities:
+- Listens on `127.0.0.1:8080`.
+- Multi-client handling via lightweight non-blocking sockets / threading.
+- Serves static assets (`index.html`, `style.css`, `app.js`, `favicon.ico`) with appropriate MIME types.
+- Dispatches `/api/*` endpoints to the shared `BookingManager` instance.
 
-### 3.3 `BookingManager` Class (`BookingManager.h` / `BookingManager.cpp`)
-- **Controller Responsibilities**:
-  - Holds `std::vector<Table>` and `std::vector<Booking>`.
-  - Coordinates scheduling, conflict detection, and best-fit allocation.
-  - Enforces deletion safety (verifying table has no active reservations before deletion).
+### 3.2 REST API Specification
 
-### 3.4 `FileHandler` Class (`FileHandler.h` / `FileHandler.cpp`)
-- **Persistence Responsibilities**:
-  - Pure static utility class for file I/O.
-  - Exception-safe parsing of records with `try-catch` around numeric token conversions.
-  - Handles multi-word strings and space/pipe delimiters gracefully.
+| Endpoint | Method | Description | Request Body / Query | Response (JSON) |
+|---|---|---|---|---|
+| `/api/state` | `GET` | Complete snapshot of tables, bookings, metrics, and activity log | None | `{ "tables": [...], "bookings": [...], "metrics": {...}, "activity": [...] }` |
+| `/api/availability` | `GET` | Computes availability for a specific slot | `?date=DD/MM/YYYY&time=8:00%20PM` | `{ "date": "...", "time": "...", "availableTableIds": [1, 2, 4], "occupiedTableIds": [3] }` |
+| `/api/bookings` | `POST` | Creates a booking using C++ smart allocation engine | `{ "guestName": "...", "guests": 4, "date": "...", "time": "..." }` | `{ "success": true, "booking": {...}, "allocationTrace": [...], "receipt": "..." }` |
+| `/api/bookings/:id` | `DELETE` | Cancels a booking | ID in URL or body | `{ "success": true, "message": "..." }` |
+| `/api/tables` | `POST` | Adds a new table | `{ "id": 5, "capacity": 4, "type": "Patio" }` | `{ "success": true, "table": {...} }` |
 
-### 3.5 `Utils` Module (`Utils.h` / `Utils.cpp`)
-- **Console & Stream Responsibilities**:
-  - Safe integer, string, and date input without stream desynchronization.
-  - Reusable screen clearing, single-enter pause, and aligned ASCII table styling.
+---
+
+## 4. Visual Companion Frontend Architecture
+
+- **Location**: `Code/web/`
+- **Stack**: Pure Vanilla HTML5, Modern CSS3 (Custom Properties, Flexbox, CSS Grid), and Vanilla JavaScript (ES6 Modules/Fetch API).
+- **Zero Build Step**: Native browser execution without bundlers, Webpack, or Babel.
+- **Key Modules**:
+  - `floorplan.js` / Floor Plan Component: Renders 2D interactive table layout with dynamic SVG seating arrangements.
+  - `visualizer.js` / Allocation Pipeline Visualizer: Step-by-step visual animation of the 6-stage allocation algorithm.
+  - `timeline.js` / Activity Stream: Real-time operational log.
+  - `app.js` / Orchestrator: State management and polling/refresh synchronization with C++ backend.

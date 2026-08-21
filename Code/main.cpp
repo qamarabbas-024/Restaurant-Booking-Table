@@ -1,5 +1,7 @@
 #include <iostream>
+#include <cstring>
 #include "BookingManager.h"
+#include "Server.h"
 #include "Utils.h"
 
 // ==========================================
@@ -97,10 +99,21 @@ void bookingMenu(BookingManager &manager)
 // ==========================================
 // MAIN ENTRY POINT
 // ==========================================
-int main()
+int main(int argc, char *argv[])
 {
     BookingManager manager;
     manager.loadData();
+
+    // Check for command line flag to launch visual companion directly
+    if (argc > 1)
+    {
+        if (std::strcmp(argv[1], "--serve") == 0 || std::strcmp(argv[1], "--visual") == 0 || std::strcmp(argv[1], "-s") == 0)
+        {
+            clearScreen();
+            Server::startCompanionServer(manager, 8080);
+            return 0;
+        }
+    }
 
     while (true)
     {
@@ -111,10 +124,11 @@ int main()
         std::cout << "  1. System Dashboard & Overview\n";
         std::cout << "  2. Table Management\n";
         std::cout << "  3. Booking & Reservation Management\n";
-        std::cout << "  4. Save Data & Exit\n";
+        std::cout << "  4. Launch Visual Companion (Local Web Interface)\n";
+        std::cout << "  5. Save Data & Exit\n";
         std::cout << "================================================================================\n";
 
-        int choice = safeIntRange(1, 4, "Enter Choice (1-4): ");
+        int choice = safeIntRange(1, 5, "Enter Choice (1-5): ");
 
         clearScreen();
 
@@ -131,6 +145,9 @@ int main()
             bookingMenu(manager);
             break;
         case 4:
+            Server::startCompanionServer(manager, 8080);
+            break;
+        case 5:
             manager.saveData();
             std::cout << "\n[SUCCESS] All table and reservation data saved successfully.\n";
             std::cout << "Thank you for using the Restaurant Table Booking System!\n\n";

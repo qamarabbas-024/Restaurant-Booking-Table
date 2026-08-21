@@ -1,110 +1,79 @@
-# UI / Console Experience Specification
+# Visual Companion & Console UI Specification
 
-## 1. Design Philosophy
-The user interface is a purposeful, polished, and structured terminal console application. It uses clear visual hierarchy, aligned ASCII borders, formatted columnar grids (`std::setw`), consistent headers, and actionable feedback messages (`[SUCCESS]`, `[ERROR]`, `[INFO]`).
+## 1. Visual Identity & Theme (Visual Companion)
 
----
+The **Visual Companion** adopts an elegant, contemporary restaurant management aesthetic designed for clarity, warmth, and operational focus.
 
-## 2. Visual Layout & Typography
-
-### 2.1 Banners & Framing
-Every screen begins with a clean header:
-```text
-================================================================================
-                     RESTAURANT TABLE BOOKING SYSTEM
-================================================================================
-```
-
-Submenus and sections use clear sectional headers:
-```text
------------------------------ TABLE MANAGEMENT ---------------------------------
-```
-
-### 2.2 Table Grid Formatting
-Tables and bookings are printed with formatted headers and column widths:
-
-**Tables View**:
-```text
-+----------+------------+----------------------+--------------------+
-| Table ID | Capacity   | Type                 | Status             |
-+----------+------------+----------------------+--------------------+
-| 1        | 2 Guests   | Couple Table         | Available          |
-| 2        | 4 Guests   | Family Booth         | Available          |
-| 3        | 6 Guests   | VIP Suite            | Available          |
-| 4        | 8 Guests   | Banquet Table        | Available          |
-+----------+------------+----------------------+--------------------+
-```
-
-**Bookings View**:
-```text
-+--------+----------+----------------------+--------+------------+----------+
-| ID     | Table ID | Guest Name           | Guests | Date       | Time     |
-+--------+----------+----------------------+--------+------------+----------+
-| 101    | 2        | Qamar Abbas          | 4      | 24/05/2026 | 8:00 PM  |
-| 102    | 3        | Sarah Jenkins        | 5      | 24/05/2026 | 6:00 PM  |
-+--------+----------+----------------------+--------+------------+----------+
-```
-
-### 2.3 Booking Receipt Format
-Upon successful reservation creation or search hit:
-```text
-================================================================================
-                             BOOKING CONFIRMATION
-================================================================================
-  Booking ID   : 101
-  Guest Name   : Qamar Abbas
-  Table Number : Table 2 (Family Booth, 4 Guests)
-  Party Size   : 4 Guests
-  Date         : 24/05/2026
-  Time Slot    : 8:00 PM
-  Status       : CONFIRMED
-================================================================================
-```
+### 1.1 Color Palette
+- **Background Deep Canvas**: `#0b0f19` (Obsidian Navy)
+- **Surface Cards & Modals**: `#111827` (Charcoal Slate) with subtle border `#1f2937`
+- **Accent Primary / Gold**: `#f59e0b` / `#d97706` (Warm Amber Hospitality Accent)
+- **Status Available / Free**: `#10b981` (Emerald Green)
+- **Status Occupied / Reserved**: `#f43f5e` (Rose Coral)
+- **Status Maintenance / Offline**: `#64748b` (Slate Gray)
+- **Text Primary**: `#f8fafc` (Clean Off-White)
+- **Text Secondary**: `#94a3b8` (Muted Slate)
 
 ---
 
-## 3. Menu Navigation & Flow
+## 2. Interactive Floor Layout Components
 
-### 3.1 Main Menu
+Tables are represented as realistic architectural dining fixtures:
+- **Couple Table (2 Guests)**: Circular table with 2 opposing rounded chairs.
+- **Family Booth (4 Guests)**: Rectangular table with comfortable booth-style seating.
+- **VIP Suite (6 Guests)**: Hexagonal / curved table with 6 cushioned armchairs.
+- **Banquet Table (8 Guests)**: Long executive dining table with 8 symmetrical seats.
+
+Each table displays:
+- Table Badge (`T-01`, `T-02`, etc.)
+- Capacity badge (`2 seats`, `4 seats`)
+- Current status pill (`FREE` or `RESERVED`)
+- Hover effect with elevation and detailed tooltip.
+
+---
+
+## 3. Allocation Pipeline Visualizer (Step-by-Step Flow)
+
+When a reservation is created, the system displays an animated multi-stage pipeline:
+
 ```text
-========================== RESTAURANT SYSTEM ==========================
-  1. System Dashboard
-  2. Table Management
-  3. Booking Management
-  4. Save & Exit
-=======================================================================
-Enter Choice (1-4): 
++-------------------+     +-------------------+     +-------------------+
+|  1. INPUT PARSE   | --> | 2. DATE/TIME CHECK| --> | 3. CONFLICT SCAN  |
+|  Guest: Qamar (4) |     | 24/05/2026 8:00PM |     | Scan active slots |
++-------------------+     +-------------------+     +-------------------+
+                                                              |
+                                                              v
++-------------------+     +-------------------+     +-------------------+
+| 6. RECEIPT ISSUED | <-- | 5. DISK PERSIST   | <-- | 4. BEST-FIT MATCH |
+| Confirmation #101 |     | Save tables.txt   |     | Table 2 (4 seats) |
++-------------------+     +-------------------+     +-------------------+
 ```
 
-### 3.2 Table Management Submenu
-```text
--------------------------- TABLE MANAGEMENT ---------------------------
-  1. View All Tables
-  2. Check Availability by Date & Time Slot
-  3. Add New Table
-  4. Update Table (Capacity / Type)
-  5. Delete Table
-  0. Back to Main Menu
------------------------------------------------------------------------
-Enter Choice (0-5): 
-```
+Each stage lights up with a smooth transition, checkmark icon, and real-time execution feedback.
 
-### 3.3 Booking Management Submenu
+---
+
+## 4. Layout Architecture (Single Page Dashboard)
+
 ```text
-------------------------- BOOKING MANAGEMENT --------------------------
-  1. Create New Booking (Smart Table Assignment)
-  2. View All Bookings
-  3. Search Bookings (by ID, Guest Name, or Date)
-  4. Cancel Booking
-  0. Back to Main Menu
------------------------------------------------------------------------
-Enter Choice (0-4): 
++-------------------------------------------------------------------------------+
+| TOP BAR: System Title | Server Status (Live) | Selected Slot | Launch Console |
++-------------------------------------------------------------------------------+
+| METRICS BAR: [Total Tables] [Total Capacity] [Active Bookings] [Slot Occupancy]
++-------------------------------------------------------------------------------+
+| LEFT PANE (60%): Interactive Floor Layout    | RIGHT PANE (40%):               |
+| - Floor View Filters (Date & Time Picker)   | - Instant Booking Wizard        |
+| - Visual Dining Room Grid                   | - Allocation Pipeline Tracker   |
+| - Table Details Modal                       | - Live Operational Timeline     |
++-------------------------------------------------------------------------------+
+| BOTTOM PANEL: Active Reservations Table with Instant Search & 1-Click Cancel  |
++-------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 4. Feedback & Status Messages
-- **Success**: `[SUCCESS] Table 5 added successfully!`
-- **Error**: `[ERROR] Invalid input! Number of guests must be greater than 0.`
-- **Warning / Notice**: `[NOTICE] No available tables found matching 6 guests for 24/05/2026 at 8:00 PM.`
-- **Pause Prompt**: `Press Enter to continue...` (guaranteed single-enter resume).
+## 5. Micro-Animations & Transitions
+- Table selection pulse animation (`keyframes: tablePulse`).
+- Smooth badge color morphing when date/time slot changes.
+- Pipeline node progress bar animation.
+- Toast notifications for successes, errors, and cancellations.

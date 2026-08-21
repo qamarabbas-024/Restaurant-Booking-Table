@@ -1,38 +1,21 @@
-# Security & Risk Specification
+# Security & Risk Specification — Core & Visual Companion
 
-## 1. Context & Threat Model
+## 1. Threat Modeling for Local Visual Companion
 
-Although the Restaurant Booking Table system is a standalone, single-user C++ console application running locally, reliable input validation and data sanitization are essential to prevent runtime crashes, stream corruption, resource exhaustion, and data file tampering.
+Because the C++ engine runs an embedded HTTP server on the user's local machine, the following attack vectors were evaluated and mitigated:
 
----
+### 1.1 Localhost Restriction
+- **Risk**: Unintended network exposure if the server listens on all interfaces (`0.0.0.0`).
+- **Mitigation**: The socket explicitly binds to `127.0.0.1` (IPv4 loopback), preventing external devices on the local area network (LAN) from accessing the API or files.
 
-## 2. Identified Risks & Mitigations
+### 1.2 Path Traversal Protection
+- **Risk**: A malicious HTTP request such as `GET /../../Windows/System32/config` attempting to read sensitive OS files.
+- **Mitigation**: The static file server strictly validates requested file paths, prevents `..` sequences, and only serves files strictly located within the sanitized `web/` subfolder.
 
-### 2.1 Input Stream Injection & Buffer Overflow
-- **Threat**: Entering very large strings, characters when integers are expected, or control characters could stall the `std::cin` stream or cause memory exhaustion.
-- **Mitigation**:
-  - `safeInt()` and `safePositiveInt()` clear the stream failure bit via `std::cin.clear()` and exhaust bad characters with `std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n')`.
-  - `safeStringInput()` uses `std::getline` with explicit length bounds and string trimming.
+### 1.3 Request Body Limits & Memory Exhaustion
+- **Risk**: A client sending huge POST payloads.
+- **Mitigation**: HTTP request headers and bodies are limited to 64KB max buffer size, and socket read operations are non-blocking with strict timeouts.
 
-### 2.2 Numeric Conversion Exceptions (`std::invalid_argument` / `std::out_of_range`)
-- **Threat**: Reading a corrupted `bookings.txt` with non-numeric text in place of `bookingId` or `tableId` could cause uncaught exceptions from `std::stoi()`, immediately terminating the application.
-- **Mitigation**:
-  - Wrap all conversions in safe parsing helper functions with `try-catch (const std::exception &e)` blocks.
-  - Gracefully skip or flag corrupt records without terminating the program.
-
-### 2.3 Data Delimiter Collision
-- **Threat**: If a user enters the pipe character (`|`) inside a guest name or table type, reading the pipe-delimited file later could misalign fields.
-- **Mitigation**:
-  - Sanitize input strings to strip or replace pipe characters (`|`) before writing to file.
-
-### 2.4 Race Conditions & File Locking
-- **Threat**: Multiple terminal instances writing to `tables.txt` simultaneously.
-- **Mitigation**:
-  - Document that the current architecture is single-process.
-  - Flush and close file handles immediately after saving operations.
-
-### 2.5 Destructive Operation Safety
-- **Threat**: Accidental deletion of tables or cancellation of customer reservations due to accidental keypresses.
-- **Mitigation**:
-  - Implement explicit confirmation checks (`Are you sure you want to cancel booking #X? (y/n): `) before committing deletions.
-  - Block table deletion if any active bookings reference that table.
+### 1.4 Input Sanitization & Delimiter Safety
+- **Risk**: Injection of pipe delimiters (`|`) in guest names or table types.
+- **Mitigation**: Input strings are sanitized to replace pipe characters with hyphens before writing to persistent text files.
