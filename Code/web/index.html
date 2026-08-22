@@ -85,13 +85,16 @@
       </div>
     </aside>
 
+    <!-- Sidebar Backdrop Overlay for Mobile / Tablet -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- Main Workspace Viewport -->
     <main class="app-workspace">
       
       <!-- Top Control Bar -->
       <header class="workspace-header">
         <div class="header-left">
-          <button class="btn btn-ghost btn-icon mobile-menu-toggle" id="btn-mobile-toggle" aria-label="Toggle Menu">
+          <button class="btn btn-ghost btn-icon menu-toggle-btn" id="btn-mobile-toggle" aria-label="Toggle Sidebar Menu" title="Toggle Navigation Menu">
             <i data-lucide="menu"></i>
           </button>
           <div class="header-view-title">
@@ -124,10 +127,11 @@
             <span class="sync-label">C++ Live</span>
           </div>
           <button class="btn btn-secondary btn-icon" id="theme-mode-toggle" title="Toggle Light/Dark Theme">
-            <i data-lucide="sun" id="theme-toggle-icon"></i>
+            <span id="theme-icon-wrap"><i data-lucide="sun"></i></span>
           </button>
-          <button class="btn btn-secondary btn-icon" id="sound-feedback-toggle" title="Toggle Audio Feedback">
-            <i data-lucide="volume-2" id="sound-toggle-icon"></i>
+          <button class="btn btn-secondary btn-icon btn-sound-toggle sound-active" id="sound-feedback-toggle" title="Audio Feedback: ON (Click to Mute)">
+            <span id="sound-icon-wrap"><i data-lucide="volume-2"></i></span>
+            <span class="sound-status-dot active" id="sound-status-dot"></span>
           </button>
           <button class="btn btn-secondary btn-icon" id="manual-sync-btn" title="Synchronize State">
             <i data-lucide="refresh-cw"></i>

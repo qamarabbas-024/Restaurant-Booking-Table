@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
   TABLES: 'royal_spice_tables',
   BOOKINGS: 'royal_spice_bookings',
   ACTIVITY: 'royal_spice_activity',
-  THEME: 'royal_spice_theme'
+  THEME: 'royal_spice_theme',
+  SOUND: 'royal_spice_sound'
 };
 
 // Initial Seed Tables
@@ -27,7 +28,7 @@ const DEFAULT_TABLES = [
 const appState = {
   currentView: 'dashboard',
   currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'light',
-  soundEnabled: true,
+  soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
   isEditLayoutMode: false,
   selectedOccasion: 'Romantic Dinner',
   selectedZone: 'ALL',
@@ -55,9 +56,7 @@ const globalDateInput = document.getElementById('global-date-input');
 const headerSlotChips = document.getElementById('header-slot-chips');
 const coreSyncIndicator = document.getElementById('core-sync-indicator');
 const themeModeToggle = document.getElementById('theme-mode-toggle');
-const themeToggleIcon = document.getElementById('theme-toggle-icon');
 const soundFeedbackToggle = document.getElementById('sound-feedback-toggle');
-const soundToggleIcon = document.getElementById('sound-toggle-icon');
 
 // Metric Tiles
 const metricAvailableTables = document.getElementById('metric-available-tables');
@@ -1083,22 +1082,59 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 document.getElementById('btn-view-all-reservations').addEventListener('click', () => switchAppView('reservations'));
 document.getElementById('btn-nav-create-res').addEventListener('click', () => switchAppView('booking'));
 
+// ================= THEME & AUDIO CONTROLLERS =================
+
+function updateSoundToggleUI() {
+  const btn = document.getElementById('sound-feedback-toggle');
+  const iconWrap = document.getElementById('sound-icon-wrap');
+  const dot = document.getElementById('sound-status-dot');
+  if (!btn || !iconWrap) return;
+
+  if (appState.soundEnabled) {
+    btn.classList.add('sound-active');
+    btn.classList.remove('sound-muted');
+    btn.setAttribute('title', 'Audio Feedback: ON (Click to Mute)');
+    iconWrap.innerHTML = '<i data-lucide="volume-2"></i>';
+    if (dot) dot.className = 'sound-status-dot active';
+  } else {
+    btn.classList.remove('sound-active');
+    btn.classList.add('sound-muted');
+    btn.setAttribute('title', 'Audio Feedback: MUTED (Click to Enable)');
+    iconWrap.innerHTML = '<i data-lucide="volume-x"></i>';
+    if (dot) dot.className = 'sound-status-dot muted';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function updateThemeToggleUI() {
+  const iconWrap = document.getElementById('theme-icon-wrap');
+  if (!iconWrap) return;
+  iconWrap.innerHTML = `<i data-lucide="${appState.currentTheme === 'light' ? 'sun' : 'moon'}"></i>`;
+  if (window.lucide) window.lucide.createIcons();
+}
+
 // Theme Toggle
 themeModeToggle.addEventListener('click', () => {
   appState.currentTheme = appState.currentTheme === 'light' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', appState.currentTheme);
   localStorage.setItem(STORAGE_KEYS.THEME, appState.currentTheme);
-  themeToggleIcon.setAttribute('data-lucide', appState.currentTheme === 'light' ? 'sun' : 'moon');
-  if (window.lucide) window.lucide.createIcons();
+  updateThemeToggleUI();
+  playAudioChime('click');
   showToastNotification(`Theme switched to ${appState.currentTheme} mode.`, 'info');
 });
 
 // Sound Toggle
 soundFeedbackToggle.addEventListener('click', () => {
   appState.soundEnabled = !appState.soundEnabled;
-  soundToggleIcon.setAttribute('data-lucide', appState.soundEnabled ? 'volume-2' : 'volume-x');
-  if (window.lucide) window.lucide.createIcons();
-  showToastNotification(appState.soundEnabled ? 'Audio feedback enabled.' : 'Audio muted.', 'info');
+  localStorage.setItem(STORAGE_KEYS.SOUND, appState.soundEnabled ? 'true' : 'false');
+  updateSoundToggleUI();
+  if (appState.soundEnabled) {
+    playAudioChime('success');
+    showToastNotification('Audio feedback ENABLED.', 'success');
+  } else {
+    showToastNotification('Audio feedback MUTED.', 'info');
+  }
 });
 
 // Stepper
@@ -1234,14 +1270,41 @@ document.getElementById('manual-sync-btn').addEventListener('click', () => {
   showToastNotification('State synchronized.', 'info');
 });
 
-// Mobile Sidebar Toggle
-document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
-  appSidebar.classList.toggle('mobile-open');
-});
+// Responsive Sidebar Toggle (3-lines hamburger menu)
+const btnMobileToggle = document.getElementById('btn-mobile-toggle');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const appLayout = document.querySelector('.app-layout');
+
+function toggleSidebarMenu() {
+  playAudioChime('click');
+  if (window.innerWidth <= 1024) {
+    appSidebar.classList.toggle('mobile-open');
+    if (sidebarBackdrop) {
+      sidebarBackdrop.classList.toggle('active', appSidebar.classList.contains('mobile-open'));
+    }
+  } else {
+    if (appLayout) {
+      appLayout.classList.toggle('sidebar-collapsed');
+    }
+  }
+}
+
+if (btnMobileToggle) {
+  btnMobileToggle.addEventListener('click', toggleSidebarMenu);
+}
+
+if (sidebarBackdrop) {
+  sidebarBackdrop.addEventListener('click', () => {
+    appSidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('active');
+  });
+}
 
 // Auto Background Polling every 3.5s
 setInterval(syncWithCoreEngine, 3500);
 
-// Initialize Theme & First Load
+// Initialize Theme, Audio UI & First Load
 document.documentElement.setAttribute('data-theme', appState.currentTheme);
+updateThemeToggleUI();
+updateSoundToggleUI();
 syncWithCoreEngine();
