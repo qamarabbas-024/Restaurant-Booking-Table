@@ -1,6 +1,6 @@
 // ==========================================================================
-// THE ROYAL SPICE 3.0+ — MASTER RESTAURANT MANAGEMENT CONTROLLER
-// Features: 3D Spatial Canvas, AI Sommelier Concierge, 5 Themes, Visual Menu & CRM
+// THE ROYAL SPICE 3.5 PRO — MASTER CONTROLLER
+// 5-Theme Engine, CAD Floor Plan Geometries, AI Sommelier & C++ REST Sync
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
@@ -10,8 +10,7 @@ const STORAGE_KEYS = {
   BOOKINGS: 'royal_spice_bookings',
   ACTIVITY: 'royal_spice_activity',
   THEME: 'royal_spice_theme',
-  SOUND: 'royal_spice_sound',
-  AI_CHAT: 'royal_spice_ai_chat'
+  SOUND: 'royal_spice_sound'
 };
 
 // Initial Seed Tables
@@ -46,27 +45,23 @@ const appState = {
   currentView: 'dashboard',
   currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'obsidian',
   soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
-  isEditLayoutMode: false,
   selectedOccasion: 'Romantic Dinner',
   selectedZone: 'ALL',
   selectedDate: '24/05/2026',
   selectedTime: '8:00 PM',
-  selectedTableId: 0,
   activeDrawerTable: null,
   isBackendConnected: false,
-  metrics: { totalCapacity: 26 },
   tables: JSON.parse(localStorage.getItem(STORAGE_KEYS.TABLES) || 'null') || DEFAULT_TABLES,
   bookings: JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || 'null') || [],
   activity: JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITY) || 'null') || [
     { timestamp: '17:30', type: 'SYSTEM_INIT', message: 'Shift started. All table fixtures calibrated.' },
     { timestamp: '17:35', type: 'TABLE_STATUS', message: 'VIP Suite prepared for dinner service.' }
   ],
-  camera3D: { tilt: 40, orbit: -20, zoom: 0.95, isIsometric: true },
   availableTableIds: [],
   occupiedTableIds: []
 };
 
-// ================= DOM ELEMENT REFERENCES =================
+// ================= DOM REFERENCES =================
 const appSidebar = document.getElementById('app-sidebar');
 const currentViewTitle = document.getElementById('current-view-title');
 const headerDateBadge = document.getElementById('header-date-badge');
@@ -200,7 +195,6 @@ function applyLuxuryTheme(themeName) {
   document.documentElement.setAttribute('data-theme', themeName);
   localStorage.setItem(STORAGE_KEYS.THEME, themeName);
   if (themeSelector) themeSelector.value = themeName;
-  showToastNotification(`Theme: ${themeName.toUpperCase()}`, 'info');
 }
 
 function updateSoundToggleUI() {
@@ -236,7 +230,7 @@ function switchAppView(viewName) {
 
   const titles = {
     dashboard: 'Live Operations Dashboard',
-    floorplan: '3D Spatial Floor Plan & Table Command',
+    floorplan: 'CAD Architectural Floor Plan & Table Command',
     reservations: 'Master Reservations Ledger',
     booking: 'Smart Reservation Allocation',
     menu: 'Michelin 3-Star Visual Dish Menu',
@@ -249,6 +243,10 @@ function switchAppView(viewName) {
   if (viewName === 'menu') renderVisualMenu('ALL');
   if (viewName === 'crm') renderVIPGuests();
   if (viewName === 'floorplan') renderFloorPlan(masterFloorCanvas, true);
+  if (viewName === 'reservations') renderReservationsTable();
+  if (viewName === 'tables') renderFleetTableList();
+  if (viewName === 'activity') renderActivityTimeline();
+  if (viewName === 'booking') populateBookingFormDropdown();
 
   if (window.innerWidth <= 1024) {
     appSidebar.classList.remove('mobile-open');
@@ -257,18 +255,256 @@ function switchAppView(viewName) {
   }
 }
 
-// ================= 3D CAMERA CONTROLLER =================
-function update3DFloorTransform() {
-  if (!masterFloorCanvas) return;
-  const { tilt, orbit, zoom, isIsometric } = appState.camera3D;
-  if (isIsometric) {
-    masterFloorCanvas.style.transform = `rotateX(${tilt}deg) rotateZ(${orbit}deg) scale(${zoom})`;
-  } else {
-    masterFloorCanvas.style.transform = `rotateX(0deg) rotateZ(0deg) scale(${zoom})`;
-  }
+// ================= CORE DATA EVALUATION =================
+function evaluateSlotState() {
+  const slotBookings = appState.bookings.filter(b => b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
+  appState.occupiedTableIds = slotBookings.map(b => b.tableId);
+  appState.availableTableIds = appState.tables
+    .filter(t => t.status === 'Available' && !appState.occupiedTableIds.includes(t.id))
+    .map(t => t.id);
+
+  let seatedCovers = 0;
+  slotBookings.forEach(b => {
+    if (b.status === 'Seated' || b.status === 'Confirmed') seatedCovers += parseInt(b.guests || 2);
+  });
+
+  if (metricAvailableTables) metricAvailableTables.textContent = appState.availableTableIds.length;
+  if (metricTotalTablesDenom) metricTotalTablesDenom.textContent = `/ ${appState.tables.length} Fleet`;
+  if (metricSeatedCovers) metricSeatedCovers.textContent = seatedCovers;
+  if (metricTotalBookingsCount) metricTotalBookingsCount.textContent = slotBookings.length;
+  if (metricSlotBookingsTag) metricSlotBookingsTag.textContent = `Slot: ${appState.selectedTime}`;
+  if (metricEstRevenue) metricEstRevenue.textContent = `$${(seatedCovers * 85).toLocaleString()}`;
+  if (navOpenTablesPill) navOpenTablesPill.textContent = `${appState.availableTableIds.length} Open`;
+  if (navBookingsPill) navBookingsPill.textContent = String(appState.bookings.length);
+  if (miniSeatedCount) miniSeatedCount.textContent = seatedCovers;
+  if (miniUpcomingCount) miniUpcomingCount.textContent = slotBookings.length;
+
+  renderUpcomingArrivalsList(slotBookings);
 }
 
-// ================= VISUAL DISH MENU & CRM =================
+// ================= PHOTOREALISTIC CAD FLOOR PLAN =================
+function renderFloorPlan(canvasElement, isMaster = false) {
+  if (!canvasElement) return;
+  canvasElement.innerHTML = '';
+
+  const tablesToRender = isMaster && appState.selectedZone !== 'ALL'
+    ? appState.tables.filter(t => t.type === appState.selectedZone)
+    : appState.tables;
+
+  tablesToRender.forEach(tbl => {
+    let liveStatus = tbl.status;
+    const booking = appState.bookings.find(b => b.tableId === tbl.id && b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
+
+    if (tbl.status === 'Maintenance') liveStatus = 'Maintenance';
+    else if (booking) liveStatus = booking.status === 'Seated' ? 'Seated' : 'Reserved';
+
+    const pod = document.createElement('div');
+    pod.className = `cad-table-pod status-${liveStatus.toLowerCase()}`;
+
+    // Generate CAD Architectural Geometry Visual
+    let geoHtml = '';
+    if (tbl.capacity <= 2) {
+      // Round Couple Table with 2 Facing Chairs
+      geoHtml = `
+        <div class="cad-geo-round">
+          <div class="cad-chair-top"></div>
+          <span>T-${tbl.id}</span>
+          <div class="cad-chair-bottom"></div>
+        </div>
+      `;
+    } else if (tbl.capacity <= 4) {
+      // Family Booth with Leather Banquette Seats
+      geoHtml = `
+        <div class="cad-geo-booth">
+          <div class="cad-booth-seat-top"></div>
+          <span>BOOTH #${tbl.id}</span>
+          <div class="cad-booth-seat-bottom"></div>
+        </div>
+      `;
+    } else if (tbl.capacity <= 6) {
+      // VIP Imperial Suite Oval Table
+      geoHtml = `
+        <div class="cad-geo-suite">
+          <span>👑 VIP #${tbl.id}</span>
+        </div>
+      `;
+    } else {
+      // Banquet 8-Seat Grand Table
+      geoHtml = `
+        <div class="cad-geo-booth" style="width: 140px; border-color: var(--primary-500);">
+          <div class="cad-booth-seat-top" style="width: 130px;"></div>
+          <span>BANQUET #${tbl.id}</span>
+          <div class="cad-booth-seat-bottom" style="width: 130px;"></div>
+        </div>
+      `;
+    }
+
+    pod.innerHTML = `
+      <div class="cad-pod-header">
+        <span class="cad-table-num">Table #${tbl.id}</span>
+        <span class="cad-status-tag" style="background:var(--c-${liveStatus.toLowerCase()}-bg, rgba(255,255,255,0.1)); color:var(--c-${liveStatus.toLowerCase()});">${liveStatus}</span>
+      </div>
+
+      <div class="cad-geometry-visual">
+        ${geoHtml}
+      </div>
+
+      <div class="cad-pod-meta">
+        <span><strong>${tbl.capacity} Seats</strong> &bull; ${tbl.type}</span>
+        ${booking ? `<span style="color:var(--primary-500); font-weight:700;">★ ${booking.name}</span>` : `<span style="color:var(--c-available);">Available</span>`}
+      </div>
+    `;
+
+    pod.addEventListener('click', () => {
+      playAudioChime('click');
+      openTableDrawer(tbl, booking, liveStatus);
+    });
+
+    canvasElement.appendChild(pod);
+  });
+}
+
+function openTableDrawer(table, booking, status) {
+  appState.activeDrawerTable = table;
+  drawerTableHeading.textContent = `Table #T-0${table.id}`;
+  drawerStatusBadge.textContent = status;
+  drawerTableCapacity.textContent = `${table.capacity} Guests`;
+  drawerTableCategory.textContent = table.type;
+  drawerTableSlot.textContent = appState.selectedTime;
+
+  if (booking) {
+    drawerBookingSection.style.display = 'block';
+    drawerGuestName.textContent = booking.name;
+    drawerBookingId.textContent = String(booking.id || 'RES-' + table.id);
+    drawerPartySize.textContent = `${booking.guests} Guests`;
+    drawerOccasion.textContent = booking.occasion || 'Dining';
+    drawerBtnReleaseTable.style.display = 'block';
+    drawerToggleStatusText.textContent = table.status === 'Maintenance' ? 'Reactivate Table' : 'Set Maintenance';
+  } else {
+    drawerBookingSection.style.display = 'none';
+    drawerBtnReleaseTable.style.display = 'none';
+    drawerToggleStatusText.textContent = table.status === 'Maintenance' ? 'Reactivate Table' : 'Set Maintenance';
+  }
+
+  tableContextDrawer.classList.add('open');
+  drawerBackdrop.classList.add('active');
+}
+
+function closeTableDrawer() {
+  tableContextDrawer.classList.remove('open');
+  drawerBackdrop.classList.remove('active');
+}
+
+// ================= UPCOMING ARRIVALS & ACTIVITY =================
+function renderUpcomingArrivalsList(slotBookings) {
+  if (!dashboardUpcomingList) return;
+  dashboardUpcomingList.innerHTML = '';
+
+  if (slotBookings.length === 0) {
+    dashboardUpcomingList.innerHTML = `<div style="text-align:center; padding: 24px; color:var(--text-muted); font-size:12.5px;">No reservations scheduled for ${appState.selectedTime}. Walk-in seating available.</div>`;
+    return;
+  }
+
+  slotBookings.forEach(b => {
+    const item = document.createElement('div');
+    item.className = 'arrival-row';
+    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-canvas); border-radius:var(--radius-xs); border:1px solid var(--border-subtle); margin-bottom:8px;';
+    item.innerHTML = `
+      <div>
+        <strong style="color:var(--text-main); font-size:13px;">${b.name}</strong>
+        <div style="font-size:11px; color:var(--text-muted);">Table #${b.tableId} &bull; ${b.guests} Guests &bull; ${b.occasion || 'Dinner'}</div>
+      </div>
+      <div>
+        <span class="badge-pill ${b.status === 'Seated' ? 'blue' : 'gold'}">${b.status}</span>
+      </div>
+    `;
+    dashboardUpcomingList.appendChild(item);
+  });
+}
+
+function renderActivityTimeline() {
+  if (!fullActivityStream) return;
+  fullActivityStream.innerHTML = '';
+
+  appState.activity.forEach(act => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:12px 16px; background:var(--bg-surface); border-radius:var(--radius-xs); border:1px solid var(--border-subtle); margin-bottom:10px; display:flex; gap:14px; align-items:center;';
+    row.innerHTML = `
+      <span style="font-family:var(--font-mono); font-size:11px; color:var(--primary-500); font-weight:700;">${act.timestamp}</span>
+      <div style="flex:1;">
+        <strong style="color:var(--text-main); font-size:12.5px;">${act.type}</strong>
+        <p style="color:var(--text-muted); font-size:11.5px; margin-top:2px;">${act.message}</p>
+      </div>
+    `;
+    fullActivityStream.appendChild(row);
+  });
+}
+
+// ================= RESERVATIONS LEDGER =================
+function renderReservationsTable() {
+  if (!masterReservationsTbody) return;
+  masterReservationsTbody.innerHTML = '';
+
+  const query = (reservationsSearchInput ? reservationsSearchInput.value : '').toLowerCase();
+  const filter = reservationsStatusFilter ? reservationsStatusFilter.value : 'ALL';
+
+  const filtered = appState.bookings.filter(b => {
+    const matchQuery = b.name.toLowerCase().includes(query) || String(b.tableId).includes(query) || String(b.id || '').toLowerCase().includes(query);
+    const matchStatus = filter === 'ALL' || b.status === filter;
+    return matchQuery && matchStatus;
+  });
+
+  if (filtered.length === 0) {
+    masterReservationsTbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">No reservations found matching search filters.</td></tr>`;
+    return;
+  }
+
+  filtered.forEach(b => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${b.id || 'RES-' + b.tableId}</strong></td>
+      <td><span class="badge-pill gold">Table #${b.tableId}</span></td>
+      <td><strong>${b.name}</strong></td>
+      <td>${b.guests} Guests</td>
+      <td>${b.date}</td>
+      <td>${b.time}</td>
+      <td>${b.occasion || 'Dinner'}</td>
+      <td><span class="badge-pill ${b.status === 'Seated' ? 'green' : 'gold'}">${b.status}</span></td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="handleCancelReservation('${b.id}')">Cancel</button>
+      </td>
+    `;
+    masterReservationsTbody.appendChild(tr);
+  });
+}
+
+// ================= TABLE FLEET TABLE =================
+function renderFleetTableList() {
+  if (!fleetTablesTbody) return;
+  fleetTablesTbody.innerHTML = '';
+
+  appState.tables.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>Table #${t.id}</strong></td>
+      <td>${t.capacity} Guests</td>
+      <td>${t.type}</td>
+      <td><span class="badge-pill ${t.status === 'Available' ? 'green' : 'red'}">${t.status}</span></td>
+      <td>${t.status === 'Maintenance' ? 'Offline' : 'Online Operational'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="handleToggleTableStatus(${t.id}, '${t.status === 'Available' ? 'Maintenance' : 'Available'}')">
+          ${t.status === 'Available' ? 'Set Maintenance' : 'Reactivate'}
+        </button>
+      </td>
+      <td>
+        <button class="btn btn-danger-sm btn-sm" onclick="handleDeleteTable(${t.id})">&times;</button>
+      </td>
+    `;
+    fleetTablesTbody.appendChild(tr);
+  });
+}
+
+// ================= VISUAL MENU & CRM =================
 function renderVisualMenu(cat) {
   const container = document.getElementById('dish-cards-grid');
   if (!container) return;
@@ -328,13 +564,11 @@ function handleAIChatSubmit(userText) {
   const chatMessages = document.getElementById('ai-chat-messages');
   if (!chatMessages) return;
 
-  // Render User Message
   const userRow = document.createElement('div');
   userRow.className = 'ai-msg user';
   userRow.innerHTML = `<div class="msg-bubble">${userText}</div>`;
   chatMessages.appendChild(userRow);
 
-  // Assistant Response Logic
   setTimeout(() => {
     let reply = "I am at your service. Let me arrange this for dinner service immediately.";
     const lower = userText.toLowerCase();
@@ -362,96 +596,170 @@ function handleAIChatSubmit(userText) {
   }, 600);
 }
 
-// ================= CORE DATA ENGINE & EVALUATION =================
-function evaluateSlotState() {
-  const slotBookings = appState.bookings.filter(b => b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
-  appState.occupiedTableIds = slotBookings.map(b => b.tableId);
-  appState.availableTableIds = appState.tables
-    .filter(t => t.status === 'Available' && !appState.occupiedTableIds.includes(t.id))
-    .map(t => t.id);
+// ================= ACTIONS & MUTATIONS =================
+window.handleToggleTableStatus = async function(tableId, targetStatus) {
+  playAudioChime('click');
+  const target = appState.tables.find(t => t.id === tableId);
+  if (target) {
+    target.status = targetStatus;
+    localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(appState.tables));
 
-  let seatedCovers = 0;
-  slotBookings.forEach(b => {
-    if (b.status === 'Seated' || b.status === 'Confirmed') seatedCovers += parseInt(b.guests || 2);
-  });
-
-  if (metricAvailableTables) metricAvailableTables.textContent = appState.availableTableIds.length;
-  if (metricTotalTablesDenom) metricTotalTablesDenom.textContent = `/ ${appState.tables.length} Fleet`;
-  if (metricSeatedCovers) metricSeatedCovers.textContent = seatedCovers;
-  if (metricTotalBookingsCount) metricTotalBookingsCount.textContent = slotBookings.length;
-  if (metricSlotBookingsTag) metricSlotBookingsTag.textContent = `Slot: ${appState.selectedTime}`;
-  if (metricEstRevenue) metricEstRevenue.textContent = `$${(seatedCovers * 85).toLocaleString()}`;
-  if (navOpenTablesPill) navOpenTablesPill.textContent = `${appState.availableTableIds.length} Open`;
-  if (navBookingsPill) navBookingsPill.textContent = String(appState.bookings.length);
-  if (miniSeatedCount) miniSeatedCount.textContent = seatedCovers;
-  if (miniUpcomingCount) miniUpcomingCount.textContent = slotBookings.length;
-}
-
-// ================= RENDER FLOOR PLAN & TABLE CARDS =================
-function renderFloorPlan(canvasElement, isMaster = false) {
-  if (!canvasElement) return;
-  canvasElement.innerHTML = '';
-
-  appState.tables.forEach(tbl => {
-    let liveStatus = tbl.status;
-    const booking = appState.bookings.find(b => b.tableId === tbl.id && b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
-
-    if (tbl.status === 'Maintenance') liveStatus = 'Maintenance';
-    else if (booking) liveStatus = booking.status === 'Seated' ? 'Seated' : 'Reserved';
-
-    const card = document.createElement('div');
-    card.className = `table-node-fixture status-${liveStatus.toLowerCase()}`;
-    card.innerHTML = `
-      <div class="tbl-node-header">
-        <strong>Table #${tbl.id}</strong>
-        <span class="tbl-node-badge" style="background:var(--c-${liveStatus.toLowerCase()}-bg, rgba(255,255,255,0.1)); color:var(--c-${liveStatus.toLowerCase()});">${liveStatus}</span>
-      </div>
-      <div class="tbl-node-body">
-        <div>Capacity: <strong>${tbl.capacity} Guests</strong></div>
-        <div>Zone: <strong>${tbl.type}</strong></div>
-        ${booking ? `<div style="margin-top:6px; color:var(--primary-500); font-weight:700;">★ ${booking.name}</div>` : ''}
-      </div>
-    `;
-
-    card.addEventListener('click', () => {
-      playAudioChime('click');
-      openTableDrawer(tbl, booking, liveStatus);
+    appState.activity.unshift({
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'TABLE_STATUS_FLIP',
+      message: `Table #${tableId} operational status changed to ${targetStatus}.`
     });
+    localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(appState.activity));
 
-    canvasElement.appendChild(card);
+    showToastNotification(`Table #${tableId} set to ${targetStatus}.`, 'info');
+    evaluateSlotState();
+    renderFloorPlan(dashboardFloorPreview, false);
+    renderFloorPlan(masterFloorCanvas, true);
+    renderFleetTableList();
+    closeTableDrawer();
+  }
+};
+
+window.handleCancelReservation = async function(bookingId) {
+  playAudioChime('click');
+  appState.bookings = appState.bookings.filter(b => String(b.id) !== String(bookingId));
+  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
+  showToastNotification(`Reservation cancelled successfully.`, 'info');
+  evaluateSlotState();
+  renderFloorPlan(dashboardFloorPreview, false);
+  renderFloorPlan(masterFloorCanvas, true);
+  renderReservationsTable();
+  closeTableDrawer();
+};
+
+window.handleDeleteTable = function(tableId) {
+  playAudioChime('click');
+  appState.tables = appState.tables.filter(t => t.id !== tableId);
+  localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(appState.tables));
+  showToastNotification(`Table #${tableId} removed from fleet.`, 'info');
+  evaluateSlotState();
+  renderFleetTableList();
+};
+
+function populateBookingFormDropdown() {
+  if (!formTableSelect) return;
+  formTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
+  appState.tables.forEach(t => {
+    const isAvail = appState.availableTableIds.includes(t.id);
+    formTableSelect.innerHTML += `<option value="${t.id}" ${!isAvail ? 'disabled' : ''}>Table #${t.id} (${t.capacity} Seats - ${t.type}) ${!isAvail ? '[Booked]' : ''}</option>`;
   });
 }
 
-function openTableDrawer(table, booking, status) {
-  appState.activeDrawerTable = table;
-  drawerTableHeading.textContent = `Table #T-0${table.id}`;
-  drawerStatusBadge.textContent = status;
-  drawerTableCapacity.textContent = `${table.capacity} Guests`;
-  drawerTableCategory.textContent = table.type;
-  drawerTableSlot.textContent = appState.selectedTime;
+// ================= NEW RESERVATION SUBMIT =================
+if (masterBookingForm) {
+  masterBookingForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    playAudioChime('success');
 
-  if (booking) {
-    drawerBookingSection.style.display = 'block';
-    drawerGuestName.textContent = booking.name;
-    drawerBookingId.textContent = String(booking.id || 'RES-' + table.id);
-    drawerPartySize.textContent = `${booking.guests} Guests`;
-    drawerOccasion.textContent = booking.occasion || 'Dining';
-    drawerBtnReleaseTable.style.display = 'block';
-  } else {
-    drawerBookingSection.style.display = 'none';
-    drawerBtnReleaseTable.style.display = 'none';
-  }
+    const name = document.getElementById('form-guest-name').value.trim();
+    const guests = parseInt(document.getElementById('form-guest-count').value || 2);
+    const date = document.getElementById('form-booking-date').value.trim();
+    const time = document.getElementById('form-booking-time').value;
+    const occasion = appState.selectedOccasion;
+    const special = document.getElementById('form-special-notes').value.trim();
+    let chosenTableId = parseInt(formTableSelect.value);
 
-  tableContextDrawer.classList.add('open');
-  drawerBackdrop.classList.add('active');
+    // Smart Best-Fit Algorithm
+    if (chosenTableId === 0) {
+      const candidates = appState.tables
+        .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
+        .sort((a, b) => a.capacity - b.capacity);
+      if (candidates.length > 0) {
+        chosenTableId = candidates[0].id;
+      } else {
+        showToastNotification('No suitable free table found for this party size.', 'error');
+        return;
+      }
+    }
+
+    const newBooking = {
+      id: 'RES-' + Math.floor(1000 + Math.random() * 9000),
+      tableId: chosenTableId,
+      name: name,
+      guests: guests,
+      date: date,
+      time: time,
+      occasion: occasion,
+      special: special,
+      status: 'Confirmed'
+    };
+
+    appState.bookings.push(newBooking);
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
+
+    appState.activity.unshift({
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'BOOKING_CREATED',
+      message: `Reservation ${newBooking.id} confirmed for ${name} at Table #${chosenTableId}.`
+    });
+    localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(appState.activity));
+
+    // Render Official Printable Pass
+    const passGrid = document.getElementById('pass-grid-data');
+    if (passGrid) {
+      passGrid.innerHTML = `
+        <div><small>Guest Name</small><strong>${name}</strong></div>
+        <div><small>Booking Ref</small><strong>${newBooking.id}</strong></div>
+        <div><small>Table Assigned</small><strong>Table #${chosenTableId}</strong></div>
+        <div><small>Party Size</small><strong>${guests} Guests</strong></div>
+        <div><small>Date & Time</small><strong>${date} at ${time}</strong></div>
+        <div><small>Occasion</small><strong>${occasion}</strong></div>
+      `;
+    }
+    modalReceiptPass.classList.add('open');
+
+    evaluateSlotState();
+    renderFloorPlan(dashboardFloorPreview, false);
+    renderFloorPlan(masterFloorCanvas, true);
+    masterBookingForm.reset();
+  });
 }
 
-function closeTableDrawer() {
-  tableContextDrawer.classList.remove('open');
-  drawerBackdrop.classList.remove('active');
+// Express Walk-In Seating Form
+const formWalkinAction = document.getElementById('form-walkin-action');
+if (formWalkinAction) {
+  formWalkinAction.addEventListener('submit', (e) => {
+    e.preventDefault();
+    playAudioChime('success');
+    const name = document.getElementById('walkin-guest-name').value.trim();
+    const guests = parseInt(document.getElementById('walkin-guest-count').value || 2);
+    let chosenId = parseInt(document.getElementById('walkin-table-choice').value || 0);
+
+    if (chosenId === 0) {
+      const candidates = appState.tables
+        .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
+        .sort((a, b) => a.capacity - b.capacity);
+      if (candidates.length > 0) chosenId = candidates[0].id;
+      else { showToastNotification('No table available for walk-in party size.', 'error'); return; }
+    }
+
+    const booking = {
+      id: 'WALKIN-' + Math.floor(100 + Math.random() * 900),
+      tableId: chosenId,
+      name: name,
+      guests: guests,
+      date: appState.selectedDate,
+      time: appState.selectedTime,
+      occasion: 'Walk-In Seating',
+      status: 'Seated'
+    };
+
+    appState.bookings.push(booking);
+    localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
+    modalWalkinDialog.classList.remove('open');
+    showToastNotification(`Walk-in guest ${name} seated at Table #${chosenId}.`, 'success');
+    evaluateSlotState();
+    renderFloorPlan(dashboardFloorPreview, false);
+    renderFloorPlan(masterFloorCanvas, true);
+  });
 }
 
-// ================= PERSISTENCE & C++ ENGINE SYNC =================
+// ================= C++ REST ENGINE SYNC =================
 async function syncWithCoreEngine() {
   try {
     const res = await fetch(`${API_BASE}/tables`, { signal: AbortSignal.timeout(1800) });
@@ -484,14 +792,14 @@ async function syncWithCoreEngine() {
   renderFloorPlan(masterFloorCanvas, true);
 }
 
-// ================= EVENT HANDLERS =================
+// ================= EVENT LISTENERS =================
 
 // Navigation
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => switchAppView(btn.dataset.view));
 });
 
-// Sidebar Responsive Toggle
+// Sidebar Toggle
 document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
   playAudioChime('click');
   if (window.innerWidth <= 1024) {
@@ -519,17 +827,37 @@ soundFeedbackToggle.addEventListener('click', () => {
   }
 });
 
-// 3D Camera Controls
-document.getElementById('btn-toggle-3d-mode').addEventListener('click', () => {
+// Stepper
+document.getElementById('btn-party-inc').addEventListener('click', () => {
   playAudioChime('click');
-  appState.camera3D.isIsometric = !appState.camera3D.isIsometric;
-  document.getElementById('btn-3d-label').textContent = appState.camera3D.isIsometric ? 'Isometric 3D' : 'Flat 2D Blueprint';
-  update3DFloorTransform();
+  const inp = document.getElementById('form-guest-count');
+  inp.value = Math.min(30, parseInt(inp.value || 1) + 1);
 });
-document.getElementById('btn-floor-orbit-left').addEventListener('click', () => { appState.camera3D.orbit -= 15; update3DFloorTransform(); });
-document.getElementById('btn-floor-orbit-right').addEventListener('click', () => { appState.camera3D.orbit += 15; update3DFloorTransform(); });
-document.getElementById('btn-floor-zoom-in').addEventListener('click', () => { appState.camera3D.zoom = Math.min(1.4, appState.camera3D.zoom + 0.1); update3DFloorTransform(); });
-document.getElementById('btn-floor-zoom-out').addEventListener('click', () => { appState.camera3D.zoom = Math.max(0.6, appState.camera3D.zoom - 0.1); update3DFloorTransform(); });
+document.getElementById('btn-party-dec').addEventListener('click', () => {
+  playAudioChime('click');
+  const inp = document.getElementById('form-guest-count');
+  inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
+});
+
+// Occasion Pills
+document.querySelectorAll('.occ-pill-btn').forEach(pill => {
+  pill.addEventListener('click', () => {
+    playAudioChime('click');
+    document.querySelectorAll('.occ-pill-btn').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    appState.selectedOccasion = pill.dataset.occ;
+  });
+});
+
+// Experience Shortcuts
+document.querySelectorAll('.exp-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playAudioChime('click');
+    const guests = parseInt(btn.dataset.guests);
+    document.getElementById('form-guest-count').value = guests;
+    switchAppView('booking');
+  });
+});
 
 // AI Concierge
 document.getElementById('btn-open-ai-concierge').addEventListener('click', () => {
@@ -545,25 +873,34 @@ aiDrawerBackdrop.addEventListener('click', () => {
   aiConciergeDrawer.classList.remove('open');
   aiDrawerBackdrop.classList.remove('active');
 });
-
 document.getElementById('ai-chat-form').addEventListener('submit', (e) => {
   e.preventDefault();
-  const input = document.getElementById('ai-chat-input');
-  handleAIChatSubmit(input.value);
-  input.value = '';
+  const inp = document.getElementById('ai-chat-input');
+  handleAIChatSubmit(inp.value);
+  inp.value = '';
 });
-
 document.querySelectorAll('.prompt-chip').forEach(btn => {
   btn.addEventListener('click', () => handleAIChatSubmit(btn.dataset.prompt));
 });
 
-// Menu Category Filtering
+// Menu Filtering
 document.querySelectorAll('.menu-cat-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     playAudioChime('click');
     document.querySelectorAll('.menu-cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderVisualMenu(btn.dataset.cat);
+  });
+});
+
+// Zone Filtering on Floor Plan
+document.querySelectorAll('.zone-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    playAudioChime('click');
+    document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    appState.selectedZone = pill.dataset.zone;
+    renderFloorPlan(masterFloorCanvas, true);
   });
 });
 
@@ -581,20 +918,60 @@ headerSlotChips.addEventListener('click', (e) => {
   }
 });
 
-// Drawer Close Handlers
-document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
-drawerBackdrop.addEventListener('click', closeTableDrawer);
+// Modals
+document.getElementById('btn-open-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
+document.getElementById('btn-close-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
+document.getElementById('btn-cancel-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
+document.getElementById('btn-floor-walkin-seat').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
 
-// Print Handlers
+document.getElementById('btn-floor-add-table').addEventListener('click', () => modalTableDialog.classList.add('open'));
+document.getElementById('btn-open-add-table-dialog').addEventListener('click', () => modalTableDialog.classList.add('open'));
+document.getElementById('btn-close-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
+document.getElementById('btn-cancel-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
+
+document.getElementById('btn-close-pass-action').addEventListener('click', () => modalReceiptPass.classList.remove('open'));
+document.getElementById('btn-print-pass-action').addEventListener('click', () => window.print());
+
 document.getElementById('btn-print-manifest').addEventListener('click', () => modalHostManifest.classList.add('open'));
 document.getElementById('btn-close-manifest').addEventListener('click', () => modalHostManifest.classList.remove('open'));
 document.getElementById('btn-print-manifest-action').addEventListener('click', () => window.print());
+
 document.getElementById('manual-sync-btn').addEventListener('click', () => { syncWithCoreEngine(); showToastNotification('State synchronized.', 'info'); });
+document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
+drawerBackdrop.addEventListener('click', closeTableDrawer);
+
+// Global Date
+globalDateInput.addEventListener('change', () => {
+  appState.selectedDate = globalDateInput.value.trim() || '24/05/2026';
+  evaluateSlotState();
+  renderFloorPlan(dashboardFloorPreview, false);
+  renderFloorPlan(masterFloorCanvas, true);
+});
+
+// Search & Filter in Reservations
+if (reservationsSearchInput) reservationsSearchInput.addEventListener('input', renderReservationsTable);
+if (reservationsStatusFilter) reservationsStatusFilter.addEventListener('change', renderReservationsTable);
+
+// CSV Export
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  let csv = 'Reservation ID,Table ID,Guest Name,Party Size,Date,Time,Occasion,Status\n';
+  appState.bookings.forEach(b => {
+    csv += `"${b.id}","${b.tableId}","${b.name}","${b.guests}","${b.date}","${b.time}","${b.occasion || ''}","${b.status}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Royal_Spice_Manifest_${Date.now()}.csv`;
+  a.click();
+  showToastNotification('Downloaded reservations CSV manifest.', 'success');
+});
+
+// Auto Background Polling every 3.5s
+setInterval(syncWithCoreEngine, 3500);
 
 // Initialize Platform
 applyLuxuryTheme(appState.currentTheme);
 updateSoundToggleUI();
-update3DFloorTransform();
 syncWithCoreEngine();
 
-console.log('⚜️ The Royal Spice 3.0+ Spatial OS Initialized.');
+console.log('⚜️ The Royal Spice 3.5 Pro Initialized.');

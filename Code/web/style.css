@@ -1,20 +1,20 @@
 /* ==========================================================================
-   THE ROYAL SPICE 3.0+ — 3D SPATIAL RESTAURANT & TABLE MANAGEMENT OS
-   Design System: 5 Luxury Hospitality Palettes, 3D Canvas & AI Sommelier
+   THE ROYAL SPICE 3.5 PRO — MASTER LUXURY HOSPITALITY DESIGN SYSTEM
+   5 Refined Theme Palettes, CAD Table Geometries & Architectural Floor Plan
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    THEME 1: IMPERIAL ONYX & GOLD (DEFAULT MICHELIN 3-STAR DARK)
    -------------------------------------------------------------------------- */
 :root, [data-theme="obsidian"] {
-  --bg-app: #080c14;
-  --bg-sidebar: #05080f;
-  --bg-sidebar-hover: rgba(255, 255, 255, 0.06);
-  --bg-surface: #0f1728;
-  --bg-surface-hover: #162035;
-  --bg-canvas: #090e1a;
-  --bg-input: #121c30;
-  --bg-glass: rgba(15, 23, 40, 0.85);
+  --bg-app: #060911;
+  --bg-sidebar: #04060c;
+  --bg-sidebar-hover: rgba(245, 158, 11, 0.08);
+  --bg-surface: #0c1322;
+  --bg-surface-hover: #141e34;
+  --bg-canvas: #070b16;
+  --bg-input: #10192d;
+  --bg-glass: rgba(12, 19, 34, 0.88);
 
   --text-main: #f8fafc;
   --text-body: #cbd5e1;
@@ -23,10 +23,10 @@
   --text-sidebar-muted: #64748b;
 
   --border-subtle: #1e293b;
-  --border-input: #2d3d5a;
+  --border-input: #293854;
   --border-focus: #f59e0b;
 
-  /* Hospitality Gold Accents */
+  /* 24k Imperial Gold Accents */
   --primary-500: #f59e0b;
   --primary-600: #d97706;
   --primary-700: #b45309;
@@ -53,22 +53,23 @@
   --radius-md: 16px;
   --radius-lg: 24px;
 
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.8);
+  --shadow-card: 0 10px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 16px 40px 0 rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.85);
 }
 
 /* --------------------------------------------------------------------------
    THEME 2: ROYAL EMERALD PALACE
    -------------------------------------------------------------------------- */
 [data-theme="emerald"] {
-  --bg-app: #031c10;
-  --bg-sidebar: #02120a;
+  --bg-app: #021a0e;
+  --bg-sidebar: #011109;
   --bg-sidebar-hover: rgba(234, 179, 8, 0.1);
-  --bg-surface: #06311d;
-  --bg-surface-hover: #0b442a;
-  --bg-canvas: #042415;
-  --bg-input: #0a3d24;
-  --bg-glass: rgba(6, 49, 29, 0.85);
+  --bg-surface: #042f1a;
+  --bg-surface-hover: #084728;
+  --bg-canvas: #032113;
+  --bg-input: #063c22;
+  --bg-glass: rgba(4, 47, 26, 0.9);
 
   --text-main: #f0fdf4;
   --text-body: #bbf7d0;
@@ -91,14 +92,14 @@
    THEME 3: CHAMPAGNE PEARL (LUXURY LIGHT)
    -------------------------------------------------------------------------- */
 [data-theme="champagne"] {
-  --bg-app: #fdfbf7;
+  --bg-app: #fbf9f5;
   --bg-sidebar: #18130e;
   --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
   --bg-surface: #ffffff;
   --bg-surface-hover: #f7f3ec;
   --bg-canvas: #f5f0e6;
   --bg-input: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.95);
 
   --text-main: #1c1917;
   --text-body: #44403c;
@@ -124,14 +125,14 @@
    THEME 4: TOKYO MIDNIGHT VELVET
    -------------------------------------------------------------------------- */
 [data-theme="midnight"] {
-  --bg-app: #03071e;
+  --bg-app: #020617;
   --bg-sidebar: #01030d;
   --bg-sidebar-hover: rgba(139, 92, 246, 0.12);
   --bg-surface: #0a1128;
   --bg-surface-hover: #121c40;
   --bg-canvas: #050b1d;
   --bg-input: #0f1a3a;
-  --bg-glass: rgba(10, 17, 40, 0.85);
+  --bg-glass: rgba(10, 17, 40, 0.88);
 
   --text-main: #f5f3ff;
   --text-body: #ddd6fe;
@@ -161,7 +162,7 @@
   --bg-surface-hover: #f1f5f9;
   --bg-canvas: #f1f5f9;
   --bg-input: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass: rgba(255, 255, 255, 0.9);
 
   --text-main: #0f172a;
   --text-body: #334155;
@@ -400,17 +401,14 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(8, 12, 20, 0.55);
+  background: rgba(6, 9, 17, 0.55);
   backdrop-filter: blur(4px);
   z-index: 115;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
 }
-.sidebar-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
-}
+.sidebar-backdrop.active { opacity: 1; pointer-events: auto; }
 
 /* Header */
 .workspace-header {
@@ -665,7 +663,7 @@ body {
   gap: 20px;
 }
 
-.status-legend-bar { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.status-legend-bar { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); font-weight: 600; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; }
 .color-dot { width: 8px; height: 8px; border-radius: 50%; }
 .color-dot.available { background: var(--c-available); }
@@ -675,63 +673,154 @@ body {
 .color-dot.maintenance { background: var(--c-maintenance); }
 
 /* ==========================================================================
-   VIEW 2: 3D SPATIAL FLOOR PLAN CANVAS
+   VIEW 2: PHOTOREALISTIC CAD FLOOR PLAN & ARCHITECTURAL GEOMETRIES
    ========================================================================== */
-.floor-master-card { height: calc(100vh - 160px); display: flex; flex-direction: column; }
-
-.floor-plan-3d-stage {
-  flex: 1;
-  perspective: 1400px;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at center, var(--bg-surface) 0%, var(--bg-canvas) 100%);
-  border-radius: var(--radius-sm);
+.floor-master-card { min-height: 680px; display: flex; flex-direction: column; }
+.zone-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.zone-pill {
+  background: var(--bg-canvas);
   border: 1px solid var(--border-subtle);
-  position: relative;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.zone-pill.active, .zone-pill:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-500);
+  color: var(--primary-500);
 }
 
 .floor-plan-full-canvas {
-  width: 920px;
-  min-height: 520px;
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
-  padding: 30px;
-  transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.floor-plan-full-canvas.is-isometric {
-  transform: rotateX(40deg) rotateZ(-20deg) scale(0.95);
+  padding: 24px;
+  background: radial-gradient(circle at center, var(--bg-surface) 0%, var(--bg-canvas) 100%);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  min-height: 480px;
 }
 
-.table-node-fixture {
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px);
+/* CAD Table Node Fixture */
+.cad-table-pod {
+  background: var(--bg-surface);
   border: 2px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 18px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   cursor: pointer;
-  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-style: preserve-3d;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.table-node-fixture:hover {
-  transform: translateZ(28px) translateY(-6px);
+.cad-table-pod:hover {
+  transform: translateY(-5px);
   border-color: var(--primary-500);
-  box-shadow: 0 26px 50px var(--primary-glow);
+  box-shadow: 0 16px 36px var(--primary-glow);
 }
-.table-node-fixture.status-available { border-top: 4px solid var(--c-available); }
-.table-node-fixture.status-reserved { border-top: 4px solid var(--c-reserved); }
-.table-node-fixture.status-seated { border-top: 4px solid var(--c-seated); }
-.table-node-fixture.status-cleaning { border-top: 4px solid var(--c-cleaning); }
-.table-node-fixture.status-maintenance { border-top: 4px solid var(--c-maintenance); }
 
-.tbl-node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.tbl-node-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; }
-.tbl-node-body { font-size: 12px; color: var(--text-body); }
-.tbl-node-body strong { color: var(--text-main); }
+.cad-table-pod.status-available { border-top: 4px solid var(--c-available); }
+.cad-table-pod.status-reserved { border-top: 4px solid var(--c-reserved); }
+.cad-table-pod.status-seated { border-top: 4px solid var(--c-seated); }
+.cad-table-pod.status-cleaning { border-top: 4px solid var(--c-cleaning); }
+.cad-table-pod.status-maintenance { border-top: 4px solid var(--c-maintenance); }
+
+.cad-pod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cad-table-num { font-family: var(--font-display); font-size: 15px; font-weight: 800; color: var(--text-main); }
+.cad-status-tag { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+
+.cad-geometry-visual {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+  position: relative;
+}
+
+/* Specific CAD Geometries */
+.cad-geo-round {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid var(--border-input);
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text-main);
+}
+.cad-chair-top, .cad-chair-bottom, .cad-chair-left, .cad-chair-right {
+  position: absolute;
+  width: 22px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border-focus);
+}
+.cad-chair-top { top: -12px; }
+.cad-chair-bottom { bottom: -12px; }
+.cad-chair-left { left: -14px; width: 8px; height: 22px; }
+.cad-chair-right { right: -14px; width: 8px; height: 22px; }
+
+.cad-geo-booth {
+  width: 110px;
+  height: 56px;
+  border-radius: var(--radius-xs);
+  border: 3px solid var(--border-input);
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text-main);
+}
+.cad-booth-seat-top, .cad-booth-seat-bottom {
+  position: absolute;
+  width: 100px;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--primary-500);
+}
+.cad-booth-seat-top { top: -12px; }
+.cad-booth-seat-bottom { bottom: -12px; }
+
+.cad-geo-suite {
+  width: 130px;
+  height: 64px;
+  border-radius: 30px;
+  border: 3px solid var(--primary-500);
+  background: var(--primary-light);
+  box-shadow: 0 0 16px var(--primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.cad-pod-meta {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 /* ==========================================================================
    VIEW 5: VISUAL PHOTO MENU
@@ -825,7 +914,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(8, 12, 20, 0.55);
+  background: rgba(6, 9, 17, 0.55);
   backdrop-filter: blur(4px);
   z-index: 145;
   opacity: 0;
@@ -881,6 +970,36 @@ body {
 .spec-cell strong { font-size: 13px; color: var(--text-main); }
 .drawer-actions-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
 
+/* Booking Pipeline Flow */
+.pipeline-flow-track { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.pipeline-card-node { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: var(--radius-xs); background: var(--bg-canvas); border: 1px solid var(--border-subtle); }
+.pipeline-card-node.active { border-color: var(--primary-500); background: var(--primary-light); }
+.node-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-600); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+.node-text strong { display: block; font-size: 12px; color: var(--text-main); }
+.node-text span { font-size: 10.5px; color: var(--text-muted); }
+
+/* Forms & Stepper */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.form-input, .form-select { width: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text-main); padding: 8px 12px; border-radius: var(--radius-xs); font-size: 12.5px; font-family: inherit; outline: none; }
+.form-input:focus, .form-select:focus { border-color: var(--border-focus); }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.stepper-box { display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: var(--radius-xs); overflow: hidden; }
+.stepper-ctrl { width: 36px; height: 36px; background: transparent; border: none; color: var(--text-main); font-size: 18px; cursor: pointer; }
+.stepper-val { flex: 1; background: transparent; border: none; color: var(--text-main); text-align: center; font-size: 14px; font-weight: 800; outline: none; }
+
+.occasion-selector-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+.occ-pill-btn { background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text-body); font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 20px; cursor: pointer; }
+.occ-pill-btn.active { background: var(--primary-light); border-color: var(--primary-500); color: var(--primary-500); }
+
+/* Experience Shortcuts */
+.quick-experience-shortcuts { margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px; }
+.shortcut-title { font-size: 11.5px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+.experience-pills-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.exp-preset-btn { background: var(--bg-canvas); border: 1px solid var(--border-subtle); color: var(--text-main); padding: 8px 10px; border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; cursor: pointer; text-align: left; transition: all 0.14s ease; }
+.exp-preset-btn:hover { background: var(--bg-surface-hover); border-color: var(--primary-500); }
+
 /* Tables & Modals */
 .master-data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .master-data-table th { background: var(--bg-canvas); color: var(--text-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); text-align: left; }
@@ -890,7 +1009,37 @@ body {
 .modal-layer.open { display: flex; }
 .modal-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); width: 480px; max-width: 90vw; padding: 24px; box-shadow: var(--shadow-modal); }
 
-/* Toast Notification */
+/* Official Pass & Manifest */
+.receipt-card-dialog { max-width: 440px; padding: 0; overflow: hidden; background: #ffffff; color: #000000; border: 2px solid var(--primary-500); }
+.official-pass-box { padding: 28px 24px; text-align: center; }
+.pass-crest { font-size: 28px; margin-bottom: 4px; }
+.pass-brand-title { font-family: var(--font-serif); font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #0f172a; }
+.pass-tagline { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: #b45309; margin-top: 2px; }
+.pass-stars { color: #f59e0b; margin: 6px 0; font-size: 13px; }
+.pass-divider { border-bottom: 2px dashed #cbd5e1; margin: 16px 0; }
+.pass-grid-data { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; font-size: 12px; margin-bottom: 16px; }
+.pass-grid-data small { display: block; font-size: 9.5px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+.pass-grid-data strong { font-size: 13px; color: #0f172a; }
+.pass-qr-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-xs); padding: 12px; display: flex; align-items: center; gap: 12px; text-align: left; margin-bottom: 18px; }
+.qr-sim-box { font-family: var(--font-mono); font-size: 8px; line-height: 1.1; color: #0f172a; letter-spacing: 1px; }
+.pass-meta-note strong { display: block; font-size: 11px; color: #0f172a; }
+.pass-meta-note small { font-size: 9.5px; color: #64748b; }
+.pass-actions-row { display: flex; gap: 10px; justify-content: center; }
+
+/* Host Manifest Run-Sheet */
+.host-manifest-card { max-width: 820px; background: #ffffff; color: #0f172a; }
+.manifest-header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
+.manifest-title-row { display: flex; justify-content: space-between; align-items: flex-end; }
+.manifest-title-row h2 { font-family: var(--font-serif); font-size: 20px; font-weight: 900; color: #0f172a; }
+.manifest-title-row p { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #64748b; }
+.manifest-meta-box { text-align: right; }
+.manifest-meta-box strong { display: block; font-size: 12px; color: #0f172a; }
+.manifest-meta-box small { font-size: 10px; color: #64748b; }
+.manifest-data-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.manifest-data-table th { background: #f1f5f9; color: #334155; padding: 8px 10px; border-bottom: 1px solid #cbd5e1; text-align: left; font-size: 10px; text-transform: uppercase; }
+.manifest-data-table td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; }
+
+/* Toast Notifications */
 .toast-stream { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 400; }
 .toast-alert { padding: 10px 18px; border-radius: var(--radius-xs); font-size: 12px; font-weight: 700; box-shadow: var(--shadow-modal); animation: toastFly 0.22s ease; }
 .toast-alert.success { background: var(--c-available-bg); color: var(--c-available); border-left: 4px solid var(--c-available); }

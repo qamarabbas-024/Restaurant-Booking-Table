@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Royal Spice — 3D Spatial Restaurant Operations, Interactive Table Floor Plan, AI Sommelier & VIP Reservation OS">
-  <title>The Royal Spice — 3D Spatial Restaurant & Table Management OS</title>
+  <meta name="description" content="The Royal Spice — Michelin 3-Star Spatial Restaurant Operations, CAD Table Floor Plan, AI Sommelier & VIP Reservation OS">
+  <title>The Royal Spice — Spatial Restaurant & Table Management OS</title>
   
-  <!-- Fonts -->
+  <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- Main Stylesheet -->
+  <!-- Master Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,7 +26,7 @@
       <div class="sidebar-brand">
         <div class="brand-crest">⚜️</div>
         <div class="brand-text">
-          <span class="brand-eyebrow">FINE DINING OS</span>
+          <span class="brand-eyebrow">MICHELIN 3-STAR OS</span>
           <h1 class="brand-title">THE ROYAL SPICE</h1>
         </div>
       </div>
@@ -37,9 +37,9 @@
           <span>Live Dashboard</span>
         </button>
         <button class="nav-item" data-view="floorplan">
-          <i data-lucide="box"></i>
-          <span>3D Floor Plan</span>
-          <span class="nav-pill green" id="nav-open-tables-pill">0 Open</span>
+          <i data-lucide="map"></i>
+          <span>CAD Floor Plan</span>
+          <span class="nav-pill green" id="nav-open-tables-pill">5 Open</span>
         </button>
         <button class="nav-item" data-view="reservations">
           <i data-lucide="calendar-check"></i>
@@ -53,7 +53,7 @@
         <button class="nav-item" data-view="menu">
           <i data-lucide="utensils"></i>
           <span>Visual Dish Menu</span>
-          <span class="nav-pill gold">Michelin</span>
+          <span class="nav-pill gold">Haute Cuisine</span>
         </button>
         <button class="nav-item" data-view="crm">
           <i data-lucide="crown"></i>
@@ -88,7 +88,7 @@
           <div class="user-avatar">QA</div>
           <div class="user-meta">
             <strong>Host Stand</strong>
-            <small>Table Manager v3.0</small>
+            <small>Table Manager v3.5 Pro</small>
           </div>
         </div>
       </div>
@@ -107,7 +107,7 @@
             <i data-lucide="menu"></i>
           </button>
           <div class="header-view-title">
-            <h2 id="current-view-title">Live Dashboard</h2>
+            <h2 id="current-view-title">Live Operations Dashboard</h2>
             <span class="current-date-badge" id="header-date-badge">24 May 2026</span>
           </div>
         </div>
@@ -151,7 +151,7 @@
           <!-- AI Dining Sommelier & Concierge Trigger -->
           <button class="btn btn-secondary btn-sm ai-concierge-btn" id="btn-open-ai-concierge" title="AI Sommelier & Concierge">
             <i data-lucide="sparkles" class="gold-icon"></i>
-            <span>AI Concierge</span>
+            <span>AI Sommelier</span>
           </button>
 
           <!-- Sound Feedback Toggle -->
@@ -288,52 +288,36 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 2: SPATIAL 3D FLOOR PLAN (THE HEART OF THE PRODUCT)       -->
+        <!-- VIEW 2: PHOTOREALISTIC CAD FLOOR PLAN (HEART OF THE PRODUCT)  -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-floorplan">
           <div class="surface-card floor-master-card">
             
-            <!-- Floor Plan Filter & 3D Camera Bar -->
+            <!-- Floor Plan Filter & Zone Bar -->
             <div class="card-top-bar floor-control-header">
               <div class="zone-filter-pills" id="floor-zone-pills">
                 <button class="zone-pill active" data-zone="ALL">All Dining Rooms</button>
-                <button class="zone-pill" data-zone="Main Dining">Main Dining Room</button>
-                <button class="zone-pill" data-zone="VIP Suite">VIP Imperial Suite</button>
-                <button class="zone-pill" data-zone="Alcove">Couples Alcove</button>
-                <button class="zone-pill" data-zone="Banquet">Grand Banquet Room</button>
+                <button class="zone-pill" data-zone="Couple Table">Couples Alcove (2 Seats)</button>
+                <button class="zone-pill" data-zone="Family Booth">Main Dining Booths (4 Seats)</button>
+                <button class="zone-pill" data-zone="VIP Suite">VIP Imperial Suite (6 Seats)</button>
+                <button class="zone-pill" data-zone="Banquet Table">Grand Banquet Hall (8 Seats)</button>
               </div>
 
               <div class="floor-action-controls">
-                <!-- 3D Camera Controls -->
-                <button class="btn btn-secondary btn-sm" id="btn-toggle-3d-mode" title="Toggle 3D Perspective">
-                  <i data-lucide="layers"></i>
-                  <span id="btn-3d-label">Isometric 3D</span>
-                </button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-orbit-left" title="Orbit Left"><i data-lucide="rotate-ccw"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-orbit-right" title="Orbit Right"><i data-lucide="rotate-cw"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-zoom-in" title="Zoom In"><i data-lucide="zoom-in"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-zoom-out" title="Zoom Out"><i data-lucide="zoom-out"></i></button>
-
-                <button class="btn btn-secondary btn-sm" id="btn-toggle-edit-mode">
-                  <i data-lucide="edit-3"></i>
-                  <span id="edit-mode-label">Edit Layout</span>
-                </button>
                 <button class="btn btn-secondary btn-sm" id="btn-floor-add-table">+ Add Table</button>
                 <button class="btn btn-primary btn-sm" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
               </div>
             </div>
 
-            <!-- Interactive Dining Room 3D Canvas -->
-            <div class="floor-plan-3d-stage" id="floor-plan-3d-stage">
-              <div class="floor-plan-full-canvas is-isometric" id="master-floor-canvas">
-                <!-- Dynamically rendered 3D table pod fixtures -->
-              </div>
+            <!-- Interactive Architectural Dining Room Floor Plan Grid -->
+            <div class="floor-plan-full-canvas" id="master-floor-canvas">
+              <!-- Dynamically rendered CAD table geometries -->
             </div>
 
             <div class="floor-footer-info">
               <div class="floor-hint">
                 <i data-lucide="info" class="icon-sm"></i>
-                <span>Click any table to open the <strong>Contextual Table Action Drawer</strong> (Seat Guests, Change Status, View Booking, or Release).</span>
+                <span>Click any physical table to open the <strong>Contextual Table Action Drawer</strong> (Seat Guests, Toggle Maintenance, View Booking Pass, or Release).</span>
               </div>
               <div class="floor-stats-pill" id="floor-active-summary-pill">
                 5 Tables Available &bull; 0 Seated &bull; 0 Reserved
