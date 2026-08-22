@@ -12,54 +12,20 @@
 
 ---
 
-## Milestone 3: Visual Companion Embedded Server & API (V3)
-
-### Ticket T-301: Embedded C++ HTTP Server Engine
-- **Type**: Backend / Bridge
-- **Description**: Implement `Server.h` and `Server.cpp` using standard Winsock2 / POSIX sockets to serve static files and handle REST requests on `127.0.0.1:8080`.
-- **Files**: `Server.h`, `Server.cpp`
-- **Acceptance Criteria**: Responds to HTTP `GET /api/state`, `GET /`, and static file requests without external dependencies.
-
-### Ticket T-302: REST API & Activity Audit Logger
-- **Type**: Core / Controller
-- **Description**: Add `ActivityLog` tracking to `BookingManager` and serialize state to JSON for `/api/state`, `/api/availability`, `/api/bookings`, and `/api/cancel`.
-- **Files**: `BookingManager.h`, `BookingManager.cpp`, `Server.cpp`
-- **Acceptance Criteria**: Creating or canceling a booking updates the in-memory log and returns JSON with full allocation trace.
+## Milestone 3: Visual Companion Embedded Server & API (V3) — Delivered
+- [x] **T-301: Embedded C++ HTTP Server Engine**: Implemented `Server.h` and `Server.cpp` using standard Winsock2 / POSIX sockets serving static files and handling REST requests on `127.0.0.1:8080`.
+- [x] **T-302: REST API & Activity Audit Logger**: Added `ActivityLog` tracking in `BookingManager` and JSON serialization for `/api/state`, `/api/availability`, `/api/bookings`, `/api/cancel`, `/api/tables/status`, and `/api/tables/delete`.
 
 ---
 
-## Milestone 4: Visual Dashboard & Interactive Floor Plan (V4)
-
-### Ticket T-401: Interactive 2D Restaurant Floor Layout
-- **Type**: Frontend / UI
-- **Description**: Build an interactive floor plan in `Code/web/` displaying tables categorized by type with real-time status badges (`Available`, `Occupied`, `Maintenance`).
-- **Files**: `Code/web/index.html`, `Code/web/style.css`, `Code/web/app.js`
-- **Acceptance Criteria**: Changing date/time selector dynamically updates table availability colors on the floor plan.
-
-### Ticket T-402: Step-by-Step Allocation Pipeline Visualizer
-- **Type**: Frontend / UX
-- **Description**: Animate the 6-stage booking pipeline upon reservation creation with real-time status feedback.
-- **Files**: `Code/web/app.js`, `Code/web/style.css`
-- **Acceptance Criteria**: Shows step-by-step progress from input parsing to disk persistence.
-
-### Ticket T-403: Live Activity Stream & Reservation Search Panel
-- **Type**: Frontend / UI
-- **Description**: Display a live operational event timeline and a filterable table of active bookings with 1-click cancellation.
-- **Files**: `Code/web/index.html`, `Code/web/app.js`
-- **Acceptance Criteria**: Searching by guest name filters reservations in real time; canceling removes the booking with confirmation.
+## Milestone 4: Visual Dashboard & Interactive Floor Plan (V4) — Delivered
+- [x] **T-401: Spatial Restaurant Floor Plan & CAD Geometries**: Multi-zone interactive canvas displaying tables categorized by type with real-time 5-state indicators (`Available`, `Reserved`, `Seated`, `Cleaning`, `Maintenance`).
+- [x] **T-402: Contextual Table Action Drawer**: Slide-out drawer with table specifications, active reservation summary, 1-click walk-in seating, operational status toggles, and table release actions.
+- [x] **T-403: Step-by-Step Allocation Pipeline Visualizer**: 5-stage visual trace animating parameter validation, slot checks, conflict scans, best-fit matching, and disk persistence.
+- [x] **T-404: Live Activity Stream & Reservations Ledger**: Real-time operational event timeline, debounced multi-criteria search, and 1-click cancellation.
 
 ---
 
-## Milestone 5: Integration, CLI Launcher & Verification (V5)
-
-### Ticket T-501: Dual Launcher & Console Menu Integration
-- **Type**: CLI / UX
-- **Description**: Add "Launch Visual Companion" option to `main.cpp` menu and support `--serve` / `--visual` command-line flags.
-- **Files**: `Code/main.cpp`
-- **Acceptance Criteria**: Users can run console or launch the visual server with automatic browser launch.
-
-### Ticket T-502: End-to-End Test Suite & Verification
-- **Type**: QA / Testing
-- **Description**: Update `test_suite.cpp` to verify REST API serialization, activity logging, and slot query correctness.
-- **Files**: `Code/test_suite.cpp`
-- **Acceptance Criteria**: 100% automated test pass rate with zero regressions.
+## Milestone 5: Integration, CLI Launcher & Verification (V5) — Delivered
+- [x] **T-501: Dual Launcher & Console Menu Integration**: Added visual companion launcher to `main.cpp` menu with `--serve` / `--visual` command-line flags.
+- [x] **T-502: End-to-End Test Suite & Verification**: 6 comprehensive test suites in `test_suite.cpp` passing 100% with zero compiler warnings under `-Wall -Wextra -Wpedantic -std=c++17 -lws2_32`.
