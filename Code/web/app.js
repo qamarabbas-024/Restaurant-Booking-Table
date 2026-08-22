@@ -112,7 +112,7 @@ function playSound(type = 'click') {
       osc.stop(audioCtx.currentTime + 0.06);
     }
   } catch (e) {
-    // AudioContext blocked
+    // AudioContext blocked before gesture
   }
 }
 
@@ -202,7 +202,7 @@ function renderMetricsRow() {
         }
       }
     } else {
-      totalRevenue += 200; // default cover estimate
+      totalRevenue += 200;
     }
   });
 
@@ -264,7 +264,7 @@ function renderGuestFloorPlan() {
     pod.className = `table-pod-fixture ${podClass} ${isSelected ? 'pod-locked' : ''}`;
     pod.dataset.id = table.id;
 
-    // Realistic Leather Chairs around perimeter
+    // Symmetrical Chairs around perimeter
     let chairsHtml = '<div class="chair-piece seat-top"></div><div class="chair-piece seat-bot"></div>';
     if (table.capacity >= 4) {
       chairsHtml += '<div class="chair-piece seat-left"></div><div class="chair-piece seat-right"></div>';
