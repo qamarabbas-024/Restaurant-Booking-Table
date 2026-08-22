@@ -93,14 +93,17 @@ static void sendHttpResponse(SOCKET clientSocket, int statusCode, const std::str
     send(clientSocket, response.c_str(), (int)response.size(), 0);
 }
 
-// Simple JSON string extraction helper
+// Simple robust JSON string extraction helper
 static std::string extractJsonString(const std::string &json, const std::string &key)
 {
-    std::string search = "\"" + key + "\":";
+    std::string search = "\"" + key + "\"";
     size_t pos = json.find(search);
     if (pos == std::string::npos) return "";
 
     pos += search.length();
+    while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\r' || json[pos] == '\n')) pos++;
+    if (pos >= json.length() || json[pos] != ':') return "";
+    pos++; // skip ':'
     while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\r' || json[pos] == '\n')) pos++;
 
     if (pos < json.length() && json[pos] == '"')
@@ -117,27 +120,34 @@ static std::string extractJsonString(const std::string &json, const std::string 
 
 static int extractJsonInt(const std::string &json, const std::string &key)
 {
-    std::string search = "\"" + key + "\":";
+    std::string search = "\"" + key + "\"";
     size_t pos = json.find(search);
     if (pos == std::string::npos) return 0;
 
     pos += search.length();
     while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\r' || json[pos] == '\n')) pos++;
+    if (pos >= json.length() || json[pos] != ':') return 0;
+    pos++; // skip ':'
+    while (pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\r' || json[pos] == '\n')) pos++;
 
-    std::string numStr;
-    while (pos < json.length() && (isdigit(json[pos]) || json[pos] == '-'))
+    size_t end = pos;
+    while (end < json.length() && ((json[end] >= '0' && json[end] <= '9') || json[end] == '-'))
     {
-        numStr += json[pos++];
+        end++;
     }
 
-    try
+    if (end > pos)
     {
-        return std::stoi(numStr);
+        try
+        {
+            return std::stoi(json.substr(pos, end - pos));
+        }
+        catch (...)
+        {
+            return 0;
+        }
     }
-    catch (...)
-    {
-        return 0;
-    }
+    return 0;
 }
 
 void Server::openBrowser(const std::string &url)
