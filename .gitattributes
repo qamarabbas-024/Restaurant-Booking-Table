@@ -1,0 +1,14 @@
+# Auto detect text files and perform LF normalization on checkout
+* text=auto
+
+# Source code files
+*.cpp text eol=crlf
+*.h text eol=crlf
+*.html text eol=crlf
+*.css text eol=crlf
+*.js text eol=crlf
+*.md text eol=crlf
+*.txt text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.yml text eol=lf
