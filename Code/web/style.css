@@ -31,6 +31,7 @@
   --c-ruby: #f43f5e;
   --c-ruby-glow: 0 0 18px rgba(244, 63, 94, 0.35);
   --c-slate: #64748b;
+  --c-amber: #f59e0b;
 
   /* Typography */
   --text-white: #ffffff;
@@ -467,7 +468,7 @@ body {
 }
 
 /* ==========================================================================
-   KPI METRICS ROW
+   KPI METRICS ROW (WITH REVENUE PROJECTIONS)
    ========================================================================== */
 .kpi-metrics-row {
   display: grid;
@@ -670,7 +671,7 @@ body {
 .legend-dot.gray { background: var(--c-slate); }
 
 /* ==========================================================================
-   2D ARCHITECTURAL FLOOR CANVAS & REALISTIC TABLES
+   2D ARCHITECTURAL FLOOR CANVAS & CAD TABLE GRAPHICS
    ========================================================================== */
 .dining-blueprint-canvas {
   background: #080d18;
@@ -681,6 +682,16 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
   gap: 18px;
   min-height: 480px;
+}
+
+.dining-blueprint-canvas.parquet-pattern {
+  background-color: #070c17;
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
+  background-size: 24px 24px;
 }
 
 /* Individual Table Pod */
@@ -823,19 +834,74 @@ body {
 }
 
 /* ==========================================================================
-   WIZARD SIDEBAR & 6-STAGE ALGORITHM VISUALIZER
+   4-STEP WIZARD SIDEBAR & OCCASIONS
    ========================================================================== */
 .wizard-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+}
+
+/* 4-Step Stepper Progress Bar */
+.wizard-stepper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  background: var(--bg-obsidian);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.step-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.step-bubble span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+.step-bubble small {
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+}
+.step-bubble.active {
+  color: var(--gold-400);
+}
+.step-bubble.active span {
+  background: var(--gold-500);
+  color: #080c14;
+  font-weight: 800;
+  border-color: var(--gold-500);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.stepper-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-subtle);
+  margin: 0 6px;
+  margin-bottom: 12px;
 }
 
 .wizard-box-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
 }
 .wizard-crest {
   font-size: 24px;
@@ -935,20 +1001,76 @@ body {
   font-size: 13px;
 }
 
+/* Dining Occasion Pills */
+.occasion-pills-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.occasion-pill {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-spring);
+  font-family: inherit;
+}
+.occasion-pill:hover {
+  color: var(--text-white);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.occasion-pill.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--gold-500);
+  color: var(--gold-400);
+  font-weight: 700;
+}
+
+/* Amenities Checkboxes */
+.amenity-chips-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.amenity-chip {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: var(--transition-spring);
+}
+.amenity-chip:hover {
+  color: var(--text-white);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.amenity-chip input[type="checkbox"] {
+  accent-color: var(--gold-500);
+}
+
 /* 6-Stage Visualizer Box */
 .algo-visualizer-box {
   background: var(--bg-obsidian);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--gold-500);
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: 14px;
 }
 
 .algo-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .algo-tag {
   font-size: 8px;
@@ -1140,6 +1262,16 @@ body {
 .pill-tag.green { background: rgba(16, 185, 129, 0.2); color: var(--c-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
 .pill-tag.red { background: rgba(244, 63, 94, 0.2); color: var(--c-ruby); border: 1px solid rgba(244, 63, 94, 0.3); }
 
+.turnover-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-400);
+  background: rgba(245, 158, 11, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
 .analytics-dual-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1207,7 +1339,7 @@ body {
 }
 
 /* ==========================================================================
-   MODAL WINDOWS & VIP PASS
+   MODAL WINDOWS & VIP PASS (PRINT-READY)
    ========================================================================== */
 .modal-backdrop-layer {
   position: fixed;
@@ -1361,6 +1493,12 @@ body {
   color: var(--text-muted);
 }
 
+.pass-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 /* Toast Hub */
 .toast-hub {
   position: fixed;
@@ -1388,6 +1526,43 @@ body {
 @keyframes toastFlyIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   PRINT STYLESHEET (@media print)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .app-container, .ambient-glow, .luxury-navbar, .slot-filter-strip, .kpi-metrics-row, .experience-showcase, .guest-stage-grid, .no-print, .toast-hub {
+    display: none !important;
+  }
+  .modal-backdrop-layer {
+    position: static !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
+  .modal-glass-card {
+    border: 3px solid #b45309 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+  .pass-restaurant-title {
+    color: #000000 !important;
+    font-size: 28px !important;
+  }
+  .pass-field-cell strong {
+    color: #000000 !important;
+  }
+  .qr-code-art {
+    color: #000000 !important;
+  }
 }
 
 @media (max-width: 1200px) {

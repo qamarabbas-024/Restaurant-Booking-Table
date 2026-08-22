@@ -7,8 +7,10 @@ const API_ENDPOINT = 'http://localhost:8080/api';
 
 const appState = {
   activeMode: 'guest', // 'guest' | 'staff'
-  staffView: 'staff-reservations', // 'staff-reservations' | 'staff-fleet' | 'staff-analytics' | 'staff-activity'
+  staffView: 'staff-reservations',
   soundEnabled: true,
+  currentWizardStep: 1,
+  selectedOccasion: 'Romantic Dinner',
   metrics: {},
   tables: [],
   bookings: [],
@@ -19,6 +21,15 @@ const appState = {
   selectedTableId: 0,
   availableTableIds: [],
   occupiedTableIds: []
+};
+
+// Pricing model per dining zone (average spend per cover)
+const ZONE_REVENUE_RATES = {
+  'Couple': 140,
+  'Family': 280,
+  'VIP': 650,
+  'Banquet': 1200,
+  'Terrace': 220
 };
 
 // ================= DOM ELEMENT REFERENCES =================
@@ -34,7 +45,8 @@ const staffActivityTimeline = document.getElementById('staff-activity-timeline')
 const metricTotalTables = document.getElementById('metric-total-tables');
 const metricOpTables = document.getElementById('metric-op-tables');
 const metricTotalCapacity = document.getElementById('metric-total-capacity');
-const metricActiveBookings = document.getElementById('metric-active-bookings');
+const metricProjectedRevenue = document.getElementById('metric-projected-revenue');
+const metricRevenueCovers = document.getElementById('metric-revenue-covers');
 const metricOccupancyRate = document.getElementById('metric-occupancy-rate');
 const metricOccupancyRatio = document.getElementById('metric-occupancy-ratio');
 const staffBookingBadge = document.getElementById('staff-booking-badge');
@@ -50,11 +62,12 @@ const soundIcon = document.getElementById('sound-icon');
 
 // Modals
 const modalTableCreate = document.getElementById('modal-table-create');
+const modalWalkinSeater = document.getElementById('modal-walkin-seater');
 const modalVipPass = document.getElementById('modal-vip-pass');
 const passDataGrid = document.getElementById('pass-data-grid');
 const toastHub = document.getElementById('toast-hub');
 
-// ================= SOUND ENGINE (WEB AUDIO API) =================
+// ================= REFINED SYNTHESIZED SOUND ENGINE =================
 function playSound(type = 'click') {
   if (!appState.soundEnabled) return;
   try {
@@ -64,15 +77,25 @@ function playSound(type = 'click') {
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
-    if (type === 'success') {
+    if (type === 'clink') {
+      // Wine Glass Clink (High pure crystal chime)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime); // D6
+      osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.08); // A6
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    } else if (type === 'success') {
+      // Royal 3-Tone Brass Chime
       osc.type = 'sine';
       osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
       osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.12); // G5
       osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.25); // C6
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.4);
+      osc.stop(audioCtx.currentTime + 0.45);
     } else if (type === 'pop') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(320, audioCtx.currentTime);
@@ -89,11 +112,11 @@ function playSound(type = 'click') {
       osc.stop(audioCtx.currentTime + 0.06);
     }
   } catch (e) {
-    // AudioContext blocked before first user interaction
+    // AudioContext blocked
   }
 }
 
-// ================= TOAST ALERTS =================
+// ================= TOAST NOTIFICATIONS =================
 function showToastAlert(message, type = 'info') {
   const alert = document.createElement('div');
   alert.className = `toast-item-alert ${type}`;
@@ -157,7 +180,7 @@ function renderAllViews() {
   staffBookingBadge.textContent = appState.bookings.length;
 }
 
-// 1. KPI Metrics Ribbon
+// 1. KPI Metrics Ribbon with Live Revenue Yield Calculation
 function renderMetricsRow() {
   const total = appState.tables.length;
   const operational = appState.tables.filter(t => t.status === 'Available').length;
@@ -165,10 +188,29 @@ function renderMetricsRow() {
   const occupiedCount = appState.occupiedTableIds.length;
   const rate = operational > 0 ? Math.round((occupiedCount / operational) * 100) : 0;
 
+  // Calculate total projected revenue from active bookings
+  let totalRevenue = 0;
+  let totalGuestsBooked = 0;
+  appState.bookings.forEach(b => {
+    totalGuestsBooked += b.guests;
+    const tbl = appState.tables.find(t => t.id === b.tableId);
+    if (tbl) {
+      for (const [key, rateVal] of Object.entries(ZONE_REVENUE_RATES)) {
+        if (tbl.type.toLowerCase().includes(key.toLowerCase())) {
+          totalRevenue += rateVal;
+          break;
+        }
+      }
+    } else {
+      totalRevenue += 200; // default cover estimate
+    }
+  });
+
   metricTotalTables.textContent = total;
   metricOpTables.textContent = `${operational} Open`;
   metricTotalCapacity.textContent = capacity;
-  metricActiveBookings.textContent = appState.bookings.length;
+  metricProjectedRevenue.textContent = `$${totalRevenue.toLocaleString()}`;
+  metricRevenueCovers.textContent = `${totalGuestsBooked} Guests`;
   metricOccupancyRate.textContent = `${rate}%`;
   metricOccupancyRatio.textContent = `${occupiedCount}/${operational} Booked`;
 }
@@ -182,7 +224,7 @@ function getFixtureDetails(type, capacity) {
   return { shape: 'shape-booth', icon: '🍽️' };
 }
 
-// 3. Guest Floor Plan Canvas
+// 3. Guest Floor Plan Canvas (CAD Blueprint)
 function renderGuestFloorPlan() {
   guestFloorCanvas.innerHTML = '';
 
@@ -234,7 +276,7 @@ function renderGuestFloorPlan() {
       chairsHtml += '<div class="chair-piece seat-bl"></div><div class="chair-piece seat-br"></div>';
     }
 
-    // Reservation Tooltip
+    // Reservation Tooltip & Dining Elapsed Clock
     let activeBooking = null;
     if (isOccupied) {
       activeBooking = appState.bookings.find(b => b.tableId === table.id && b.date === appState.selectedDate && b.time === appState.selectedTime);
@@ -260,7 +302,7 @@ function renderGuestFloorPlan() {
 
     // Click handler to select table directly
     pod.addEventListener('click', () => {
-      playSound('pop');
+      playSound('clink');
 
       if (isMaintenance) {
         showToastAlert(`Table #${table.id} is currently under maintenance.`, 'error');
@@ -273,6 +315,7 @@ function renderGuestFloorPlan() {
         appState.selectedTableId = table.id;
         guestTableSelect.value = String(table.id);
         document.getElementById('party-size-input').value = Math.min(table.capacity, 4);
+        setWizardStep(2);
         showToastAlert(`Table #${table.id} (${table.type}, ${table.capacity} seats) selected.`, 'success');
         renderGuestFloorPlan();
       }
@@ -282,10 +325,12 @@ function renderGuestFloorPlan() {
   });
 }
 
-// 4. Dropdown Table Options
+// 4. Dropdown Table Options (Wizard & Walk-in Modal)
 function renderTableDropdownOptions() {
   const current = guestTableSelect.value;
   guestTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
+  const walkinSelect = document.getElementById('walkin-table-choice');
+  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Allocation</option>';
 
   appState.tables.forEach(t => {
     if (t.status === 'Available') {
@@ -294,6 +339,11 @@ function renderTableDropdownOptions() {
       const isOcc = appState.occupiedTableIds.includes(t.id);
       opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked in slot' : '✅ Free'}`;
       guestTableSelect.appendChild(opt);
+
+      const walkOpt = document.createElement('option');
+      walkOpt.value = t.id;
+      walkOpt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats)`;
+      walkinSelect.appendChild(walkOpt);
     }
   });
 
@@ -360,16 +410,26 @@ function renderStaffReservations() {
   });
 }
 
-// 6. Staff Physical Table Fleet Controls
+// 6. Staff Physical Table Fleet Controls (With Turnover Clocks)
 function renderStaffFleet() {
   staffFleetTbody.innerHTML = '';
   appState.tables.forEach(t => {
     const isAvail = t.status === 'Available';
+    const isOccupied = appState.occupiedTableIds.includes(t.id);
     const tr = document.createElement('tr');
+
+    let turnoverText = 'Ready for Guests';
+    if (isOccupied) {
+      turnoverText = '⏱️ Dining (est. 60m left)';
+    } else if (!isAvail) {
+      turnoverText = '⚠️ Maintenance';
+    }
+
     tr.innerHTML = `
       <td><strong>#T-${t.id}</strong></td>
       <td>${t.capacity} Guests</td>
       <td>${t.type}</td>
+      <td><span class="turnover-badge">${turnoverText}</span></td>
       <td><span class="pill-tag ${isAvail ? 'green' : 'red'}">${t.status}</span></td>
       <td>
         <button class="btn-status-toggle btn-toggle-status" data-id="${t.id}" data-current="${t.status}">
@@ -400,7 +460,7 @@ function renderStaffFleet() {
   });
 }
 
-// 7. Staff Analytics & Zone Breakdown
+// 7. Staff Analytics & Revenue Breakdown
 function renderStaffAnalytics() {
   staffZoneBreakdown.innerHTML = '';
   const counts = {};
@@ -409,16 +469,17 @@ function renderStaffAnalytics() {
   });
 
   for (const [type, count] of Object.entries(counts)) {
+    const rate = ZONE_REVENUE_RATES[type.split(' ')[0]] || 200;
     const div = document.createElement('div');
     div.className = 'breakdown-row';
     div.innerHTML = `
-      <span><strong>${type}</strong></span>
-      <span class="pill-tag gold">${count} Tables (${count * 1} unit)</span>
+      <span><strong>${type}</strong> ($${rate} / service)</span>
+      <span class="pill-tag gold">${count} Tables &bull; Est. $${count * rate}</span>
     `;
     staffZoneBreakdown.appendChild(div);
   }
 
-  // Slot demand
+  // Hourly slot demand
   staffSlotDemand.innerHTML = '';
   const slotCounts = {};
   appState.bookings.forEach(b => {
@@ -458,6 +519,15 @@ function renderStaffActivityTrail() {
     `;
     staffActivityTimeline.appendChild(card);
   });
+}
+
+// ================= 4-STEP WIZARD STEPPER CONTROLLER =================
+function setWizardStep(step) {
+  appState.currentWizardStep = step;
+  for (let i = 1; i <= 4; ++i) {
+    const bubble = document.getElementById(`step-bubble-${i}`);
+    if (bubble) bubble.classList.toggle('active', i <= step);
+  }
 }
 
 // ================= 6-STAGE ALGORITHM VISUALIZER ANIMATION =================
@@ -519,6 +589,7 @@ async function runAllocationSequence(trace, success, createdBooking, errorMsg) {
   document.getElementById('pipeline-status').textContent = 'Confirmed';
   document.getElementById('pipeline-status').style.color = '#10b981';
 
+  setWizardStep(4);
   playSound('success');
   showVipPassModal(createdBooking);
 }
@@ -549,6 +620,14 @@ function showVipPassModal(b) {
     <div class="pass-field-cell">
       <label>Dining Time Slot</label>
       <strong>${b.time}</strong>
+    </div>
+    <div class="pass-field-cell">
+      <label>Dining Occasion</label>
+      <strong style="color:var(--gold-300);">${appState.selectedOccasion}</strong>
+    </div>
+    <div class="pass-field-cell">
+      <label>Service Standard</label>
+      <strong>Michelin 3-Star Pairing</strong>
     </div>
   `;
   modalVipPass.classList.add('open');
@@ -586,10 +665,21 @@ document.querySelectorAll('.staff-tab').forEach(tab => {
   });
 });
 
-// 2. Quick Experience Booking Buttons
+// 2. Occasion Selector Pills
+document.querySelectorAll('.occasion-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    playSound('pop');
+    document.querySelectorAll('.occasion-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    appState.selectedOccasion = pill.dataset.occ;
+    setWizardStep(3);
+  });
+});
+
+// 3. Quick Experience Booking Buttons
 document.querySelectorAll('.btn-quick-experience').forEach(btn => {
   btn.addEventListener('click', () => {
-    playSound('pop');
+    playSound('clink');
     const guests = parseInt(btn.dataset.guests);
     const type = btn.dataset.type;
     document.getElementById('party-size-input').value = guests;
@@ -600,15 +690,17 @@ document.querySelectorAll('.btn-quick-experience').forEach(btn => {
       appState.selectedTableId = candidate.id;
       guestTableSelect.value = String(candidate.id);
       showToastAlert(`Selected Table #${candidate.id} (${candidate.type}).`, 'success');
+      setWizardStep(2);
       renderGuestFloorPlan();
     } else {
       guestTableSelect.value = '0';
       showToastAlert(`Auto-assigning optimal ${type} table.`, 'info');
+      setWizardStep(1);
     }
   });
 });
 
-// 3. Guest Booking Submission
+// 4. Guest Booking Submission
 guestReservationForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -646,7 +738,7 @@ guestReservationForm.addEventListener('submit', async (e) => {
   }
 });
 
-// 4. Cancel Reservation Action
+// 5. Cancel Reservation Action
 async function handleCancelReservation(id) {
   if (!confirm(`Are you sure you want to cancel Reservation #${id}?`)) return;
 
@@ -669,7 +761,7 @@ async function handleCancelReservation(id) {
   }
 }
 
-// 5. Staff Table Operational Status Toggle
+// 6. Staff Table Operational Status Toggle
 async function handleToggleTableStatus(id, status) {
   try {
     const res = await fetch(`${API_ENDPOINT}/tables/status`, {
@@ -690,7 +782,7 @@ async function handleToggleTableStatus(id, status) {
   }
 }
 
-// 6. Staff Delete Table Action
+// 7. Staff Delete Table Action
 async function handleDeleteTable(id) {
   if (!confirm(`Are you sure you want to delete Table #${id}?`)) return;
 
@@ -713,7 +805,38 @@ async function handleDeleteTable(id) {
   }
 }
 
-// 7. Add Table Form
+// 8. Express Walk-In Seating Handler
+document.getElementById('form-quick-walkin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const guestName = document.getElementById('walkin-guest-name').value.trim() || 'Walk-In Guest';
+  const guests = parseInt(document.getElementById('walkin-party-size').value);
+  const tableId = parseInt(document.getElementById('walkin-table-choice').value);
+  const date = appState.selectedDate;
+  const time = appState.selectedTime;
+
+  try {
+    const res = await fetch(`${API_ENDPOINT}/bookings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestName, guests, date, time, tableId })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToastAlert(`Walk-in seated at Table #${data.booking.tableId}!`, 'success');
+      modalWalkinSeater.classList.remove('open');
+      document.getElementById('form-quick-walkin').reset();
+      playSound('success');
+      await syncCoreEngine();
+    } else {
+      showToastAlert(data.error || 'No table available for walk-in party.', 'error');
+    }
+  } catch (err) {
+    showToastAlert('Error seating walk-in guest.', 'error');
+  }
+});
+
+// 9. Add Table Form
 document.getElementById('form-add-new-table').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = parseInt(document.getElementById('new-tbl-id').value);
@@ -741,23 +864,25 @@ document.getElementById('form-add-new-table').addEventListener('submit', async (
   }
 });
 
-// 8. Party Size Steppers & Filters
+// 10. Stepper Actions
 document.getElementById('btn-stepper-plus').addEventListener('click', () => {
   playSound('pop');
   const inp = document.getElementById('party-size-input');
   inp.value = Math.min(50, parseInt(inp.value || 1) + 1);
+  setWizardStep(1);
 });
 
 document.getElementById('btn-stepper-minus').addEventListener('click', () => {
   playSound('pop');
   const inp = document.getElementById('party-size-input');
   inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
+  setWizardStep(1);
 });
 
 slotCarousel.addEventListener('click', (e) => {
   const chip = e.target.closest('.slot-chip');
   if (chip) {
-    playSound('click');
+    playSound('clink');
     document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     appState.selectedTime = chip.dataset.time;
@@ -812,12 +937,20 @@ document.getElementById('btn-toggle-sound').addEventListener('click', () => {
   showToastAlert(appState.soundEnabled ? 'Audio feedback enabled.' : 'Audio feedback muted.', 'info');
 });
 
-// Modal Toggles
-document.getElementById('btn-open-table-modal').addEventListener('click', () => modalTableCreate.classList.add('open'));
+// Modals
+document.getElementById('btn-open-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.add('open'));
+document.getElementById('btn-staff-walkin-quick').addEventListener('click', () => modalWalkinSeater.classList.add('open'));
+document.getElementById('btn-close-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.remove('open'));
+document.getElementById('btn-cancel-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.remove('open'));
+
 document.getElementById('btn-staff-add-table').addEventListener('click', () => modalTableCreate.classList.add('open'));
 document.getElementById('btn-close-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
 document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
+
 document.getElementById('btn-dismiss-pass').addEventListener('click', () => modalVipPass.classList.remove('open'));
+document.getElementById('btn-print-pass').addEventListener('click', () => {
+  window.print();
+});
 
 // Background auto-sync every 3.5s
 setInterval(syncCoreEngine, 3500);

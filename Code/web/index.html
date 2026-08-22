@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Royal Spice — Michelin Dining & Smart Table Management System</title>
+  <title>The Royal Spice — Michelin 3-Star Dining & Smart Table Management System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,12 +11,12 @@
 </head>
 <body>
 
-  <!-- Ambient Cinematic Radial Glows -->
+  <!-- Ambient Cinematic Lighting Orbs -->
   <div class="ambient-glow glow-gold"></div>
   <div class="ambient-glow glow-emerald"></div>
   <div class="ambient-glow glow-ruby"></div>
 
-  <!-- Master Application Container -->
+  <!-- Master Application Layout -->
   <div class="app-container">
 
     <!-- Top Luxury Navigation Bar -->
@@ -24,7 +24,7 @@
       <div class="navbar-brand">
         <div class="brand-crest">⚜️</div>
         <div class="brand-headings">
-          <div class="brand-tagline">MICHELIN GUIDE &bull; FINE DINING HOSPITALITY</div>
+          <div class="brand-tagline">MICHELIN GUIDE &bull; THREE STARS FINE DINING</div>
           <h1 class="brand-title">THE ROYAL SPICE</h1>
         </div>
       </div>
@@ -53,8 +53,8 @@
         <button class="btn btn-glass btn-icon" id="btn-refresh-state" title="Synchronize with C++ Core">
           <span>🔄</span>
         </button>
-        <button class="btn btn-gold btn-sm" id="btn-open-table-modal">
-          <span>+ Add Table</span>
+        <button class="btn btn-gold btn-sm" id="btn-open-walkin-modal">
+          <span>⚡ Quick Walk-In</span>
         </button>
       </div>
     </header>
@@ -131,7 +131,7 @@
       </div>
     </section>
 
-    <!-- Executive Metrics Ribbon -->
+    <!-- Executive Metrics Ribbon with Revenue Estimation -->
     <section class="kpi-metrics-row">
       <div class="kpi-tile">
         <div class="kpi-icon-box gold">🪑</div>
@@ -152,12 +152,12 @@
       </div>
 
       <div class="kpi-tile">
-        <div class="kpi-icon-box amber">🎫</div>
+        <div class="kpi-icon-box amber">💎</div>
         <div class="kpi-content">
-          <div class="kpi-title">Active Bookings</div>
-          <div class="kpi-number" id="metric-active-bookings">0</div>
+          <div class="kpi-title">Projected Revenue</div>
+          <div class="kpi-number" id="metric-projected-revenue">$0</div>
         </div>
-        <div class="kpi-tag amber">Confirmed</div>
+        <div class="kpi-tag amber" id="metric-revenue-covers">0 Covers</div>
       </div>
 
       <div class="kpi-tile">
@@ -181,8 +181,8 @@
           <div class="showcase-icon">🍷</div>
           <div class="showcase-info">
             <h4>Couples Alcove</h4>
-            <p>Intimate candlelit dining for 2 with curated wine pairings.</p>
-            <span class="showcase-badge">2 Guests &bull; Private Setting</span>
+            <p>Intimate candlelit dining for 2 with sommelier wine pairings.</p>
+            <span class="showcase-badge">2 Guests &bull; Private Setting &bull; $140 avg</span>
           </div>
           <button class="btn btn-gold btn-xs btn-quick-experience" data-guests="2" data-type="Couple">Book Table</button>
         </div>
@@ -192,7 +192,7 @@
           <div class="showcase-info">
             <h4>Family Dining Booth</h4>
             <p>Comfortable upholstered booths designed for family dinners.</p>
-            <span class="showcase-badge">4 Guests &bull; Center Hall</span>
+            <span class="showcase-badge">4 Guests &bull; Center Hall &bull; $280 avg</span>
           </div>
           <button class="btn btn-gold btn-xs btn-quick-experience" data-guests="4" data-type="Family">Book Table</button>
         </div>
@@ -202,7 +202,7 @@
           <div class="showcase-info">
             <h4>VIP Imperial Suite</h4>
             <p>Gold-trimmed luxury lounge with dedicated executive service.</p>
-            <span class="showcase-badge gold">6 Guests &bull; VIP Exclusive</span>
+            <span class="showcase-badge gold">6 Guests &bull; VIP Exclusive &bull; $650 avg</span>
           </div>
           <button class="btn btn-gold btn-xs btn-quick-experience" data-guests="6" data-type="VIP">Book Table</button>
         </div>
@@ -211,21 +211,21 @@
           <div class="showcase-icon">🍾</div>
           <div class="showcase-info">
             <h4>Grand Gala Banquet</h4>
-            <p>Executive long tables for grand celebrations & business feasts.</p>
-            <span class="showcase-badge">8+ Guests &bull; Royal Feast</span>
+            <p>Executive long tables for grand celebrations & feasts.</p>
+            <span class="showcase-badge">8+ Guests &bull; Royal Gala &bull; $1,200 avg</span>
           </div>
           <button class="btn btn-gold btn-xs btn-quick-experience" data-guests="8" data-type="Banquet">Book Table</button>
         </div>
       </section>
 
-      <!-- Main Floor Map & Reservation Dual Layout -->
+      <!-- Main Floor Map & 4-Step Reservation Journey Grid -->
       <div class="guest-stage-grid">
         
-        <!-- Floor Plan Card -->
+        <!-- Floor Plan Card with Architectural Parquet Floor -->
         <section class="panel-card floor-card">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Interactive Dining Room Seating Map</h2>
+              <h2 class="panel-title">Architectural Dining Blueprint Seating Map</h2>
               <span class="panel-subtitle" id="guest-slot-label">Viewing availability for 24/05/2026 at 8:00 PM</span>
             </div>
             <div class="status-legend-wrap">
@@ -235,9 +235,9 @@
             </div>
           </div>
 
-          <!-- Floor Canvas Container -->
-          <div class="dining-blueprint-canvas" id="guest-floor-canvas">
-            <!-- Dynamically rendered table pods -->
+          <!-- Architectural Floor Canvas -->
+          <div class="dining-blueprint-canvas parquet-pattern" id="guest-floor-canvas">
+            <!-- Dynamically rendered CAD-style table pods -->
           </div>
 
           <div class="canvas-tip-footer">
@@ -245,8 +245,32 @@
           </div>
         </section>
 
-        <!-- Reservation Wizard & Algorithm Visualizer -->
+        <!-- 4-Step Reservation Wizard & Visualizer -->
         <aside class="panel-card wizard-sidebar">
+          
+          <!-- Stepper Progress Header -->
+          <div class="wizard-stepper-header">
+            <div class="step-bubble active" id="step-bubble-1">
+              <span>1</span>
+              <small>Party</small>
+            </div>
+            <div class="stepper-line" id="step-line-1"></div>
+            <div class="step-bubble" id="step-bubble-2">
+              <span>2</span>
+              <small>Seating</small>
+            </div>
+            <div class="stepper-line" id="step-line-2"></div>
+            <div class="step-bubble" id="step-bubble-3">
+              <span>3</span>
+              <small>Occasion</small>
+            </div>
+            <div class="stepper-line" id="step-line-3"></div>
+            <div class="step-bubble" id="step-bubble-4">
+              <span>4</span>
+              <small>Pass</small>
+            </div>
+          </div>
+
           <div class="wizard-box-header">
             <div class="wizard-crest">⚜️</div>
             <div>
@@ -256,6 +280,8 @@
           </div>
 
           <form id="guest-reservation-form" class="wizard-form-body">
+            
+            <!-- Guest Full Name -->
             <div class="form-control-group">
               <label for="guest-name-input">Guest Full Name</label>
               <div class="input-icon-wrapper">
@@ -264,6 +290,7 @@
               </div>
             </div>
 
+            <!-- Party Size & Table Selection -->
             <div class="form-row-2">
               <div class="form-control-group">
                 <label>Party Size</label>
@@ -275,7 +302,7 @@
               </div>
 
               <div class="form-control-group">
-                <label for="guest-table-select">Table Selection</label>
+                <label for="guest-table-select">Table Choice</label>
                 <select id="guest-table-select" class="luxury-dropdown">
                   <option value="0">✨ Auto-Assign Best Fit</option>
                   <!-- Populated dynamically -->
@@ -283,6 +310,7 @@
               </div>
             </div>
 
+            <!-- Date & Time -->
             <div class="form-row-2">
               <div class="form-control-group">
                 <label for="guest-date-input">Date</label>
@@ -299,6 +327,28 @@
                   <option value="8:00 PM" selected>8:00 PM (Prime Dinner)</option>
                   <option value="10:00 PM">10:00 PM (Late Night)</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Dining Occasion Pills -->
+            <div class="form-control-group">
+              <label>Dining Occasion</label>
+              <div class="occasion-pills-wrap" id="occasion-pills-wrap">
+                <button type="button" class="occasion-pill active" data-occ="Romantic Dinner">💍 Romantic</button>
+                <button type="button" class="occasion-pill" data-occ="Birthday Celebration">🎂 Birthday</button>
+                <button type="button" class="occasion-pill" data-occ="Business Meeting">💼 Business</button>
+                <button type="button" class="occasion-pill" data-occ="Casual Fine Dining">🥂 Casual</button>
+              </div>
+            </div>
+
+            <!-- Dietary / Special Requests -->
+            <div class="form-control-group">
+              <label>Special Amenities & Preferences</label>
+              <div class="amenity-chips-wrap">
+                <label class="amenity-chip"><input type="checkbox" value="Window View"> 🪟 Window View</label>
+                <label class="amenity-chip"><input type="checkbox" value="Wine Pairing"> 🍾 Sommelier Pairing</label>
+                <label class="amenity-chip"><input type="checkbox" value="Quiet Corner"> 🕯️ Quiet Corner</label>
+                <label class="amenity-chip"><input type="checkbox" value="Chef Tasting"> 👨‍🍳 Chef's Tasting</label>
               </div>
             </div>
 
@@ -378,7 +428,7 @@
           <span>🏛️ Physical Table Fleet & Status Controls</span>
         </button>
         <button class="staff-tab" data-staff-view="staff-analytics">
-          <span>📊 Seating Capacity & Analytics</span>
+          <span>📊 Seating Capacity & Revenue Forecast</span>
         </button>
         <button class="staff-tab" data-staff-view="staff-activity">
           <span>⚡ Live System Audit Log</span>
@@ -426,10 +476,13 @@
         <section class="panel-card">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Physical Table Fleet Controls</h2>
+              <h2 class="panel-title">Physical Table Fleet & Turnover Controls</h2>
               <p class="panel-subtitle">1-Click operational status toggles (Available / Maintenance) and table management</p>
             </div>
-            <button class="btn btn-gold btn-sm" id="btn-staff-add-table">+ Add New Table</button>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-gold btn-sm" id="btn-staff-add-table">+ Add Table</button>
+              <button class="btn btn-glass btn-sm" id="btn-staff-walkin-quick">⚡ Quick Walk-In</button>
+            </div>
           </div>
 
           <div class="table-responsive-box">
@@ -439,6 +492,7 @@
                   <th>Table ID</th>
                   <th>Capacity</th>
                   <th>Dining Category</th>
+                  <th>Turnover / Dining Time</th>
                   <th>Operational Status</th>
                   <th>Status Toggle</th>
                   <th>Delete</th>
@@ -456,14 +510,14 @@
       <div class="staff-subview" id="subview-staff-analytics">
         <div class="analytics-dual-grid">
           <section class="panel-card">
-            <h3 class="panel-title" style="margin-bottom:16px;">Seating Breakdown by Category</h3>
+            <h3 class="panel-title" style="margin-bottom:16px;">Seating Breakdown & Revenue Yield</h3>
             <div class="zone-breakdown-container" id="staff-zone-breakdown">
               <!-- Rendered dynamically -->
             </div>
           </section>
 
           <section class="panel-card">
-            <h3 class="panel-title" style="margin-bottom:16px;">Time Slot Demand Distribution</h3>
+            <h3 class="panel-title" style="margin-bottom:16px;">Hourly Time Slot Demand Distribution</h3>
             <div class="slot-demand-list" id="staff-slot-demand">
               <!-- Rendered dynamically -->
             </div>
@@ -487,6 +541,41 @@
     </div>
 
   </div> <!-- End App Container -->
+
+  <!-- ================================================================= -->
+  <!-- MODAL: QUICK WALK-IN SEATING                                      -->
+  <!-- ================================================================= -->
+  <div class="modal-backdrop-layer" id="modal-walkin-seater">
+    <div class="modal-glass-card">
+      <div class="modal-card-top">
+        <div class="modal-title-row">
+          <span class="modal-emblem">⚡</span>
+          <h3>Express Walk-In Seating</h3>
+        </div>
+        <button class="modal-dismiss-btn" id="btn-close-walkin-modal">&times;</button>
+      </div>
+      <form id="form-quick-walkin" class="modal-form-content">
+        <div class="form-control-group">
+          <label for="walkin-guest-name">Walk-In Guest Name</label>
+          <input type="text" id="walkin-guest-name" class="luxury-field" placeholder="e.g. Walk-In Party" required>
+        </div>
+        <div class="form-control-group">
+          <label for="walkin-party-size">Party Size</label>
+          <input type="number" id="walkin-party-size" class="luxury-field" min="1" max="20" value="2" required>
+        </div>
+        <div class="form-control-group">
+          <label for="walkin-table-choice">Assign Free Table</label>
+          <select id="walkin-table-choice" class="luxury-dropdown">
+            <option value="0">✨ Auto Best-Fit Allocation</option>
+          </select>
+        </div>
+        <div class="modal-btn-row">
+          <button type="button" class="btn btn-glass" id="btn-cancel-walkin-modal">Cancel</button>
+          <button type="submit" class="btn btn-gold">⚡ Seat Guests Immediately</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- ================================================================= -->
   <!-- MODAL: ADD NEW DINING TABLE                                       -->
@@ -528,11 +617,11 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- MODAL: LUXURY VIP RESERVATION TICKET PASS                         -->
+  <!-- MODAL: LUXURY VIP RESERVATION TICKET PASS (PRINT-READY)          -->
   <!-- ================================================================= -->
   <div class="modal-backdrop-layer" id="modal-vip-pass">
-    <div class="modal-glass-card ticket-pass-modal">
-      <div class="pass-card-wrapper">
+    <div class="modal-glass-card ticket-pass-modal printable-ticket-container">
+      <div class="pass-card-wrapper" id="printable-pass-card">
         <div class="pass-crest-top">⚜️</div>
         <div class="pass-subheading">OFFICIAL DINING RESERVATION PASS</div>
         <h2 class="pass-restaurant-title">THE ROYAL SPICE</h2>
@@ -556,9 +645,12 @@
           </div>
         </div>
 
-        <div class="pass-actions-row">
-          <button class="btn btn-gold btn-block" id="btn-dismiss-pass">
-            <span>Accept & Close Pass</span>
+        <div class="pass-actions-row no-print">
+          <button class="btn btn-glass" id="btn-print-pass">
+            <span>🖨️ Print Ticket</span>
+          </button>
+          <button class="btn btn-gold" id="btn-dismiss-pass">
+            <span>Accept & Close</span>
           </button>
         </div>
       </div>
