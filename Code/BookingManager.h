@@ -66,6 +66,8 @@ public:
     bool cancelBookingProgrammatic(int bookingId, std::string &errorMsg);
     
     bool addTableProgrammatic(int id, int capacity, const std::string &type, std::string &errorMsg);
+    bool updateTableStatusProgrammatic(int id, const std::string &status, std::string &errorMsg);
+    bool deleteTableProgrammatic(int id, std::string &errorMsg);
 
     void getSlotAvailability(const std::string &date, const std::string &time,
                              std::vector<int> &availableTableIds,

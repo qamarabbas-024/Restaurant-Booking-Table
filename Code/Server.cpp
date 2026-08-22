@@ -399,6 +399,33 @@ void Server::startCompanionServer(BookingManager &manager, int port)
 
             sendHttpResponse(clientSocket, ok ? 200 : 400, ok ? "OK" : "Bad Request", "application/json", resp.str());
         }
+        else if (path == "/api/tables/status" && method == "POST")
+        {
+            int id = extractJsonInt(body, "id");
+            std::string status = extractJsonString(body, "status");
+
+            std::string errorMsg;
+            bool ok = manager.updateTableStatusProgrammatic(id, status, errorMsg);
+
+            std::ostringstream resp;
+            resp << "{\n  \"success\": " << (ok ? "true" : "false") << ",\n";
+            resp << "  \"error\": \"" << errorMsg << "\"\n}\n";
+
+            sendHttpResponse(clientSocket, ok ? 200 : 400, ok ? "OK" : "Bad Request", "application/json", resp.str());
+        }
+        else if (path == "/api/tables/delete" && method == "POST")
+        {
+            int id = extractJsonInt(body, "id");
+
+            std::string errorMsg;
+            bool ok = manager.deleteTableProgrammatic(id, errorMsg);
+
+            std::ostringstream resp;
+            resp << "{\n  \"success\": " << (ok ? "true" : "false") << ",\n";
+            resp << "  \"error\": \"" << errorMsg << "\"\n}\n";
+
+            sendHttpResponse(clientSocket, ok ? 200 : 400, ok ? "OK" : "Bad Request", "application/json", resp.str());
+        }
         // ================= STATIC FILE SERVING =================
         else
         {

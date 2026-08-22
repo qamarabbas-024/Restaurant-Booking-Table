@@ -167,7 +167,7 @@ void testSpecificTableBooking()
 
 void testActivityLogBuffer()
 {
-    std::cout << "[TEST 5/6] Activity Log Buffer & Event Stream...\n";
+    std::cout << "[TEST 5/6] Activity Log Buffer & Programmatic Table Operations...\n";
 
     BookingManager bm;
     bm.loadData();
@@ -184,7 +184,17 @@ void testActivityLogBuffer()
     const auto &updatedLogs = bm.getActivityLogs();
     assert(updatedLogs.back().type == "TABLE_ADDED");
 
-    std::cout << "  -> Activity Log Buffer tests PASSED.\n";
+    // Toggle operational status
+    ok = bm.updateTableStatusProgrammatic(10, "Maintenance", err);
+    assert(ok == true);
+    assert(bm.findTableById(10)->getStatus() == "Maintenance");
+
+    // Delete table programmatically
+    ok = bm.deleteTableProgrammatic(10, err);
+    assert(ok == true);
+    assert(bm.findTableById(10) == nullptr);
+
+    std::cout << "  -> Activity Log Buffer & Table Operations tests PASSED.\n";
 }
 
 void testFileHandlerRobustness()

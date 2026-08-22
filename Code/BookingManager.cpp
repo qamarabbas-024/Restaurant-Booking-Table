@@ -665,6 +665,56 @@ bool BookingManager::addTableProgrammatic(int id, int capacity, const std::strin
     return true;
 }
 
+bool BookingManager::updateTableStatusProgrammatic(int id, const std::string &status, std::string &errorMsg)
+{
+    Table *table = findTableByIdInternal(id);
+    if (table == nullptr)
+    {
+        errorMsg = "Table #" + std::to_string(id) + " not found.";
+        return false;
+    }
+
+    if (status != "Available" && status != "Maintenance")
+    {
+        errorMsg = "Status must be 'Available' or 'Maintenance'.";
+        return false;
+    }
+
+    table->setOperationalStatus(status);
+    logActivity("TABLE_STATUS_CHANGED", "Table #" + std::to_string(id) + " status changed to " + status + ".");
+    saveData();
+    return true;
+}
+
+bool BookingManager::deleteTableProgrammatic(int id, std::string &errorMsg)
+{
+    Table *table = findTableByIdInternal(id);
+    if (table == nullptr)
+    {
+        errorMsg = "Table #" + std::to_string(id) + " not found.";
+        return false;
+    }
+
+    for (const auto &b : m_bookings)
+    {
+        if (b.getTableId() == id)
+        {
+            errorMsg = "Cannot delete Table #" + std::to_string(id) + " because active booking #" +
+                       std::to_string(b.getBookingId()) + " is assigned to it.";
+            return false;
+        }
+    }
+
+    m_tables.erase(
+        std::remove_if(m_tables.begin(), m_tables.end(),
+                       [id](const Table &t) { return t.getId() == id; }),
+        m_tables.end());
+
+    logActivity("TABLE_DELETED", "Table #" + std::to_string(id) + " deleted.");
+    saveData();
+    return true;
+}
+
 void BookingManager::getSlotAvailability(const std::string &date, const std::string &time,
                                          std::vector<int> &availableTableIds,
                                          std::vector<int> &occupiedTableIds) const

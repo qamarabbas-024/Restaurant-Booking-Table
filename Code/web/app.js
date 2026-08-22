@@ -1,11 +1,14 @@
 // ==========================================================================
-// THE ROYAL SPICE — VISUAL COMPANION APP CONTROLLER
-// Seamless C++17 Core Engine REST Integration
+// THE ROYAL SPICE — VISUAL COMPANION MASTER CONTROLLER
+// Seamless C++17 Core Engine REST Integration (Port 8080)
 // ==========================================================================
 
-const API_ROOT = 'http://localhost:8080/api';
+const API_ENDPOINT = 'http://localhost:8080/api';
 
-const state = {
+const appState = {
+  activeMode: 'guest', // 'guest' | 'staff'
+  staffView: 'staff-reservations', // 'staff-reservations' | 'staff-fleet' | 'staff-analytics' | 'staff-activity'
+  soundEnabled: true,
   metrics: {},
   tables: [],
   bookings: [],
@@ -18,168 +21,180 @@ const state = {
   occupiedTableIds: []
 };
 
-// ================= DOM ELEMENTS =================
-const floorCanvas = document.getElementById('floor-canvas');
-const floorViewIndicator = document.getElementById('floor-view-indicator');
-const bookingsTbody = document.getElementById('bookings-tbody');
-const fleetTbody = document.getElementById('fleet-tbody');
-const zoneBreakdownList = document.getElementById('zone-breakdown-list');
-const activityTimeline = document.getElementById('activity-stream-timeline');
+// ================= DOM ELEMENT REFERENCES =================
+const guestFloorCanvas = document.getElementById('guest-floor-canvas');
+const guestSlotLabel = document.getElementById('guest-slot-label');
+const staffReservationsTbody = document.getElementById('staff-reservations-tbody');
+const staffFleetTbody = document.getElementById('staff-fleet-tbody');
+const staffZoneBreakdown = document.getElementById('staff-zone-breakdown');
+const staffSlotDemand = document.getElementById('staff-slot-demand');
+const staffActivityTimeline = document.getElementById('staff-activity-timeline');
 
-// Metrics Elements
-const statTables = document.getElementById('stat-tables');
-const statTablesOp = document.getElementById('stat-tables-op');
-const statCapacity = document.getElementById('stat-capacity');
-const statBookings = document.getElementById('stat-bookings');
-const statOccupancy = document.getElementById('stat-occupancy');
-const statOccupancyRatio = document.getElementById('stat-occupancy-ratio');
-const badgeBookingsCount = document.getElementById('badge-bookings-count');
+// Metrics
+const metricTotalTables = document.getElementById('metric-total-tables');
+const metricOpTables = document.getElementById('metric-op-tables');
+const metricTotalCapacity = document.getElementById('metric-total-capacity');
+const metricActiveBookings = document.getElementById('metric-active-bookings');
+const metricOccupancyRate = document.getElementById('metric-occupancy-rate');
+const metricOccupancyRatio = document.getElementById('metric-occupancy-ratio');
+const staffBookingBadge = document.getElementById('staff-booking-badge');
 
-// Inputs & Selectors
-const inputDate = document.getElementById('input-date');
-const filterZoneSelect = document.getElementById('filter-zone-select');
-const timeCarousel = document.getElementById('time-carousel');
-const searchBookingsQuery = document.getElementById('search-bookings-query');
-const selectAssignedTable = document.getElementById('select-assigned-table');
+// Controls & Inputs
+const slotDateInput = document.getElementById('slot-date-input');
+const slotCarousel = document.getElementById('slot-carousel');
+const zoneFilterSelect = document.getElementById('zone-filter-select');
+const guestReservationForm = document.getElementById('guest-reservation-form');
+const guestTableSelect = document.getElementById('guest-table-select');
+const staffSearchInput = document.getElementById('staff-search-input');
+const soundIcon = document.getElementById('sound-icon');
 
-// Forms & Modals
-const bookingWizardForm = document.getElementById('booking-wizard-form');
-const formCreateTable = document.getElementById('form-create-table');
-const modalAddTable = document.getElementById('modal-add-table');
-const modalPass = document.getElementById('modal-pass');
-const ticketInfoGrid = document.getElementById('ticket-info-grid');
+// Modals
+const modalTableCreate = document.getElementById('modal-table-create');
+const modalVipPass = document.getElementById('modal-vip-pass');
+const passDataGrid = document.getElementById('pass-data-grid');
 const toastHub = document.getElementById('toast-hub');
 
-// ================= AUDIO FEEDBACK (OPTIONAL SYNTH) =================
-function playChime(type = 'click') {
+// ================= SOUND ENGINE (WEB AUDIO API) =================
+function playSound(type = 'click') {
+  if (!appState.soundEnabled) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(audioCtx.destination);
 
     if (type === 'success') {
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+      osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.12); // G5
+      osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.25); // C6
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
       osc.start();
-      osc.stop(ctx.currentTime + 0.25);
+      osc.stop(audioCtx.currentTime + 0.4);
+    } else if (type === 'pop') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.08);
     } else {
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
       osc.start();
-      osc.stop(ctx.currentTime + 0.08);
+      osc.stop(audioCtx.currentTime + 0.06);
     }
   } catch (e) {
-    // AudioContext not allowed before user gesture
+    // AudioContext blocked before first user interaction
   }
 }
 
-// ================= TOAST SYSTEM =================
-function notify(text, type = 'info') {
-  const t = document.createElement('div');
-  t.className = `toast-msg t-${type}`;
-  t.textContent = text;
-  toastHub.appendChild(t);
+// ================= TOAST ALERTS =================
+function showToastAlert(message, type = 'info') {
+  const alert = document.createElement('div');
+  alert.className = `toast-item-alert ${type}`;
+  alert.textContent = message;
+  toastHub.appendChild(alert);
   setTimeout(() => {
-    t.style.opacity = '0';
-    t.style.transform = 'translateY(10px)';
-    setTimeout(() => t.remove(), 300);
+    alert.style.opacity = '0';
+    alert.style.transform = 'translateY(10px)';
+    setTimeout(() => alert.remove(), 300);
   }, 3500);
 }
 
-// ================= DATA FETCHING =================
-async function syncBackendState() {
+// ================= REST API SYNC WITH C++ CORE =================
+async function syncCoreEngine() {
   try {
-    const res = await fetch(`${API_ROOT}/state`);
-    if (!res.ok) throw new Error('C++ Server Offline');
+    const res = await fetch(`${API_ENDPOINT}/state`);
+    if (!res.ok) throw new Error('C++ Server Unreachable');
     const data = await res.json();
 
-    state.metrics = data.metrics || {};
-    state.tables = data.tables || [];
-    state.bookings = data.bookings || [];
-    state.activity = data.activity || [];
+    appState.metrics = data.metrics || {};
+    appState.tables = data.tables || [];
+    appState.bookings = data.bookings || [];
+    appState.activity = data.activity || [];
 
-    document.getElementById('core-badge').style.borderColor = 'rgba(16, 185, 129, 0.3)';
-    document.getElementById('core-badge').querySelector('.engine-label').textContent = 'C++ Engine Live';
+    document.getElementById('core-beacon-pill').style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    document.getElementById('core-beacon-pill').querySelector('.beacon-text').textContent = 'C++ Engine Live';
 
-    await refreshSlotAvailability();
+    await updateSlotMatrix();
   } catch (err) {
-    document.getElementById('core-badge').style.borderColor = 'rgba(244, 63, 94, 0.4)';
-    document.getElementById('core-badge').querySelector('.engine-label').textContent = '⚠️ Backend Disconnected';
+    document.getElementById('core-beacon-pill').style.borderColor = 'rgba(244, 63, 94, 0.4)';
+    document.getElementById('core-beacon-pill').querySelector('.beacon-text').textContent = '⚠️ Backend Offline';
   }
 }
 
-async function refreshSlotAvailability() {
+async function updateSlotMatrix() {
   try {
-    const res = await fetch(`${API_ROOT}/availability?date=${encodeURIComponent(state.selectedDate)}&time=${encodeURIComponent(state.selectedTime)}`);
+    const res = await fetch(`${API_ENDPOINT}/availability?date=${encodeURIComponent(appState.selectedDate)}&time=${encodeURIComponent(appState.selectedTime)}`);
     if (res.ok) {
       const data = await res.json();
-      state.availableTableIds = data.available || [];
-      state.occupiedTableIds = data.occupied || [];
+      appState.availableTableIds = data.available || [];
+      appState.occupiedTableIds = data.occupied || [];
     }
   } catch (err) {
-    console.error('Availability fetch error:', err);
+    console.error('Failed to update slot matrix:', err);
   }
 
-  renderAllComponents();
+  renderAllViews();
 }
 
-// ================= RENDER EVERYTHING =================
-function renderAllComponents() {
-  renderMetrics();
-  renderFloorPlan();
-  renderTableDropdown();
-  renderBookingsGrid();
-  renderFleetGrid();
-  renderZoneBreakdown();
-  renderActivityTrail();
+// ================= MASTER RENDER =================
+function renderAllViews() {
+  renderMetricsRow();
+  renderGuestFloorPlan();
+  renderTableDropdownOptions();
+  renderStaffReservations();
+  renderStaffFleet();
+  renderStaffAnalytics();
+  renderStaffActivityTrail();
 
-  floorViewIndicator.textContent = `Viewing: ${state.selectedDate} at ${state.selectedTime}`;
-  badgeBookingsCount.textContent = state.bookings.length;
+  guestSlotLabel.textContent = `Viewing availability for ${appState.selectedDate} at ${appState.selectedTime}`;
+  staffBookingBadge.textContent = appState.bookings.length;
 }
 
-// 1. Render Metrics Strip
-function renderMetrics() {
-  const total = state.tables.length;
-  const operational = state.tables.filter(t => t.status === 'Available').length;
-  const capacity = state.metrics.totalCapacity || 0;
-  const occupiedCount = state.occupiedTableIds.length;
+// 1. KPI Metrics Ribbon
+function renderMetricsRow() {
+  const total = appState.tables.length;
+  const operational = appState.tables.filter(t => t.status === 'Available').length;
+  const capacity = appState.metrics.totalCapacity || 0;
+  const occupiedCount = appState.occupiedTableIds.length;
   const rate = operational > 0 ? Math.round((occupiedCount / operational) * 100) : 0;
 
-  statTables.textContent = total;
-  statTablesOp.textContent = `${operational} Open`;
-  statCapacity.textContent = capacity;
-  statBookings.textContent = state.bookings.length;
-  statOccupancy.textContent = `${rate}%`;
-  statOccupancyRatio.textContent = `${occupiedCount}/${operational} Booked`;
+  metricTotalTables.textContent = total;
+  metricOpTables.textContent = `${operational} Open`;
+  metricTotalCapacity.textContent = capacity;
+  metricActiveBookings.textContent = appState.bookings.length;
+  metricOccupancyRate.textContent = `${rate}%`;
+  metricOccupancyRatio.textContent = `${occupiedCount}/${operational} Booked`;
 }
 
 // 2. Table Geometry & Fixture Icons
-function getFixtureMeta(type, capacity) {
+function getFixtureDetails(type, capacity) {
   const t = type.toLowerCase();
-  if (t.includes('vip')) return { shape: 'shape-vip', icon: '👑', label: 'VIP Royal Suite' };
-  if (t.includes('couple') || capacity <= 2) return { shape: 'shape-round', icon: '🍷', label: 'Couples Alcove' };
-  if (t.includes('banquet') || capacity >= 8) return { shape: 'shape-banquet', icon: '🍾', label: 'Grand Banquet' };
-  return { shape: 'shape-booth', icon: '🍽️', label: 'Family Dining Booth' };
+  if (t.includes('vip')) return { shape: 'shape-vip', icon: '👑' };
+  if (t.includes('couple') || capacity <= 2) return { shape: 'shape-round', icon: '🍷' };
+  if (t.includes('banquet') || capacity >= 8) return { shape: 'shape-banquet', icon: '🍾' };
+  return { shape: 'shape-booth', icon: '🍽️' };
 }
 
-// 3. Render 2D Floor Plan Canvas
-function renderFloorPlan() {
-  floorCanvas.innerHTML = '';
+// 3. Guest Floor Plan Canvas
+function renderGuestFloorPlan() {
+  guestFloorCanvas.innerHTML = '';
 
-  let filtered = state.tables;
-  if (state.selectedZone !== 'ALL') {
-    filtered = state.tables.filter(t => t.type.toLowerCase().includes(state.selectedZone.toLowerCase()));
+  let filtered = appState.tables;
+  if (appState.selectedZone !== 'ALL') {
+    filtered = appState.tables.filter(t => t.type.toLowerCase().includes(appState.selectedZone.toLowerCase()));
   }
 
   if (filtered.length === 0) {
-    floorCanvas.innerHTML = `
+    guestFloorCanvas.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 50px;">
-        No tables found in section "${state.selectedZone}".
+        No tables found in section "${appState.selectedZone}".
       </div>
     `;
     return;
@@ -187,110 +202,110 @@ function renderFloorPlan() {
 
   filtered.forEach(table => {
     const isMaintenance = table.status === 'Maintenance';
-    const isOccupied = state.occupiedTableIds.includes(table.id);
-    const isSelected = state.selectedTableId === table.id;
+    const isOccupied = appState.occupiedTableIds.includes(table.id);
+    const isSelected = appState.selectedTableId === table.id;
 
-    let podClass = 'pod-free';
+    let podClass = 'pod-available';
     let statusText = 'FREE';
 
     if (isMaintenance) {
-      podClass = 'pod-off';
+      podClass = 'pod-offline';
       statusText = 'OFFLINE';
     } else if (isOccupied) {
-      podClass = 'pod-busy';
+      podClass = 'pod-reserved';
       statusText = 'RESERVED';
     }
 
-    const { shape, icon, label } = getFixtureMeta(table.type, table.capacity);
+    const { shape, icon } = getFixtureDetails(table.type, table.capacity);
 
     const pod = document.createElement('div');
-    pod.className = `table-pod ${podClass} ${isSelected ? 'pod-selected' : ''}`;
+    pod.className = `table-pod-fixture ${podClass} ${isSelected ? 'pod-locked' : ''}`;
     pod.dataset.id = table.id;
 
-    // Symmetrical Chairs around perimeter
-    let chairsHtml = '<div class="chair-item ch-top"></div><div class="chair-item ch-bottom"></div>';
+    // Realistic Leather Chairs around perimeter
+    let chairsHtml = '<div class="chair-piece seat-top"></div><div class="chair-piece seat-bot"></div>';
     if (table.capacity >= 4) {
-      chairsHtml += '<div class="chair-item ch-left"></div><div class="chair-item ch-right"></div>';
+      chairsHtml += '<div class="chair-piece seat-left"></div><div class="chair-piece seat-right"></div>';
     }
     if (table.capacity >= 6) {
-      chairsHtml += '<div class="chair-item ch-top-l"></div><div class="chair-item ch-top-r"></div>';
+      chairsHtml += '<div class="chair-piece seat-tl"></div><div class="chair-piece seat-tr"></div>';
     }
     if (table.capacity >= 8) {
-      chairsHtml += '<div class="chair-item ch-bot-l"></div><div class="chair-item ch-bot-r"></div>';
+      chairsHtml += '<div class="chair-piece seat-bl"></div><div class="chair-piece seat-br"></div>';
     }
 
     // Reservation Tooltip
-    let currentBooking = null;
+    let activeBooking = null;
     if (isOccupied) {
-      currentBooking = state.bookings.find(b => b.tableId === table.id && b.date === state.selectedDate && b.time === state.selectedTime);
+      activeBooking = appState.bookings.find(b => b.tableId === table.id && b.date === appState.selectedDate && b.time === appState.selectedTime);
     }
 
     pod.innerHTML = `
-      <span class="pod-id-tag">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
-      <span class="pod-status-badge">${statusText}</span>
+      <span class="fixture-top-tag">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
+      <span class="fixture-status-pill">${statusText}</span>
 
-      <div class="pod-fixture">
-        <div class="fixture-surface ${shape}">
+      <div class="table-geometry-wrap">
+        <div class="table-surface-3d ${shape}">
           <span>${icon}</span>
         </div>
         ${chairsHtml}
       </div>
 
-      <div class="pod-info">
-        <div class="pod-name">${table.type}</div>
-        <div class="pod-cap">${table.capacity} Guest Seats</div>
-        ${currentBooking ? `<div class="pod-guest-tag">Reserved: ${currentBooking.guestName}</div>` : ''}
+      <div class="fixture-caption">
+        <div class="fixture-name">${table.type}</div>
+        <div class="fixture-cap">${table.capacity} Guest Seats</div>
+        ${activeBooking ? `<div class="fixture-guest-name">Reserved: ${activeBooking.guestName}</div>` : ''}
       </div>
     `;
 
-    // Click handler to select table
+    // Click handler to select table directly
     pod.addEventListener('click', () => {
-      playChime('click');
+      playSound('pop');
 
       if (isMaintenance) {
-        notify(`Table #${table.id} is currently under maintenance.`, 'error');
+        showToastAlert(`Table #${table.id} is currently under maintenance.`, 'error');
         return;
       }
 
       if (isOccupied) {
-        notify(`Table #${table.id} is occupied by "${currentBooking?.guestName || 'Guest'}" at this time slot.`, 'info');
+        showToastAlert(`Table #${table.id} is booked by "${activeBooking?.guestName || 'Guest'}" for this time slot.`, 'info');
       } else {
-        state.selectedTableId = table.id;
-        selectAssignedTable.value = String(table.id);
-        document.getElementById('input-party-size').value = Math.min(table.capacity, 4);
-        notify(`Table #${table.id} selected for reservation.`, 'success');
-        renderFloorPlan();
+        appState.selectedTableId = table.id;
+        guestTableSelect.value = String(table.id);
+        document.getElementById('party-size-input').value = Math.min(table.capacity, 4);
+        showToastAlert(`Table #${table.id} (${table.type}, ${table.capacity} seats) selected.`, 'success');
+        renderGuestFloorPlan();
       }
     });
 
-    floorCanvas.appendChild(pod);
+    guestFloorCanvas.appendChild(pod);
   });
 }
 
-// 4. Render Table Dropdown in Wizard
-function renderTableDropdown() {
-  const currentVal = selectAssignedTable.value;
-  selectAssignedTable.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
+// 4. Dropdown Table Options
+function renderTableDropdownOptions() {
+  const current = guestTableSelect.value;
+  guestTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
 
-  state.tables.forEach(t => {
+  appState.tables.forEach(t => {
     if (t.status === 'Available') {
       const opt = document.createElement('option');
       opt.value = t.id;
-      const isOcc = state.occupiedTableIds.includes(t.id);
-      opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Occupied in slot' : '✅ Free'}`;
-      selectAssignedTable.appendChild(opt);
+      const isOcc = appState.occupiedTableIds.includes(t.id);
+      opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked in slot' : '✅ Free'}`;
+      guestTableSelect.appendChild(opt);
     }
   });
 
-  selectAssignedTable.value = currentVal || '0';
+  guestTableSelect.value = current || '0';
 }
 
-// 5. Render Reservations Table
-function renderBookingsGrid() {
-  const query = searchBookingsQuery.value.trim().toLowerCase();
-  bookingsTbody.innerHTML = '';
+// 5. Staff Reservations Ledger
+function renderStaffReservations() {
+  const query = staffSearchInput.value.trim().toLowerCase();
+  staffReservationsTbody.innerHTML = '';
 
-  const list = state.bookings.filter(b => {
+  const list = appState.bookings.filter(b => {
     if (!query) return true;
     return b.guestName.toLowerCase().includes(query) ||
            String(b.bookingId).includes(query) ||
@@ -299,10 +314,10 @@ function renderBookingsGrid() {
   });
 
   if (list.length === 0) {
-    bookingsTbody.innerHTML = `
+    staffReservationsTbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align:center; color:var(--text-muted); padding:36px;">
-          No reservations found.
+        <td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">
+          No reservations found matching criteria.
         </td>
       </tr>
     `;
@@ -313,124 +328,154 @@ function renderBookingsGrid() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>#${b.bookingId}</strong></td>
-      <td><span class="badge-tag badge-gold">Table #${b.tableId}</span></td>
+      <td><span class="pill-tag gold">Table #${b.tableId}</span></td>
       <td><strong>${b.guestName}</strong></td>
       <td>${b.guests} Guests</td>
       <td><code>${b.date}</code></td>
       <td><code>${b.time}</code></td>
-      <td><span class="badge-tag badge-emerald">CONFIRMED</span></td>
+      <td><span class="pill-tag green">CONFIRMED</span></td>
       <td>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-secondary btn-sm btn-view-ticket" data-id="${b.bookingId}">View Pass</button>
-          <button class="btn-danger-sm btn-cancel-booking" data-id="${b.bookingId}">Cancel</button>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-glass btn-xs btn-view-pass" data-id="${b.bookingId}">View Pass</button>
+          <button class="btn-danger-xs btn-cancel-b" data-id="${b.bookingId}">Cancel</button>
         </div>
       </td>
     `;
-    bookingsTbody.appendChild(tr);
+    staffReservationsTbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-view-ticket').forEach(btn => {
+  document.querySelectorAll('.btn-view-pass').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
-      const b = state.bookings.find(x => x.bookingId === id);
-      if (b) showTicketPass(b);
+      const b = appState.bookings.find(x => x.bookingId === id);
+      if (b) showVipPassModal(b);
     });
   });
 
-  document.querySelectorAll('.btn-cancel-booking').forEach(btn => {
+  document.querySelectorAll('.btn-cancel-b').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
-      cancelReservation(id);
+      handleCancelReservation(id);
     });
   });
 }
 
-// 6. Render Fleet Table in Analytics View
-function renderFleetGrid() {
-  fleetTbody.innerHTML = '';
-  state.tables.forEach(t => {
+// 6. Staff Physical Table Fleet Controls
+function renderStaffFleet() {
+  staffFleetTbody.innerHTML = '';
+  appState.tables.forEach(t => {
+    const isAvail = t.status === 'Available';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>#T-${t.id}</strong></td>
       <td>${t.capacity} Guests</td>
       <td>${t.type}</td>
-      <td><span class="badge-tag ${t.status === 'Available' ? 'badge-emerald' : 'badge-ruby'}">${t.status}</span></td>
+      <td><span class="pill-tag ${isAvail ? 'green' : 'red'}">${t.status}</span></td>
       <td>
-        <button class="btn btn-secondary btn-sm btn-book-table" data-id="${t.id}">Select</button>
+        <button class="btn-status-toggle btn-toggle-status" data-id="${t.id}" data-current="${t.status}">
+          ${isAvail ? 'Set Maintenance' : 'Set Available'}
+        </button>
+      </td>
+      <td>
+        <button class="btn-danger-xs btn-delete-table" data-id="${t.id}">Delete</button>
       </td>
     `;
-    fleetTbody.appendChild(tr);
+    staffFleetTbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-book-table').forEach(btn => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll('.btn-toggle-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id);
-      state.selectedTableId = id;
-      selectAssignedTable.value = String(id);
-      switchNavigationTab('floor-view');
-      notify(`Table #${id} selected in booking wizard.`, 'info');
+      const current = btn.dataset.current;
+      const target = (current === 'Available') ? 'Maintenance' : 'Available';
+      await handleToggleTableStatus(id, target);
+    });
+  });
+
+  document.querySelectorAll('.btn-delete-table').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = parseInt(btn.dataset.id);
+      await handleDeleteTable(id);
     });
   });
 }
 
-// 7. Render Zone Breakdown
-function renderZoneBreakdown() {
-  zoneBreakdownList.innerHTML = '';
+// 7. Staff Analytics & Zone Breakdown
+function renderStaffAnalytics() {
+  staffZoneBreakdown.innerHTML = '';
   const counts = {};
-  state.tables.forEach(t => {
+  appState.tables.forEach(t => {
     counts[t.type] = (counts[t.type] || 0) + 1;
   });
 
   for (const [type, count] of Object.entries(counts)) {
     const div = document.createElement('div');
-    div.className = 'zone-stat-card';
+    div.className = 'breakdown-row';
     div.innerHTML = `
       <span><strong>${type}</strong></span>
-      <span class="badge-tag badge-gold">${count} Tables</span>
+      <span class="pill-tag gold">${count} Tables (${count * 1} unit)</span>
     `;
-    zoneBreakdownList.appendChild(div);
+    staffZoneBreakdown.appendChild(div);
   }
+
+  // Slot demand
+  staffSlotDemand.innerHTML = '';
+  const slotCounts = {};
+  appState.bookings.forEach(b => {
+    slotCounts[b.time] = (slotCounts[b.time] || 0) + 1;
+  });
+
+  ['12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM', '8:00 PM', '10:00 PM'].forEach(slot => {
+    const count = slotCounts[slot] || 0;
+    const div = document.createElement('div');
+    div.className = 'breakdown-row';
+    div.innerHTML = `
+      <span><strong>${slot}</strong></span>
+      <span class="pill-tag ${count > 0 ? 'green' : 'gold'}">${count} Bookings</span>
+    `;
+    staffSlotDemand.appendChild(div);
+  });
 }
 
-// 8. Render Activity Timeline
-function renderActivityTrail() {
-  activityTimeline.innerHTML = '';
-  if (state.activity.length === 0) {
-    activityTimeline.innerHTML = '<div style="color:var(--text-muted); padding:20px;">No audit events recorded yet.</div>';
+// 8. Staff Activity Audit Trail
+function renderStaffActivityTrail() {
+  staffActivityTimeline.innerHTML = '';
+  if (appState.activity.length === 0) {
+    staffActivityTimeline.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No audit events recorded.</div>';
     return;
   }
 
-  const reversed = [...state.activity].reverse();
+  const reversed = [...appState.activity].reverse();
   reversed.forEach(item => {
     const card = document.createElement('div');
-    card.className = 'activity-event-card';
+    card.className = 'timeline-card';
     card.innerHTML = `
-      <div class="event-clock">${item.timestamp}</div>
+      <div class="time-stamp">${item.timestamp}</div>
       <div>
-        <div class="event-label">${item.type}</div>
-        <div class="event-text">${item.message}</div>
+        <div class="event-type-badge">${item.type}</div>
+        <div class="event-desc">${item.message}</div>
       </div>
     `;
-    activityTimeline.appendChild(card);
+    staffActivityTimeline.appendChild(card);
   });
 }
 
 // ================= 6-STAGE ALGORITHM VISUALIZER ANIMATION =================
 function resetPipelineAnimation() {
   for (let i = 1; i <= 5; ++i) {
-    const node = document.getElementById(`step-${i}`);
-    node.className = 'flow-step';
+    const node = document.getElementById(`pipe-node-${i}`);
+    node.className = 'pipeline-node';
   }
-  document.getElementById('pipeline-status-badge').textContent = 'Allocating...';
-  document.getElementById('pipeline-status-badge').style.color = '#fbbf24';
+  document.getElementById('pipeline-status').textContent = 'Allocating...';
+  document.getElementById('pipeline-status').style.color = '#fbbf24';
 }
 
-function setPipelineStepState(step, status, text = null) {
-  const node = document.getElementById(`step-${step}`);
+function setPipelineStep(step, status, text = null) {
+  const node = document.getElementById(`pipe-node-${step}`);
   if (!node) return;
-  node.className = `flow-step step-${status}`;
+  node.className = `pipeline-node node-${status}`;
   if (text) {
-    document.getElementById(`step-${step}-sub`).textContent = text;
+    document.getElementById(`pipe-sub-${step}`).textContent = text;
   }
 }
 
@@ -438,112 +483,146 @@ async function runAllocationSequence(trace, success, createdBooking, errorMsg) {
   resetPipelineAnimation();
 
   // Step 1: Sanitization
-  setPipelineStepState(1, 'active', 'Validating guest parameters');
+  setPipelineStep(1, 'running', 'Validating guest parameters');
   await new Promise(r => setTimeout(r, 200));
-  setPipelineStepState(1, 'complete', 'Input verified');
+  setPipelineStep(1, 'success', 'Input verified');
 
   // Step 2: Slot Window
-  setPipelineStepState(2, 'active', 'Checking date & time boundaries');
+  setPipelineStep(2, 'running', 'Checking date & time boundaries');
   await new Promise(r => setTimeout(r, 200));
-  setPipelineStepState(2, 'complete', `${createdBooking?.date || state.selectedDate} @ ${createdBooking?.time || state.selectedTime}`);
+  setPipelineStep(2, 'success', `${createdBooking?.date || appState.selectedDate} @ ${createdBooking?.time || appState.selectedTime}`);
 
   // Step 3: Conflict Scan
-  setPipelineStepState(3, 'active', 'Scanning slot collisions in active records');
+  setPipelineStep(3, 'running', 'Scanning slot collisions in active records');
   await new Promise(r => setTimeout(r, 240));
-  setPipelineStepState(3, 'complete', 'Slot conflict scan complete');
+  setPipelineStep(3, 'success', 'Slot conflict scan complete');
 
   // Step 4: Best-Fit Match
-  setPipelineStepState(4, 'active', 'Matching optimal seating capacity');
+  setPipelineStep(4, 'running', 'Matching optimal seating capacity');
   await new Promise(r => setTimeout(r, 280));
 
   if (!success) {
-    setPipelineStepState(4, 'active', errorMsg || 'No table match');
-    document.getElementById('pipeline-status-badge').textContent = 'Allocation Failed';
-    document.getElementById('pipeline-status-badge').style.color = '#f43f5e';
-    notify(errorMsg || 'Reservation failed: No table available.', 'error');
+    setPipelineStep(4, 'running', errorMsg || 'No table match');
+    document.getElementById('pipeline-status').textContent = 'Allocation Failed';
+    document.getElementById('pipeline-status').style.color = '#f43f5e';
+    showToastAlert(errorMsg || 'Reservation failed: No table available.', 'error');
     return;
   }
 
-  setPipelineStepState(4, 'complete', `Matched Table #${createdBooking.tableId}`);
+  setPipelineStep(4, 'success', `Matched Table #${createdBooking.tableId}`);
 
   // Step 5: Disk Persist
-  setPipelineStepState(5, 'active', 'Writing to tables.txt & bookings.txt');
+  setPipelineStep(5, 'running', 'Writing to tables.txt & bookings.txt');
   await new Promise(r => setTimeout(r, 200));
-  setPipelineStepState(5, 'complete', 'Disk persistence confirmed');
+  setPipelineStep(5, 'success', 'Disk persistence confirmed');
 
-  document.getElementById('pipeline-status-badge').textContent = 'Confirmed';
-  document.getElementById('pipeline-status-badge').style.color = '#10b981';
+  document.getElementById('pipeline-status').textContent = 'Confirmed';
+  document.getElementById('pipeline-status').style.color = '#10b981';
 
-  playChime('success');
-  showTicketPass(createdBooking);
+  playSound('success');
+  showVipPassModal(createdBooking);
 }
 
-// ================= LUXURY RESERVATION PASS MODAL =================
-function showTicketPass(b) {
-  ticketInfoGrid.innerHTML = `
-    <div class="ticket-field">
+// ================= VIP DINING PASS MODAL =================
+function showVipPassModal(b) {
+  passDataGrid.innerHTML = `
+    <div class="pass-field-cell">
       <label>Booking Reference</label>
       <strong>#${b.bookingId}</strong>
     </div>
-    <div class="ticket-field">
+    <div class="pass-field-cell">
       <label>Assigned Dining Table</label>
       <strong style="color:var(--gold-400);">Table #${b.tableId}</strong>
     </div>
-    <div class="ticket-field">
+    <div class="pass-field-cell">
       <label>Guest Full Name</label>
       <strong>${b.guestName}</strong>
     </div>
-    <div class="ticket-field">
+    <div class="pass-field-cell">
       <label>Party Size</label>
       <strong>${b.guests} Guest(s)</strong>
     </div>
-    <div class="ticket-field">
+    <div class="pass-field-cell">
       <label>Reservation Date</label>
       <strong>${b.date}</strong>
     </div>
-    <div class="ticket-field">
+    <div class="pass-field-cell">
       <label>Dining Time Slot</label>
       <strong>${b.time}</strong>
     </div>
   `;
-  modalPass.classList.add('is-visible');
+  modalVipPass.classList.add('open');
 }
 
-// ================= USER INTERACTIONS & EVENTS =================
+// ================= ACTIONS & EVENT HANDLERS =================
 
-// 1. Segmented Tab Navigation
-function switchNavigationTab(viewId) {
-  document.querySelectorAll('.nav-segment').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.view === viewId);
-  });
+// 1. Dual Mode Switching (Guest Portal vs Staff Host Stand)
+document.getElementById('btn-mode-guest').addEventListener('click', () => {
+  playSound('click');
+  document.getElementById('btn-mode-guest').classList.add('active');
+  document.getElementById('btn-mode-staff').classList.remove('active');
+  document.getElementById('view-mode-guest').classList.add('active');
+  document.getElementById('view-mode-staff').classList.remove('active');
+});
 
-  document.querySelectorAll('.view-stage').forEach(panel => {
-    panel.classList.toggle('active', panel.id === `view-${viewId.replace('-view', '')}`);
-  });
-}
+document.getElementById('btn-mode-staff').addEventListener('click', () => {
+  playSound('click');
+  document.getElementById('btn-mode-staff').classList.add('active');
+  document.getElementById('btn-mode-guest').classList.remove('active');
+  document.getElementById('view-mode-staff').classList.add('active');
+  document.getElementById('view-mode-guest').classList.remove('active');
+});
 
-document.querySelectorAll('.nav-segment').forEach(tab => {
+// Staff Subview Switching
+document.querySelectorAll('.staff-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    playChime('click');
-    switchNavigationTab(tab.dataset.view);
+    playSound('click');
+    document.querySelectorAll('.staff-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const view = tab.dataset.staffView;
+    document.querySelectorAll('.staff-subview').forEach(sv => {
+      sv.classList.toggle('active', sv.id === `subview-${view}`);
+    });
   });
 });
 
-// 2. Booking Submission
-bookingWizardForm.addEventListener('submit', async (e) => {
+// 2. Quick Experience Booking Buttons
+document.querySelectorAll('.btn-quick-experience').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playSound('pop');
+    const guests = parseInt(btn.dataset.guests);
+    const type = btn.dataset.type;
+    document.getElementById('party-size-input').value = guests;
+    
+    // Find free table matching type
+    const candidate = appState.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && appState.availableTableIds.includes(t.id));
+    if (candidate) {
+      appState.selectedTableId = candidate.id;
+      guestTableSelect.value = String(candidate.id);
+      showToastAlert(`Selected Table #${candidate.id} (${candidate.type}).`, 'success');
+      renderGuestFloorPlan();
+    } else {
+      guestTableSelect.value = '0';
+      showToastAlert(`Auto-assigning optimal ${type} table.`, 'info');
+    }
+  });
+});
+
+// 3. Guest Booking Submission
+guestReservationForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const guestName = document.getElementById('input-guest-name').value.trim();
-  const guests = parseInt(document.getElementById('input-party-size').value);
-  const date = document.getElementById('input-booking-date').value.trim();
-  const time = document.getElementById('select-booking-time').value;
-  const tableId = parseInt(selectAssignedTable.value);
+  const guestName = document.getElementById('guest-name-input').value.trim();
+  const guests = parseInt(document.getElementById('party-size-input').value);
+  const date = document.getElementById('guest-date-input').value.trim();
+  const time = document.getElementById('guest-time-select').value;
+  const tableId = parseInt(guestTableSelect.value);
 
-  const btn = document.getElementById('btn-submit-booking');
+  const btn = document.getElementById('btn-book-submit');
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API_ROOT}/bookings`, {
+    const res = await fetch(`${API_ENDPOINT}/bookings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guestName, guests, date, time, tableId })
@@ -553,26 +632,26 @@ bookingWizardForm.addEventListener('submit', async (e) => {
     await runAllocationSequence(data.trace || [], data.success, data.booking, data.error);
 
     if (data.success) {
-      bookingWizardForm.reset();
-      document.getElementById('input-party-size').value = '4';
-      document.getElementById('input-booking-date').value = state.selectedDate;
-      document.getElementById('select-booking-time').value = state.selectedTime;
-      state.selectedTableId = 0;
-      await syncBackendState();
+      guestReservationForm.reset();
+      document.getElementById('party-size-input').value = '4';
+      document.getElementById('guest-date-input').value = appState.selectedDate;
+      document.getElementById('guest-time-select').value = appState.selectedTime;
+      appState.selectedTableId = 0;
+      await syncCoreEngine();
     }
   } catch (err) {
-    notify('Failed to reach C++ backend server.', 'error');
+    showToastAlert('Failed to communicate with C++ backend.', 'error');
   } finally {
     btn.disabled = false;
   }
 });
 
-// 3. Cancel Reservation
-async function cancelReservation(id) {
-  if (!confirm(`Cancel Reservation #${id}?`)) return;
+// 4. Cancel Reservation Action
+async function handleCancelReservation(id) {
+  if (!confirm(`Are you sure you want to cancel Reservation #${id}?`)) return;
 
   try {
-    const res = await fetch(`${API_ROOT}/cancel`, {
+    const res = await fetch(`${API_ENDPOINT}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bookingId: id })
@@ -580,25 +659,69 @@ async function cancelReservation(id) {
 
     const data = await res.json();
     if (data.success) {
-      notify(`Reservation #${id} has been cancelled.`, 'success');
-      await syncBackendState();
+      showToastAlert(`Reservation #${id} cancelled.`, 'success');
+      await syncCoreEngine();
     } else {
-      notify(data.error || 'Could not cancel reservation.', 'error');
+      showToastAlert(data.error || 'Could not cancel reservation.', 'error');
     }
   } catch (err) {
-    notify('Backend communication error.', 'error');
+    showToastAlert('Backend communication error.', 'error');
   }
 }
 
-// 4. Create New Table
-formCreateTable.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = parseInt(document.getElementById('new-table-id').value);
-  const capacity = parseInt(document.getElementById('new-table-cap').value);
-  const type = document.getElementById('new-table-type').value.trim();
+// 5. Staff Table Operational Status Toggle
+async function handleToggleTableStatus(id, status) {
+  try {
+    const res = await fetch(`${API_ENDPOINT}/tables/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToastAlert(`Table #${id} status updated to ${status}.`, 'success');
+      await syncCoreEngine();
+    } else {
+      showToastAlert(data.error || 'Failed to update table status.', 'error');
+    }
+  } catch (err) {
+    showToastAlert('Server communication error.', 'error');
+  }
+}
+
+// 6. Staff Delete Table Action
+async function handleDeleteTable(id) {
+  if (!confirm(`Are you sure you want to delete Table #${id}?`)) return;
 
   try {
-    const res = await fetch(`${API_ROOT}/tables`, {
+    const res = await fetch(`${API_ENDPOINT}/tables/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showToastAlert(`Table #${id} deleted from restaurant.`, 'success');
+      await syncCoreEngine();
+    } else {
+      showToastAlert(data.error || 'Cannot delete table.', 'error');
+    }
+  } catch (err) {
+    showToastAlert('Server communication error.', 'error');
+  }
+}
+
+// 7. Add Table Form
+document.getElementById('form-add-new-table').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = parseInt(document.getElementById('new-tbl-id').value);
+  const capacity = parseInt(document.getElementById('new-tbl-capacity').value);
+  const type = document.getElementById('new-tbl-type').value.trim();
+
+  try {
+    const res = await fetch(`${API_ENDPOINT}/tables`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, capacity, type })
@@ -606,89 +729,98 @@ formCreateTable.addEventListener('submit', async (e) => {
 
     const data = await res.json();
     if (data.success) {
-      notify(`Table #${id} added to the restaurant!`, 'success');
-      modalAddTable.classList.remove('is-visible');
-      formCreateTable.reset();
-      await syncBackendState();
+      showToastAlert(`Table #${id} successfully added!`, 'success');
+      modalTableCreate.classList.remove('open');
+      document.getElementById('form-add-new-table').reset();
+      await syncCoreEngine();
     } else {
-      notify(data.error || 'Could not add table.', 'error');
+      showToastAlert(data.error || 'Could not add table.', 'error');
     }
   } catch (err) {
-    notify('Error adding table.', 'error');
+    showToastAlert('Backend error adding table.', 'error');
   }
 });
 
-// 5. Stepper & Controls
-document.getElementById('btn-party-plus').addEventListener('click', () => {
-  const inp = document.getElementById('input-party-size');
+// 8. Party Size Steppers & Filters
+document.getElementById('btn-stepper-plus').addEventListener('click', () => {
+  playSound('pop');
+  const inp = document.getElementById('party-size-input');
   inp.value = Math.min(50, parseInt(inp.value || 1) + 1);
 });
 
-document.getElementById('btn-party-minus').addEventListener('click', () => {
-  const inp = document.getElementById('input-party-size');
+document.getElementById('btn-stepper-minus').addEventListener('click', () => {
+  playSound('pop');
+  const inp = document.getElementById('party-size-input');
   inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
 });
 
-timeCarousel.addEventListener('click', (e) => {
-  const chip = e.target.closest('.time-slot-chip');
+slotCarousel.addEventListener('click', (e) => {
+  const chip = e.target.closest('.slot-chip');
   if (chip) {
-    playChime('click');
-    document.querySelectorAll('.time-slot-chip').forEach(c => c.classList.remove('active'));
+    playSound('click');
+    document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    state.selectedTime = chip.dataset.time;
-    document.getElementById('select-booking-time').value = state.selectedTime;
-    refreshSlotAvailability();
+    appState.selectedTime = chip.dataset.time;
+    document.getElementById('guest-time-select').value = appState.selectedTime;
+    updateSlotMatrix();
   }
 });
 
-inputDate.addEventListener('change', () => {
-  state.selectedDate = inputDate.value.trim() || '24/05/2026';
-  document.getElementById('input-booking-date').value = state.selectedDate;
-  refreshSlotAvailability();
+slotDateInput.addEventListener('change', () => {
+  appState.selectedDate = slotDateInput.value.trim() || '24/05/2026';
+  document.getElementById('guest-date-input').value = appState.selectedDate;
+  updateSlotMatrix();
 });
 
-document.querySelectorAll('.date-pill').forEach(btn => {
+document.querySelectorAll('.pill').forEach(btn => {
   btn.addEventListener('click', () => {
-    playChime('click');
-    document.querySelectorAll('.date-pill').forEach(b => b.classList.remove('active'));
+    playSound('click');
+    document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const preset = btn.dataset.preset;
+    const preset = btn.dataset.date;
     if (preset === 'TODAY') {
       const now = new Date();
-      state.selectedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+      appState.selectedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
     } else if (preset === 'TOMORROW') {
       const tm = new Date();
       tm.setDate(tm.getDate() + 1);
-      state.selectedDate = `${String(tm.getDate()).padStart(2,'0')}/${String(tm.getMonth()+1).padStart(2,'0')}/${tm.getFullYear()}`;
+      appState.selectedDate = `${String(tm.getDate()).padStart(2,'0')}/${String(tm.getMonth()+1).padStart(2,'0')}/${tm.getFullYear()}`;
     } else {
-      state.selectedDate = preset;
+      appState.selectedDate = preset;
     }
-    inputDate.value = state.selectedDate;
-    document.getElementById('input-booking-date').value = state.selectedDate;
-    refreshSlotAvailability();
+    slotDateInput.value = appState.selectedDate;
+    document.getElementById('guest-date-input').value = appState.selectedDate;
+    updateSlotMatrix();
   });
 });
 
-filterZoneSelect.addEventListener('change', () => {
-  state.selectedZone = filterZoneSelect.value;
-  renderFloorPlan();
+zoneFilterSelect.addEventListener('change', () => {
+  appState.selectedZone = zoneFilterSelect.value;
+  renderGuestFloorPlan();
 });
 
-searchBookingsQuery.addEventListener('input', renderBookingsGrid);
+staffSearchInput.addEventListener('input', renderStaffReservations);
 
-document.getElementById('btn-sync-core').addEventListener('click', () => {
-  syncBackendState();
-  notify('State synced with C++ Core Engine.', 'info');
+document.getElementById('btn-refresh-state').addEventListener('click', () => {
+  syncCoreEngine();
+  showToastAlert('Synchronized with C++ Core Engine.', 'info');
 });
 
-// Modals
-document.getElementById('btn-show-add-table').addEventListener('click', () => modalAddTable.classList.add('is-visible'));
-document.getElementById('btn-close-table-modal').addEventListener('click', () => modalAddTable.classList.remove('is-visible'));
-document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalAddTable.classList.remove('is-visible'));
-document.getElementById('btn-close-ticket').addEventListener('click', () => modalPass.classList.remove('is-visible'));
+document.getElementById('btn-toggle-sound').addEventListener('click', () => {
+  appState.soundEnabled = !appState.soundEnabled;
+  soundIcon.textContent = appState.soundEnabled ? '🔊' : '🔇';
+  showToastAlert(appState.soundEnabled ? 'Audio feedback enabled.' : 'Audio feedback muted.', 'info');
+});
 
-// Auto-sync polling every 3.5s
-setInterval(syncBackendState, 3500);
+// Modal Toggles
+document.getElementById('btn-open-table-modal').addEventListener('click', () => modalTableCreate.classList.add('open'));
+document.getElementById('btn-staff-add-table').addEventListener('click', () => modalTableCreate.classList.add('open'));
+document.getElementById('btn-close-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
+document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
+document.getElementById('btn-dismiss-pass').addEventListener('click', () => modalVipPass.classList.remove('open'));
 
-// Initialize on Load
-syncBackendState();
+// Background auto-sync every 3.5s
+setInterval(syncCoreEngine, 3500);
+
+// Initialize on page load
+syncCoreEngine();
