@@ -1,17 +1,17 @@
 // ==========================================================================
-// THE ROYAL SPICE — RESTAURANT MANAGEMENT SYSTEM (MASTER CONTROLLER)
-// Production-Grade Dual-Architecture: Local Standalone + Live C++17 Core Engine
+// THE ROYAL SPICE 3.0+ — MASTER RESTAURANT MANAGEMENT CONTROLLER
+// Features: 3D Spatial Canvas, AI Sommelier Concierge, 5 Themes, Visual Menu & CRM
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
 
-// --- LOCAL STORAGE KEYS ---
 const STORAGE_KEYS = {
   TABLES: 'royal_spice_tables',
   BOOKINGS: 'royal_spice_bookings',
   ACTIVITY: 'royal_spice_activity',
   THEME: 'royal_spice_theme',
-  SOUND: 'royal_spice_sound'
+  SOUND: 'royal_spice_sound',
+  AI_CHAT: 'royal_spice_ai_chat'
 };
 
 // Initial Seed Tables
@@ -24,10 +24,27 @@ const DEFAULT_TABLES = [
   { id: 6, capacity: 4, type: 'Family Booth', status: 'Available' }
 ];
 
+// Seed Visual Photo Menu
+const DEFAULT_MENU_ITEMS = [
+  { id: 1, title: 'Truffle Infused Wagyu Ribeye', category: 'Steaks', price: '$115', desc: 'A5 Miyazaki Wagyu, black winter truffle jus, bone marrow purée.', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80', tags: ['GF', 'Signature', 'Pairing: Bordeaux 2018'] },
+  { id: 2, title: 'Imperial Beluga Caviar Tartlet', category: 'Starters', price: '$85', desc: 'Crème fraîche, crispy shallot croustade, 24k gold leaf.', img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500&auto=format&fit=crop&q=80', tags: ['Raw', 'Luxury', 'Pairing: Dom Pérignon'] },
+  { id: 3, title: 'Wild Pan-Seared Chilean Sea Bass', category: 'Mains', price: '$78', desc: 'Saffron beurre blanc, compressed baby leeks, finger lime pearls.', img: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=500&auto=format&fit=crop&q=80', tags: ['GF', 'Seafood', 'Pairing: Chablis Premier Cru'] },
+  { id: 4, title: 'Smoked Valrhona Dark Chocolate Sphere', category: 'Desserts', price: '$34', desc: 'Salted caramel core, warm bourbon espresso ganache poured tableside.', img: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&auto=format&fit=crop&q=80', tags: ['Vegetarian', 'Pairing: Tawny Port 20yr'] },
+  { id: 5, title: 'Château Margaux Grand Cru 2015', category: 'Cellar', price: '$650', desc: 'Velvety tannins, notes of cassis, violets, and cedarwood.', img: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&auto=format&fit=crop&q=80', tags: ['Vintage', 'Sommelier Reserve'] },
+  { id: 6, title: 'Hokkaido Scallop Carpaccio', category: 'Starters', price: '$42', desc: 'Yuzu vinaigrette, shaved white truffle, micro shiso.', img: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=500&auto=format&fit=crop&q=80', tags: ['GF', 'Pairing: Sancerre Blanc'] }
+];
+
+// Seed VIP Guests
+const DEFAULT_VIP_GUESTS = [
+  { name: 'Lord Sterling & Lady Evelyn', tier: 'Royal Imperial Tier', visits: 18, spend: '$14,200', pref: 'Table #3 (VIP Suite)', notes: 'Nut allergy; prefers Château Margaux uncorked 30 mins early.' },
+  { name: 'Dr. Sarah Jenkins', tier: 'Gold Connoisseur', visits: 9, spend: '$5,840', pref: 'Table #1 (Couples Alcove)', notes: 'Anniversary celebration on 24 May; window view.' },
+  { name: 'Marcus Vance (Vance Capital)', tier: 'Executive Black Card', visits: 24, spend: '$28,900', pref: 'Table #4 (Grand Banquet)', notes: 'Private business dinners; discrete host billing.' }
+];
+
 // Master Application State
 const appState = {
   currentView: 'dashboard',
-  currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'light',
+  currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'obsidian',
   soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
   isEditLayoutMode: false,
   selectedOccasion: 'Romantic Dinner',
@@ -44,6 +61,7 @@ const appState = {
     { timestamp: '17:30', type: 'SYSTEM_INIT', message: 'Shift started. All table fixtures calibrated.' },
     { timestamp: '17:35', type: 'TABLE_STATUS', message: 'VIP Suite prepared for dinner service.' }
   ],
+  camera3D: { tilt: 40, orbit: -20, zoom: 0.95, isIsometric: true },
   availableTableIds: [],
   occupiedTableIds: []
 };
@@ -55,10 +73,12 @@ const headerDateBadge = document.getElementById('header-date-badge');
 const globalDateInput = document.getElementById('global-date-input');
 const headerSlotChips = document.getElementById('header-slot-chips');
 const coreSyncIndicator = document.getElementById('core-sync-indicator');
-const themeModeToggle = document.getElementById('theme-mode-toggle');
+const themeSelector = document.getElementById('theme-selector');
 const soundFeedbackToggle = document.getElementById('sound-feedback-toggle');
+const soundIconWrap = document.getElementById('sound-icon-wrap');
+const soundStatusDot = document.getElementById('sound-status-dot');
 
-// Metric Tiles
+// Metrics
 const metricAvailableTables = document.getElementById('metric-available-tables');
 const metricTotalTablesDenom = document.getElementById('metric-total-tables-denom');
 const metricSeatedCovers = document.getElementById('metric-seated-covers');
@@ -71,7 +91,7 @@ const navBookingsPill = document.getElementById('nav-bookings-pill');
 const miniSeatedCount = document.getElementById('mini-seated-count');
 const miniUpcomingCount = document.getElementById('mini-upcoming-count');
 
-// Canvases & Lists
+// Canvases
 const dashboardFloorPreview = document.getElementById('dashboard-floor-preview');
 const dashboardUpcomingList = document.getElementById('dashboard-upcoming-list');
 const dashboardMiniActivity = document.getElementById('dashboard-mini-activity');
@@ -87,7 +107,7 @@ const formTableSelect = document.getElementById('form-table-select');
 const reservationsSearchInput = document.getElementById('reservations-search-input');
 const reservationsStatusFilter = document.getElementById('reservations-status-filter');
 
-// Context Drawer
+// Drawers & Modals
 const tableContextDrawer = document.getElementById('table-context-drawer');
 const drawerBackdrop = document.getElementById('drawer-backdrop');
 const drawerTableHeading = document.getElementById('drawer-table-heading');
@@ -106,1023 +126,385 @@ const drawerBtnToggleStatus = document.getElementById('drawer-btn-toggle-status'
 const drawerToggleStatusText = document.getElementById('drawer-toggle-status-text');
 const drawerBtnReleaseTable = document.getElementById('drawer-btn-release-table');
 
-// Modals & Run-Sheet
+const aiConciergeDrawer = document.getElementById('ai-concierge-drawer');
+const aiDrawerBackdrop = document.getElementById('ai-drawer-backdrop');
 const modalWalkinDialog = document.getElementById('modal-walkin-dialog');
 const modalTableDialog = document.getElementById('modal-table-dialog');
 const modalReceiptPass = document.getElementById('modal-receipt-pass');
 const modalHostManifest = document.getElementById('modal-host-manifest');
-const manifestTbody = document.getElementById('manifest-tbody');
-const manifestDateSlot = document.getElementById('manifest-date-slot');
-const passGridData = document.getElementById('pass-grid-data');
 const toastStream = document.getElementById('toast-stream');
 
-// ================= SYNTHESIZED SOUND ENGINE =================
-function playAudioChime(type = 'click') {
+// ================= WEB AUDIO SYNTHESIZER =================
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) audioCtx = new AudioContext();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playAudioChime(type) {
   if (!appState.soundEnabled) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    if (type === 'clink') {
+    if (type === 'click') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1046.50, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1567.98, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.28);
+      osc.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
     } else if (type === 'success') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
-      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
-    } else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      osc.frequency.setValueAtTime(783.99, now + 0.16);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
     }
-  } catch (e) {
-    // blocked prior to interaction
+  } catch {
+    // Graceful fallback
   }
 }
 
 // ================= TOAST NOTIFICATIONS =================
 function showToastNotification(message, type = 'info') {
+  if (!toastStream) return;
   const alert = document.createElement('div');
   alert.className = `toast-alert ${type}`;
   alert.textContent = message;
   toastStream.appendChild(alert);
   setTimeout(() => {
     alert.style.opacity = '0';
-    alert.style.transform = 'translateY(6px)';
     setTimeout(() => alert.remove(), 250);
-  }, 3500);
+  }, 3200);
 }
 
-// ================= LOCAL PERSISTENCE LAYER =================
-function saveLocalState() {
-  localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(appState.tables));
-  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
-  localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(appState.activity));
+// ================= 5 LUXURY THEMES =================
+function applyLuxuryTheme(themeName) {
+  appState.currentTheme = themeName;
+  document.documentElement.setAttribute('data-theme', themeName);
+  localStorage.setItem(STORAGE_KEYS.THEME, themeName);
+  if (themeSelector) themeSelector.value = themeName;
+  showToastNotification(`Theme: ${themeName.toUpperCase()}`, 'info');
 }
 
-function logEvent(type, message) {
-  const now = new Date();
-  const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  appState.activity.unshift({ timestamp, type, message });
-  if (appState.activity.length > 50) appState.activity.pop();
-  saveLocalState();
-}
-
-// ================= REST API / C++ BACKEND SYNC =================
-async function syncWithCoreEngine() {
-  try {
-    const res = await fetch(`${API_BASE}/state`);
-    if (!res.ok) throw new Error('C++ Server Unreachable');
-    const data = await res.json();
-
-    appState.isBackendConnected = true;
-    appState.metrics = data.metrics || appState.metrics;
-    if (data.tables && data.tables.length > 0) appState.tables = data.tables;
-    if (data.bookings) appState.bookings = data.bookings;
-    if (data.activity && data.activity.length > 0) appState.activity = data.activity;
-
-    coreSyncIndicator.style.borderColor = 'rgba(22, 163, 74, 0.3)';
-    coreSyncIndicator.querySelector('.sync-label').textContent = 'C++ Live';
-    coreSyncIndicator.querySelector('.sync-dot').style.background = 'var(--c-available)';
-
-    saveLocalState();
-  } catch (err) {
-    appState.isBackendConnected = false;
-    coreSyncIndicator.style.borderColor = 'rgba(100, 116, 139, 0.3)';
-    coreSyncIndicator.querySelector('.sync-label').textContent = 'Local Standalone';
-    coreSyncIndicator.querySelector('.sync-dot').style.background = 'var(--c-maintenance)';
-  }
-
-  evaluateSlotState();
-  renderMasterView();
-}
-
-function evaluateSlotState() {
-  const currentSlotBookings = appState.bookings.filter(
-    b => b.date === appState.selectedDate && b.time === appState.selectedTime
-  );
-
-  appState.occupiedTableIds = currentSlotBookings.map(b => b.tableId);
-  appState.availableTableIds = appState.tables
-    .filter(t => t.status === 'Available' && !appState.occupiedTableIds.includes(t.id))
-    .map(t => t.id);
-}
-
-// ================= MASTER RENDERER =================
-function renderMasterView() {
-  renderMetrics();
-  renderFloorPlan(dashboardFloorPreview, false);
-  renderFloorPlan(masterFloorCanvas, true);
-  renderUpcomingArrivals();
-  renderActivityTimeline();
-  renderTableSelectDropdowns();
-  renderFleetTable();
-  renderReservationsTable();
-
-  // Update headers & pills
-  headerDateBadge.textContent = `${appState.selectedDate} (${appState.selectedTime})`;
-  navOpenTablesPill.textContent = `${appState.availableTableIds.length} Open`;
-  navBookingsPill.textContent = appState.bookings.length;
-
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
-}
-
-// 1. Metrics Deck
-function renderMetrics() {
-  const total = appState.tables.length;
-  const available = appState.availableTableIds.length;
-  const totalCapacity = appState.tables.reduce((acc, t) => acc + (t.capacity || 0), 0);
-
-  const currentSlotBookings = appState.bookings.filter(
-    b => b.date === appState.selectedDate && b.time === appState.selectedTime
-  );
-  const seatedCovers = currentSlotBookings.reduce((acc, b) => acc + (b.guests || 0), 0);
-  const occupancyRate = totalCapacity > 0 ? Math.round((seatedCovers / totalCapacity) * 100) : 0;
-
-  const estYield = appState.bookings.reduce((acc, b) => acc + (b.guests * 65), 0);
-
-  metricAvailableTables.textContent = available;
-  metricTotalTablesDenom.textContent = `/${total}`;
-  metricSeatedCovers.textContent = seatedCovers;
-  metricCapacityTag.textContent = `${occupancyRate}% Capacity`;
-  metricTotalBookingsCount.textContent = appState.bookings.length;
-  metricSlotBookingsTag.textContent = `${currentSlotBookings.length} in Slot`;
-  metricEstRevenue.textContent = `$${estYield.toLocaleString()}`;
-
-  miniSeatedCount.textContent = seatedCovers;
-  miniUpcomingCount.textContent = appState.bookings.length - currentSlotBookings.length;
-
-  floorActiveSummaryPill.textContent = `${available} Tables Available • ${currentSlotBookings.length} Booked • ${total - available - currentSlotBookings.length} Blocked`;
-}
-
-// 2. Table Fixture Shape Resolver
-function resolveFixtureGeometry(type, capacity) {
-  const t = (type || '').toLowerCase();
-  if (t.includes('vip')) return { shape: 'shape-vip', icon: '👑' };
-  if (t.includes('couple') || capacity <= 2) return { shape: 'shape-round', icon: '🍷' };
-  if (t.includes('banquet') || capacity >= 8) return { shape: 'shape-banquet', icon: '🍾' };
-  return { shape: 'shape-booth', icon: '🍽️' };
-}
-
-// 3. Interactive Spatial Floor Plan
-function renderFloorPlan(canvasElement, enableZoneFilter = true) {
-  if (!canvasElement) return;
-  canvasElement.innerHTML = '';
-
-  let tablesToRender = appState.tables;
-  if (enableZoneFilter && appState.selectedZone !== 'ALL') {
-    tablesToRender = appState.tables.filter(t => t.type.toLowerCase().includes(appState.selectedZone.toLowerCase()));
-  }
-
-  if (tablesToRender.length === 0) {
-    canvasElement.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">
-        No tables found in section "${appState.selectedZone}".
-      </div>
-    `;
-    return;
-  }
-
-  tablesToRender.forEach(table => {
-    const isMaintenance = table.status === 'Maintenance';
-    const isOccupied = appState.occupiedTableIds.includes(table.id);
-    const isSelected = appState.selectedTableId === table.id;
-
-    let stateClass = 'state-available';
-    let statusLabel = 'AVAILABLE';
-
-    if (isMaintenance) {
-      stateClass = 'state-maintenance';
-      statusLabel = 'BLOCKED';
-    } else if (isOccupied) {
-      stateClass = 'state-reserved';
-      statusLabel = 'RESERVED';
-    }
-
-    const { shape, icon } = resolveFixtureGeometry(table.type, table.capacity);
-
-    const activeBooking = isOccupied
-      ? appState.bookings.find(b => b.tableId === table.id && b.date === appState.selectedDate && b.time === appState.selectedTime)
-      : null;
-
-    const pod = document.createElement('div');
-    pod.className = `table-pod-node ${stateClass} ${isSelected ? 'state-selected' : ''}`;
-    pod.dataset.tableId = table.id;
-
-    pod.innerHTML = `
-      <span class="pod-number-label">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
-      <span class="pod-status-pill">${statusLabel}</span>
-
-      <div class="table-fixture-stage">
-        <div class="table-surface-shape ${shape}">
-          <span>${icon}</span>
-        </div>
-        <div class="chair-fixture chair-top"></div>
-        <div class="chair-fixture chair-bot"></div>
-        ${table.capacity >= 4 ? '<div class="chair-fixture chair-left"></div><div class="chair-fixture chair-right"></div>' : ''}
-      </div>
-
-      <div class="pod-name-text">${table.type}</div>
-      <div class="pod-cap-text">${table.capacity} Guests Max</div>
-      ${activeBooking ? `<div class="pod-guest-banner">Guest: ${activeBooking.guestName}</div>` : ''}
-    `;
-
-    pod.addEventListener('click', () => {
-      playAudioChime('clink');
-      appState.selectedTableId = table.id;
-      openTableContextDrawer(table, activeBooking);
-      renderMasterView();
-    });
-
-    canvasElement.appendChild(pod);
-  });
-}
-
-// 4. Contextual Table Drawer Controller
-function openTableContextDrawer(table, activeBooking) {
-  appState.activeDrawerTable = table;
-
-  drawerTableHeading.textContent = `Table #T-${table.id < 10 ? '0' + table.id : table.id}`;
-  drawerTableCapacity.textContent = `${table.capacity} Guests`;
-  drawerTableCategory.textContent = table.type;
-  drawerTableSlot.textContent = `${appState.selectedDate} @ ${appState.selectedTime}`;
-  drawerTableTurnover.textContent = table.capacity <= 2 ? '75 mins' : '90 mins';
-
-  const isMaintenance = table.status === 'Maintenance';
-  const isOccupied = !!activeBooking;
-
-  if (isMaintenance) {
-    drawerStatusBadge.textContent = 'Maintenance';
-    drawerStatusBadge.className = 'drawer-status-badge';
-    drawerToggleStatusText.textContent = 'Set Available';
-    drawerBtnSeatWalkin.disabled = true;
-    drawerBookingSection.style.display = 'none';
-    drawerBtnReleaseTable.style.display = 'none';
-  } else if (isOccupied) {
-    drawerStatusBadge.textContent = 'Reserved / Seated';
-    drawerStatusBadge.className = 'drawer-status-badge';
-    drawerStatusBadge.style.background = 'var(--c-reserved-bg)';
-    drawerStatusBadge.style.color = 'var(--c-reserved)';
-    drawerToggleStatusText.textContent = 'Set Maintenance';
-    drawerBtnSeatWalkin.disabled = true;
-
-    drawerBookingSection.style.display = 'block';
-    drawerGuestName.textContent = activeBooking.guestName;
-    drawerBookingId.textContent = `#${activeBooking.bookingId || activeBooking.id}`;
-    drawerPartySize.textContent = `${activeBooking.guests} Guests`;
-    drawerOccasion.textContent = activeBooking.occasion || 'Dinner Service';
-
-    drawerBtnReleaseTable.style.display = 'block';
+function updateSoundToggleUI() {
+  if (!soundFeedbackToggle || !soundIconWrap) return;
+  if (appState.soundEnabled) {
+    soundFeedbackToggle.classList.add('sound-active');
+    soundFeedbackToggle.classList.remove('sound-muted');
+    soundFeedbackToggle.title = 'Audio Feedback: ON (Click to Mute)';
+    soundIconWrap.innerHTML = '<i data-lucide="volume-2"></i>';
+    if (soundStatusDot) soundStatusDot.className = 'sound-status-dot active';
   } else {
-    drawerStatusBadge.textContent = 'Available';
-    drawerStatusBadge.className = 'drawer-status-badge';
-    drawerStatusBadge.style.background = 'var(--c-available-bg)';
-    drawerStatusBadge.style.color = 'var(--c-available)';
-    drawerToggleStatusText.textContent = 'Set Maintenance';
-    drawerBtnSeatWalkin.disabled = false;
-    drawerBookingSection.style.display = 'none';
-    drawerBtnReleaseTable.style.display = 'none';
+    soundFeedbackToggle.classList.remove('sound-active');
+    soundFeedbackToggle.classList.add('sound-muted');
+    soundFeedbackToggle.title = 'Audio Feedback: MUTED (Click to Enable)';
+    soundIconWrap.innerHTML = '<i data-lucide="volume-x"></i>';
+    if (soundStatusDot) soundStatusDot.className = 'sound-status-dot muted';
   }
-
-  tableContextDrawer.classList.add('open');
-  drawerBackdrop.classList.add('open');
+  if (window.lucide) window.lucide.createIcons();
 }
 
-function closeTableDrawer() {
-  tableContextDrawer.classList.remove('open');
-  drawerBackdrop.classList.remove('open');
-}
-
-// 5. Upcoming Arrivals & Activity Timeline
-function renderUpcomingArrivals() {
-  dashboardUpcomingList.innerHTML = '';
-  const upcoming = appState.bookings.slice(0, 4);
-
-  if (upcoming.length === 0) {
-    dashboardUpcomingList.innerHTML = `
-      <div style="text-align:center; color:var(--text-muted); padding:16px;">
-        No reservations scheduled for this service shift.
-      </div>
-    `;
-    return;
-  }
-
-  upcoming.forEach(b => {
-    const item = document.createElement('div');
-    item.className = 'arrival-row';
-    item.innerHTML = `
-      <div>
-        <div class="arrival-guest">${b.guestName} <small>(Table #${b.tableId})</small></div>
-        <div class="arrival-meta">${b.guests} Guests • ${b.date} at ${b.time}</div>
-      </div>
-      <span class="badge-tag green">CONFIRMED</span>
-    `;
-    dashboardUpcomingList.appendChild(item);
-  });
-}
-
-function renderActivityTimeline() {
-  dashboardMiniActivity.innerHTML = '';
-  fullActivityStream.innerHTML = '';
-
-  const entries = appState.activity.slice(0, 20);
-  if (entries.length === 0) {
-    dashboardMiniActivity.innerHTML = '<div style="color:var(--text-muted);">No activity recorded.</div>';
-    fullActivityStream.innerHTML = '<div style="color:var(--text-muted);">No activity recorded.</div>';
-    return;
-  }
-
-  entries.forEach((item, index) => {
-    const html = `
-      <div class="event-clock">${item.timestamp}</div>
-      <div>
-        <div class="event-type-badge">${item.type}</div>
-        <div class="event-msg-text">${item.message}</div>
-      </div>
-    `;
-
-    if (index < 4) {
-      const miniCard = document.createElement('div');
-      miniCard.className = 'activity-event-card';
-      miniCard.innerHTML = html;
-      dashboardMiniActivity.appendChild(miniCard);
-    }
-
-    const fullCard = document.createElement('div');
-    fullCard.className = 'activity-event-card';
-    fullCard.innerHTML = html;
-    fullActivityStream.appendChild(fullCard);
-  });
-}
-
-// 6. Dropdown Table Options
-function renderTableSelectDropdowns() {
-  const current = formTableSelect.value;
-  formTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
-  const walkinSelect = document.getElementById('walkin-table-choice');
-  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Allocation</option>';
-
-  appState.tables.forEach(t => {
-    if (t.status === 'Available') {
-      const isOcc = appState.occupiedTableIds.includes(t.id);
-      
-      const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked' : '✅ Free'}`;
-      formTableSelect.appendChild(opt);
-
-      const walkOpt = document.createElement('option');
-      walkOpt.value = t.id;
-      walkOpt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats)`;
-      walkinSelect.appendChild(walkOpt);
-    }
-  });
-
-  formTableSelect.value = current || '0';
-}
-
-// 7. Fleet Management Table
-function renderFleetTable() {
-  fleetTablesTbody.innerHTML = '';
-
-  appState.tables.forEach(t => {
-    const isAvail = t.status === 'Available';
-    const isOccupied = appState.occupiedTableIds.includes(t.id);
-    const tr = document.createElement('tr');
-
-    let serviceTag = isOccupied
-      ? '<span class="badge-tag blue">Occupied</span>'
-      : (isAvail ? '<span class="badge-tag green">Available</span>' : '<span class="badge-tag">Blocked</span>');
-
-    tr.innerHTML = `
-      <td><strong>#T-${t.id}</strong></td>
-      <td>${t.capacity} Guests</td>
-      <td>${t.type}</td>
-      <td>${serviceTag}</td>
-      <td><span class="badge-tag ${isAvail ? 'green' : 'gold'}">${t.status}</span></td>
-      <td>
-        <button class="btn-status-toggle btn-toggle-fleet" data-id="${t.id}" data-current="${t.status}">
-          ${isAvail ? 'Set Maintenance' : 'Set Available'}
-        </button>
-      </td>
-      <td>
-        <button class="btn-danger-sm btn-delete-fleet" data-id="${t.id}">Delete</button>
-      </td>
-    `;
-    fleetTablesTbody.appendChild(tr);
-  });
-
-  document.querySelectorAll('.btn-toggle-fleet').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = parseInt(btn.dataset.id);
-      const current = btn.dataset.current;
-      const target = current === 'Available' ? 'Maintenance' : 'Available';
-      await handleToggleTableStatus(id, target);
-    });
-  });
-
-  document.querySelectorAll('.btn-delete-fleet').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = parseInt(btn.dataset.id);
-      await handleDeleteTable(id);
-    });
-  });
-}
-
-// 8. Master Reservations Table
-function renderReservationsTable() {
-  const query = (reservationsSearchInput.value || '').trim().toLowerCase();
-  masterReservationsTbody.innerHTML = '';
-
-  const list = appState.bookings.filter(b => {
-    const matchesQuery = !query ||
-      b.guestName.toLowerCase().includes(query) ||
-      String(b.bookingId || b.id).includes(query) ||
-      String(b.tableId).includes(query) ||
-      b.date.includes(query);
-
-    return matchesQuery;
-  });
-
-  if (list.length === 0) {
-    masterReservationsTbody.innerHTML = `
-      <tr>
-        <td colspan="9" style="text-align:center; color:var(--text-muted); padding:32px;">
-          No reservations found matching search criteria.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  list.forEach(b => {
-    const tr = document.createElement('tr');
-    const refId = b.bookingId || b.id;
-    tr.innerHTML = `
-      <td><strong>#${refId}</strong></td>
-      <td><span class="badge-tag gold">Table #${b.tableId}</span></td>
-      <td><strong>${b.guestName}</strong></td>
-      <td>${b.guests} Guests</td>
-      <td><code>${b.date}</code></td>
-      <td><code>${b.time}</code></td>
-      <td>${b.occasion || 'Dinner'}</td>
-      <td><span class="badge-tag green">CONFIRMED</span></td>
-      <td>
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary btn-sm btn-show-pass" data-id="${refId}">View Pass</button>
-          <button class="btn-danger-sm btn-cancel-booking" data-id="${refId}">Cancel</button>
-        </div>
-      </td>
-    `;
-    masterReservationsTbody.appendChild(tr);
-  });
-
-  document.querySelectorAll('.btn-show-pass').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      const b = appState.bookings.find(x => String(x.bookingId || x.id) === String(id));
-      if (b) showVipDiningPass(b);
-    });
-  });
-
-  document.querySelectorAll('.btn-cancel-booking').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      handleCancelReservation(id);
-    });
-  });
-}
-
-// ================= EXPORT RESERVATIONS CSV =================
-function exportReservationsCSV() {
-  playAudioChime('click');
-  if (appState.bookings.length === 0) {
-    showToastNotification('No reservations available to export.', 'info');
-    return;
-  }
-
-  const headers = ['Booking ID', 'Table Number', 'Guest Name', 'Party Size', 'Reservation Date', 'Time Slot', 'Occasion', 'Status'];
-  const rows = appState.bookings.map(b => [
-    `"${b.bookingId || b.id}"`,
-    `"Table #${b.tableId}"`,
-    `"${b.guestName.replace(/"/g, '""')}"`,
-    b.guests,
-    `"${b.date}"`,
-    `"${b.time}"`,
-    `"${b.occasion || 'Dinner'}"`,
-    '"CONFIRMED"'
-  ]);
-
-  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `royal_spice_manifest_${appState.selectedDate.replace(/\//g, '-')}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  showToastNotification('Manifest exported as CSV successfully!', 'success');
-}
-
-// ================= DAILY HOST RUN-SHEET MODAL =================
-function openHostRunSheetModal() {
-  playAudioChime('clink');
-  manifestDateSlot.textContent = `${appState.selectedDate} — Shift Manifest`;
-  manifestTbody.innerHTML = '';
-
-  const dayBookings = appState.bookings.filter(b => b.date === appState.selectedDate);
-  if (dayBookings.length === 0) {
-    manifestTbody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">
-          No reservations found for ${appState.selectedDate}.
-        </td>
-      </tr>
-    `;
-  } else {
-    dayBookings.forEach(b => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${b.time}</strong></td>
-        <td><span class="badge-tag gold">Table #${b.tableId}</span></td>
-        <td><strong>${b.guestName}</strong></td>
-        <td>${b.guests} Covers</td>
-        <td>${b.occasion || 'Dinner Service'}</td>
-        <td><span class="badge-tag green">CONFIRMED</span></td>
-        <td><input type="checkbox" style="transform:scale(1.2);"></td>
-      `;
-      manifestTbody.appendChild(tr);
-    });
-  }
-
-  modalHostManifest.classList.add('open');
-}
-
-// ================= EDIT LAYOUT MODE =================
-function toggleEditLayoutMode() {
-  appState.isEditLayoutMode = !appState.isEditLayoutMode;
-  masterFloorCanvas.classList.toggle('edit-mode-active', appState.isEditLayoutMode);
-  document.getElementById('edit-mode-label').textContent = appState.isEditLayoutMode ? 'Done Editing' : 'Edit Layout';
-  showToastNotification(
-    appState.isEditLayoutMode ? 'Edit Mode: Click any table to configure or add tables.' : 'Layout changes finalized.',
-    'info'
-  );
-}
-
-// ================= VIEW SWITCHER =================
+// ================= NAVIGATION =================
 function switchAppView(viewName) {
+  playAudioChime('click');
   appState.currentView = viewName;
+
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === viewName);
   });
+
   document.querySelectorAll('.view-panel').forEach(panel => {
     panel.classList.toggle('active', panel.id === `view-${viewName}`);
   });
 
   const titles = {
-    dashboard: 'Live Dashboard & Service Radar',
-    floorplan: 'Spatial Dining Floor Plan',
+    dashboard: 'Live Operations Dashboard',
+    floorplan: '3D Spatial Floor Plan & Table Command',
     reservations: 'Master Reservations Ledger',
-    booking: 'Create Guest Reservation',
+    booking: 'Smart Reservation Allocation',
+    menu: 'Michelin 3-Star Visual Dish Menu',
+    crm: 'VIP Guest CRM & Loyalty Profiles',
     tables: 'Physical Table Fleet Management',
-    activity: 'Live System Activity Stream'
+    activity: 'System Operational Event Log'
   };
-  currentViewTitle.textContent = titles[viewName] || 'The Royal Spice';
-  
-  if (appSidebar.classList.contains('mobile-open')) {
+  if (currentViewTitle) currentViewTitle.textContent = titles[viewName] || 'The Royal Spice';
+
+  if (viewName === 'menu') renderVisualMenu('ALL');
+  if (viewName === 'crm') renderVIPGuests();
+  if (viewName === 'floorplan') renderFloorPlan(masterFloorCanvas, true);
+
+  if (window.innerWidth <= 1024) {
     appSidebar.classList.remove('mobile-open');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (backdrop) backdrop.classList.remove('active');
   }
 }
 
-// ================= 5-STAGE ALGORITHM PIPELINE =================
-function resetAlgorithmNodes() {
-  for (let i = 1; i <= 5; ++i) {
-    const card = document.getElementById(`pipe-card-${i}`);
-    if (card) card.className = 'pipeline-card-node';
-  }
-  document.getElementById('trace-pipeline-badge').textContent = 'Allocating...';
-  document.getElementById('trace-pipeline-badge').className = 'badge-pill gold';
-}
-
-function setAlgorithmStep(step, status, text = null) {
-  const card = document.getElementById(`pipe-card-${step}`);
-  if (!card) return;
-  card.className = `pipeline-card-node node-${status}`;
-  if (text) {
-    document.getElementById(`pipe-desc-${step}`).textContent = text;
-  }
-}
-
-async function runAllocationSequence(trace, success, createdBooking, errorMsg) {
-  resetAlgorithmNodes();
-
-  setAlgorithmStep(1, 'running', 'Validating guest parameters');
-  await new Promise(r => setTimeout(r, 160));
-  setAlgorithmStep(1, 'success', 'Input boundaries verified');
-
-  setAlgorithmStep(2, 'running', 'Checking date & time slot');
-  await new Promise(r => setTimeout(r, 160));
-  setAlgorithmStep(2, 'success', `${createdBooking?.date || appState.selectedDate} @ ${createdBooking?.time || appState.selectedTime}`);
-
-  setAlgorithmStep(3, 'running', 'Scanning slot collisions');
-  await new Promise(r => setTimeout(r, 200));
-  setAlgorithmStep(3, 'success', 'No conflict detected');
-
-  setAlgorithmStep(4, 'running', 'Matching smallest suitable table');
-  await new Promise(r => setTimeout(r, 220));
-
-  if (!success) {
-    setAlgorithmStep(4, 'running', errorMsg || 'No table match');
-    document.getElementById('trace-pipeline-badge').textContent = 'Failed';
-    document.getElementById('trace-pipeline-badge').className = 'badge-pill';
-    showToastNotification(errorMsg || 'No table available for this slot.', 'error');
-    return;
-  }
-
-  setAlgorithmStep(4, 'success', `Assigned Table #${createdBooking.tableId}`);
-
-  setAlgorithmStep(5, 'running', 'Persisting to disk');
-  await new Promise(r => setTimeout(r, 160));
-  setAlgorithmStep(5, 'success', 'Saved permanently');
-
-  document.getElementById('trace-pipeline-badge').textContent = 'Confirmed';
-  document.getElementById('trace-pipeline-badge').className = 'badge-pill green';
-
-  playAudioChime('success');
-  showVipDiningPass(createdBooking);
-}
-
-// ================= VIP DINING PASS MODAL =================
-function showVipDiningPass(b) {
-  passGridData.innerHTML = `
-    <div class="pass-field-node">
-      <label>Booking Reference</label>
-      <strong>#${b.bookingId || b.id}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Assigned Table</label>
-      <strong style="color:var(--primary-600);">Table #${b.tableId}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Guest Full Name</label>
-      <strong>${b.guestName}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Party Size</label>
-      <strong>${b.guests} Guests</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Reservation Date</label>
-      <strong>${b.date}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Dining Time Slot</label>
-      <strong>${b.time}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Occasion</label>
-      <strong style="color:var(--primary-text);">${b.occasion || appState.selectedOccasion}</strong>
-    </div>
-    <div class="pass-field-node">
-      <label>Status</label>
-      <strong style="color:var(--c-available);">CONFIRMED</strong>
-    </div>
-  `;
-  modalReceiptPass.classList.add('open');
-}
-
-// ================= OPERATIONS & MUTATIONS =================
-
-// 1. Create Reservation
-masterBookingForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const guestName = document.getElementById('form-guest-name').value.trim();
-  const guests = parseInt(document.getElementById('form-guest-count').value);
-  const date = document.getElementById('form-booking-date').value.trim();
-  const time = document.getElementById('form-booking-time').value;
-  const tableId = parseInt(formTableSelect.value);
-  const occasion = appState.selectedOccasion;
-
-  const submitBtn = document.getElementById('btn-submit-booking-action');
-  submitBtn.disabled = true;
-
-  try {
-    let result = null;
-
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestName, guests, date, time, tableId, occasion })
-      });
-      result = await res.json();
-    } else {
-      let candidateTable = null;
-      if (tableId > 0) {
-        candidateTable = appState.tables.find(t => t.id === tableId && t.status === 'Available');
-      } else {
-        const suitable = appState.tables
-          .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
-          .sort((a, b) => a.capacity - b.capacity);
-        if (suitable.length > 0) candidateTable = suitable[0];
-      }
-
-      if (!candidateTable) {
-        throw new Error('No available table suitable for this party size.');
-      }
-
-      const newBooking = {
-        id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
-        bookingId: Math.floor(100 + Math.random() * 900),
-        guestName,
-        guests,
-        date,
-        time,
-        tableId: candidateTable.id,
-        occasion
-      };
-
-      appState.bookings.push(newBooking);
-      logEvent('BOOKING_CREATED', `Reservation #${newBooking.bookingId} created for ${guestName} (Table #${candidateTable.id})`);
-      saveLocalState();
-
-      result = { success: true, booking: newBooking };
-    }
-
-    await runAllocationSequence(result.trace || [], result.success, result.booking, result.error);
-
-    if (result.success) {
-      masterBookingForm.reset();
-      document.getElementById('form-guest-count').value = '4';
-      document.getElementById('form-booking-date').value = appState.selectedDate;
-      document.getElementById('form-booking-time').value = appState.selectedTime;
-      appState.selectedTableId = 0;
-      await syncWithCoreEngine();
-    }
-  } catch (err) {
-    showToastNotification(err.message || 'Error processing reservation.', 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
-});
-
-// 2. Cancel Reservation
-async function handleCancelReservation(id) {
-  if (!confirm(`Are you sure you want to cancel Reservation #${id}?`)) return;
-
-  try {
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId: parseInt(id) })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to cancel');
-    } else {
-      const idx = appState.bookings.findIndex(b => String(b.bookingId || b.id) === String(id));
-      if (idx !== -1) {
-        const removed = appState.bookings.splice(idx, 1)[0];
-        logEvent('BOOKING_CANCELLED', `Reservation #${id} for ${removed.guestName} was cancelled.`);
-        saveLocalState();
-      }
-    }
-
-    showToastNotification(`Reservation #${id} cancelled.`, 'success');
-    await syncWithCoreEngine();
-  } catch (err) {
-    showToastNotification(err.message || 'Could not cancel reservation.', 'error');
-  }
-}
-
-// 3. Table Status Flip
-async function handleToggleTableStatus(id, targetStatus) {
-  try {
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/tables/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: targetStatus })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Status update failed');
-    } else {
-      const tbl = appState.tables.find(t => t.id === id);
-      if (tbl) {
-        tbl.status = targetStatus;
-        logEvent('TABLE_STATUS', `Table #${id} status changed to ${targetStatus}.`);
-        saveLocalState();
-      }
-    }
-
-    showToastNotification(`Table #${id} is now ${targetStatus}.`, 'success');
-    closeTableDrawer();
-    await syncWithCoreEngine();
-  } catch (err) {
-    showToastNotification(err.message || 'Error updating table status.', 'error');
-  }
-}
-
-// 4. Delete Table
-async function handleDeleteTable(id) {
-  if (!confirm(`Delete Table #${id} permanently?`)) return;
-
-  try {
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/tables/delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Delete failed');
-    } else {
-      const idx = appState.tables.findIndex(t => t.id === id);
-      if (idx !== -1) {
-        appState.tables.splice(idx, 1);
-        logEvent('TABLE_DELETED', `Table #${id} removed from fleet.`);
-        saveLocalState();
-      }
-    }
-
-    showToastNotification(`Table #${id} deleted.`, 'success');
-    closeTableDrawer();
-    await syncWithCoreEngine();
-  } catch (err) {
-    showToastNotification(err.message || 'Cannot delete table.', 'error');
-  }
-}
-
-// 5. Walk-In Seater
-document.getElementById('form-walkin-action').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const guestName = document.getElementById('walkin-guest-name').value.trim() || 'Walk-In Guest';
-  const guests = parseInt(document.getElementById('walkin-guest-count').value);
-  const tableId = parseInt(document.getElementById('walkin-table-choice').value);
-  const date = appState.selectedDate;
-  const time = appState.selectedTime;
-
-  try {
-    let result = null;
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestName, guests, date, time, tableId })
-      });
-      result = await res.json();
-    } else {
-      let candidate = null;
-      if (tableId > 0) {
-        candidate = appState.tables.find(t => t.id === tableId && t.status === 'Available');
-      } else {
-        const suitable = appState.tables
-          .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
-          .sort((a, b) => a.capacity - b.capacity);
-        if (suitable.length > 0) candidate = suitable[0];
-      }
-
-      if (!candidate) throw new Error('No table available for walk-in party.');
-
-      const newBooking = {
-        id: 'WK-' + Math.floor(1000 + Math.random() * 9000),
-        bookingId: Math.floor(100 + Math.random() * 900),
-        guestName,
-        guests,
-        date,
-        time,
-        tableId: candidate.id,
-        occasion: 'Walk-In Dining'
-      };
-
-      appState.bookings.push(newBooking);
-      logEvent('WALKIN_SEATED', `Walk-in party "${guestName}" seated at Table #${candidate.id}.`);
-      saveLocalState();
-      result = { success: true, booking: newBooking };
-    }
-
-    if (result.success) {
-      showToastNotification(`Walk-in seated at Table #${result.booking.tableId}!`, 'success');
-      modalWalkinDialog.classList.remove('open');
-      document.getElementById('form-walkin-action').reset();
-      playAudioChime('success');
-      await syncWithCoreEngine();
-    } else {
-      showToastNotification(result.error || 'Could not seat walk-in.', 'error');
-    }
-  } catch (err) {
-    showToastNotification(err.message || 'Error seating walk-in.', 'error');
-  }
-});
-
-// 6. Add Table Action
-document.getElementById('form-add-table-action').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = parseInt(document.getElementById('new-tbl-id-input').value);
-  const capacity = parseInt(document.getElementById('new-tbl-cap-input').value);
-  const type = document.getElementById('new-tbl-category-input').value.trim();
-
-  try {
-    if (appState.isBackendConnected) {
-      const res = await fetch(`${API_BASE}/tables`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, capacity, type })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to add table');
-    } else {
-      if (appState.tables.some(t => t.id === id)) {
-        throw new Error(`Table #${id} already exists!`);
-      }
-      appState.tables.push({ id, capacity, type, status: 'Available' });
-      logEvent('TABLE_ADDED', `New Table #${id} (${type}, ${capacity} seats) added to restaurant.`);
-      saveLocalState();
-    }
-
-    showToastNotification(`Table #${id} added successfully!`, 'success');
-    modalTableDialog.classList.remove('open');
-    document.getElementById('form-add-table-action').reset();
-    await syncWithCoreEngine();
-  } catch (err) {
-    showToastNotification(err.message || 'Could not add table.', 'error');
-  }
-});
-
-// ================= EVENT HANDLERS & NAVIGATION =================
-
-// Sidebar Navigation
-document.querySelectorAll('.nav-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    playAudioChime('click');
-    switchAppView(btn.dataset.view);
-  });
-});
-
-document.getElementById('btn-view-all-reservations').addEventListener('click', () => switchAppView('reservations'));
-document.getElementById('btn-nav-create-res').addEventListener('click', () => switchAppView('booking'));
-
-// ================= THEME & AUDIO CONTROLLERS =================
-
-function updateSoundToggleUI() {
-  const btn = document.getElementById('sound-feedback-toggle');
-  const iconWrap = document.getElementById('sound-icon-wrap');
-  const dot = document.getElementById('sound-status-dot');
-  if (!btn || !iconWrap) return;
-
-  if (appState.soundEnabled) {
-    btn.classList.add('sound-active');
-    btn.classList.remove('sound-muted');
-    btn.setAttribute('title', 'Audio Feedback: ON (Click to Mute)');
-    iconWrap.innerHTML = '<i data-lucide="volume-2"></i>';
-    if (dot) dot.className = 'sound-status-dot active';
+// ================= 3D CAMERA CONTROLLER =================
+function update3DFloorTransform() {
+  if (!masterFloorCanvas) return;
+  const { tilt, orbit, zoom, isIsometric } = appState.camera3D;
+  if (isIsometric) {
+    masterFloorCanvas.style.transform = `rotateX(${tilt}deg) rotateZ(${orbit}deg) scale(${zoom})`;
   } else {
-    btn.classList.remove('sound-active');
-    btn.classList.add('sound-muted');
-    btn.setAttribute('title', 'Audio Feedback: MUTED (Click to Enable)');
-    iconWrap.innerHTML = '<i data-lucide="volume-x"></i>';
-    if (dot) dot.className = 'sound-status-dot muted';
+    masterFloorCanvas.style.transform = `rotateX(0deg) rotateZ(0deg) scale(${zoom})`;
+  }
+}
+
+// ================= VISUAL DISH MENU & CRM =================
+function renderVisualMenu(cat) {
+  const container = document.getElementById('dish-cards-grid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filtered = cat === 'ALL' ? DEFAULT_MENU_ITEMS : DEFAULT_MENU_ITEMS.filter(d => d.category === cat);
+  filtered.forEach(dish => {
+    const card = document.createElement('div');
+    card.className = 'dish-card';
+    card.innerHTML = `
+      <img src="${dish.img}" class="dish-card-img" alt="${dish.title}" loading="lazy">
+      <div class="dish-card-body">
+        <div class="dish-header-row">
+          <h4 class="dish-title">${dish.title}</h4>
+          <span class="dish-price">${dish.price}</span>
+        </div>
+        <p class="dish-desc">${dish.desc}</p>
+        <div class="dish-tags">
+          ${dish.tags.map(t => `<span class="dish-tag">${t}</span>`).join('')}
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderVIPGuests() {
+  const container = document.getElementById('crm-guest-grid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  DEFAULT_VIP_GUESTS.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'crm-card';
+    card.innerHTML = `
+      <div class="crm-card-header">
+        <div class="crm-avatar">${g.name[0]}</div>
+        <div>
+          <strong>${g.name}</strong>
+          <div><span class="crm-tier-tag">${g.tier}</span></div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted);">${g.notes}</p>
+      <div class="crm-stats-grid">
+        <div><small>Total Visits:</small> <strong>${g.visits}</strong></div>
+        <div><small>Lifetime Spend:</small> <strong style="color:var(--primary-500);">${g.spend}</strong></div>
+        <div style="grid-column: span 2;"><small>Preferred Seating:</small> <strong>${g.pref}</strong></div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ================= AI CONCIERGE & SOMMELIER BOT =================
+function handleAIChatSubmit(userText) {
+  if (!userText.trim()) return;
+  const chatMessages = document.getElementById('ai-chat-messages');
+  if (!chatMessages) return;
+
+  // Render User Message
+  const userRow = document.createElement('div');
+  userRow.className = 'ai-msg user';
+  userRow.innerHTML = `<div class="msg-bubble">${userText}</div>`;
+  chatMessages.appendChild(userRow);
+
+  // Assistant Response Logic
+  setTimeout(() => {
+    let reply = "I am at your service. Let me arrange this for dinner service immediately.";
+    const lower = userText.toLowerCase();
+
+    if (lower.includes('wine') || lower.includes('pairing')) {
+      reply = "🍷 **Sommelier Pairing:** For Wagyu Ribeye, I highly recommend our **Château Margaux 2015 Grand Cru** or a bold **Napa Valley Cabernet Sauvignon 2018** to harmonize with the rich marbling.";
+    } else if (lower.includes('vip') || lower.includes('suite')) {
+      reply = "👑 **Table Allocation:** Table #3 (VIP Imperial Suite, 6 seats) is available for tonight's 8:00 PM shift. Would you like me to reserve it?";
+    } else if (lower.includes('book') || lower.includes('reserve')) {
+      reply = "⚡ **Instant Booking Confirmed:** I have staged Table #3 for 4 guests tonight at 8:00 PM under VIP Concierge priority. Official Dining Pass generated!";
+      playAudioChime('success');
+    }
+
+    const botRow = document.createElement('div');
+    botRow.className = 'ai-msg bot';
+    botRow.innerHTML = `
+      <div class="msg-avatar">⚜️</div>
+      <div class="msg-bubble">
+        <strong>Chef Auguste</strong>
+        <p>${reply}</p>
+      </div>
+    `;
+    chatMessages.appendChild(botRow);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }, 600);
+}
+
+// ================= CORE DATA ENGINE & EVALUATION =================
+function evaluateSlotState() {
+  const slotBookings = appState.bookings.filter(b => b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
+  appState.occupiedTableIds = slotBookings.map(b => b.tableId);
+  appState.availableTableIds = appState.tables
+    .filter(t => t.status === 'Available' && !appState.occupiedTableIds.includes(t.id))
+    .map(t => t.id);
+
+  let seatedCovers = 0;
+  slotBookings.forEach(b => {
+    if (b.status === 'Seated' || b.status === 'Confirmed') seatedCovers += parseInt(b.guests || 2);
+  });
+
+  if (metricAvailableTables) metricAvailableTables.textContent = appState.availableTableIds.length;
+  if (metricTotalTablesDenom) metricTotalTablesDenom.textContent = `/ ${appState.tables.length} Fleet`;
+  if (metricSeatedCovers) metricSeatedCovers.textContent = seatedCovers;
+  if (metricTotalBookingsCount) metricTotalBookingsCount.textContent = slotBookings.length;
+  if (metricSlotBookingsTag) metricSlotBookingsTag.textContent = `Slot: ${appState.selectedTime}`;
+  if (metricEstRevenue) metricEstRevenue.textContent = `$${(seatedCovers * 85).toLocaleString()}`;
+  if (navOpenTablesPill) navOpenTablesPill.textContent = `${appState.availableTableIds.length} Open`;
+  if (navBookingsPill) navBookingsPill.textContent = String(appState.bookings.length);
+  if (miniSeatedCount) miniSeatedCount.textContent = seatedCovers;
+  if (miniUpcomingCount) miniUpcomingCount.textContent = slotBookings.length;
+}
+
+// ================= RENDER FLOOR PLAN & TABLE CARDS =================
+function renderFloorPlan(canvasElement, isMaster = false) {
+  if (!canvasElement) return;
+  canvasElement.innerHTML = '';
+
+  appState.tables.forEach(tbl => {
+    let liveStatus = tbl.status;
+    const booking = appState.bookings.find(b => b.tableId === tbl.id && b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
+
+    if (tbl.status === 'Maintenance') liveStatus = 'Maintenance';
+    else if (booking) liveStatus = booking.status === 'Seated' ? 'Seated' : 'Reserved';
+
+    const card = document.createElement('div');
+    card.className = `table-node-fixture status-${liveStatus.toLowerCase()}`;
+    card.innerHTML = `
+      <div class="tbl-node-header">
+        <strong>Table #${tbl.id}</strong>
+        <span class="tbl-node-badge" style="background:var(--c-${liveStatus.toLowerCase()}-bg, rgba(255,255,255,0.1)); color:var(--c-${liveStatus.toLowerCase()});">${liveStatus}</span>
+      </div>
+      <div class="tbl-node-body">
+        <div>Capacity: <strong>${tbl.capacity} Guests</strong></div>
+        <div>Zone: <strong>${tbl.type}</strong></div>
+        ${booking ? `<div style="margin-top:6px; color:var(--primary-500); font-weight:700;">★ ${booking.name}</div>` : ''}
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      playAudioChime('click');
+      openTableDrawer(tbl, booking, liveStatus);
+    });
+
+    canvasElement.appendChild(card);
+  });
+}
+
+function openTableDrawer(table, booking, status) {
+  appState.activeDrawerTable = table;
+  drawerTableHeading.textContent = `Table #T-0${table.id}`;
+  drawerStatusBadge.textContent = status;
+  drawerTableCapacity.textContent = `${table.capacity} Guests`;
+  drawerTableCategory.textContent = table.type;
+  drawerTableSlot.textContent = appState.selectedTime;
+
+  if (booking) {
+    drawerBookingSection.style.display = 'block';
+    drawerGuestName.textContent = booking.name;
+    drawerBookingId.textContent = String(booking.id || 'RES-' + table.id);
+    drawerPartySize.textContent = `${booking.guests} Guests`;
+    drawerOccasion.textContent = booking.occasion || 'Dining';
+    drawerBtnReleaseTable.style.display = 'block';
+  } else {
+    drawerBookingSection.style.display = 'none';
+    drawerBtnReleaseTable.style.display = 'none';
   }
 
-  if (window.lucide) window.lucide.createIcons();
+  tableContextDrawer.classList.add('open');
+  drawerBackdrop.classList.add('active');
 }
 
-function updateThemeToggleUI() {
-  const iconWrap = document.getElementById('theme-icon-wrap');
-  if (!iconWrap) return;
-  iconWrap.innerHTML = `<i data-lucide="${appState.currentTheme === 'light' ? 'sun' : 'moon'}"></i>`;
-  if (window.lucide) window.lucide.createIcons();
+function closeTableDrawer() {
+  tableContextDrawer.classList.remove('open');
+  drawerBackdrop.classList.remove('active');
 }
 
-// Theme Toggle
-themeModeToggle.addEventListener('click', () => {
-  appState.currentTheme = appState.currentTheme === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', appState.currentTheme);
-  localStorage.setItem(STORAGE_KEYS.THEME, appState.currentTheme);
-  updateThemeToggleUI();
-  playAudioChime('click');
-  showToastNotification(`Theme switched to ${appState.currentTheme} mode.`, 'info');
+// ================= PERSISTENCE & C++ ENGINE SYNC =================
+async function syncWithCoreEngine() {
+  try {
+    const res = await fetch(`${API_BASE}/tables`, { signal: AbortSignal.timeout(1800) });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        appState.tables = data;
+        localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(appState.tables));
+        appState.isBackendConnected = true;
+      }
+    }
+  } catch {
+    appState.isBackendConnected = false;
+  }
+
+  if (coreSyncIndicator) {
+    const dot = coreSyncIndicator.querySelector('.sync-dot');
+    const lbl = coreSyncIndicator.querySelector('.sync-label');
+    if (appState.isBackendConnected) {
+      dot.style.background = 'var(--c-available)';
+      lbl.textContent = 'C++ Live';
+    } else {
+      dot.style.background = 'var(--primary-500)';
+      lbl.textContent = 'Local Standalone';
+    }
+  }
+
+  evaluateSlotState();
+  renderFloorPlan(dashboardFloorPreview, false);
+  renderFloorPlan(masterFloorCanvas, true);
+}
+
+// ================= EVENT HANDLERS =================
+
+// Navigation
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => switchAppView(btn.dataset.view));
 });
+
+// Sidebar Responsive Toggle
+document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
+  playAudioChime('click');
+  if (window.innerWidth <= 1024) {
+    appSidebar.classList.toggle('mobile-open');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (backdrop) backdrop.classList.toggle('active', appSidebar.classList.contains('mobile-open'));
+  } else {
+    document.getElementById('app-layout').classList.toggle('sidebar-collapsed');
+  }
+});
+
+// Theme Selector
+themeSelector.addEventListener('change', (e) => applyLuxuryTheme(e.target.value));
 
 // Sound Toggle
 soundFeedbackToggle.addEventListener('click', () => {
@@ -1137,43 +519,51 @@ soundFeedbackToggle.addEventListener('click', () => {
   }
 });
 
-// Stepper
-document.getElementById('btn-party-inc').addEventListener('click', () => {
+// 3D Camera Controls
+document.getElementById('btn-toggle-3d-mode').addEventListener('click', () => {
   playAudioChime('click');
-  const inp = document.getElementById('form-guest-count');
-  inp.value = Math.min(30, parseInt(inp.value || 1) + 1);
+  appState.camera3D.isIsometric = !appState.camera3D.isIsometric;
+  document.getElementById('btn-3d-label').textContent = appState.camera3D.isIsometric ? 'Isometric 3D' : 'Flat 2D Blueprint';
+  update3DFloorTransform();
 });
+document.getElementById('btn-floor-orbit-left').addEventListener('click', () => { appState.camera3D.orbit -= 15; update3DFloorTransform(); });
+document.getElementById('btn-floor-orbit-right').addEventListener('click', () => { appState.camera3D.orbit += 15; update3DFloorTransform(); });
+document.getElementById('btn-floor-zoom-in').addEventListener('click', () => { appState.camera3D.zoom = Math.min(1.4, appState.camera3D.zoom + 0.1); update3DFloorTransform(); });
+document.getElementById('btn-floor-zoom-out').addEventListener('click', () => { appState.camera3D.zoom = Math.max(0.6, appState.camera3D.zoom - 0.1); update3DFloorTransform(); });
 
-document.getElementById('btn-party-dec').addEventListener('click', () => {
+// AI Concierge
+document.getElementById('btn-open-ai-concierge').addEventListener('click', () => {
   playAudioChime('click');
-  const inp = document.getElementById('form-guest-count');
-  inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
+  aiConciergeDrawer.classList.add('open');
+  aiDrawerBackdrop.classList.add('active');
+});
+document.getElementById('btn-close-ai-concierge').addEventListener('click', () => {
+  aiConciergeDrawer.classList.remove('open');
+  aiDrawerBackdrop.classList.remove('active');
+});
+aiDrawerBackdrop.addEventListener('click', () => {
+  aiConciergeDrawer.classList.remove('open');
+  aiDrawerBackdrop.classList.remove('active');
 });
 
-// Occasion Pills
-document.querySelectorAll('.occ-pill-btn').forEach(pill => {
-  pill.addEventListener('click', () => {
-    playAudioChime('click');
-    document.querySelectorAll('.occ-pill-btn').forEach(p => p.classList.remove('active'));
-    pill.classList.add('active');
-    appState.selectedOccasion = pill.dataset.occ;
-  });
+document.getElementById('ai-chat-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = document.getElementById('ai-chat-input');
+  handleAIChatSubmit(input.value);
+  input.value = '';
 });
 
-// Quick Experience Shortcuts
-document.querySelectorAll('.exp-preset-btn').forEach(btn => {
+document.querySelectorAll('.prompt-chip').forEach(btn => {
+  btn.addEventListener('click', () => handleAIChatSubmit(btn.dataset.prompt));
+});
+
+// Menu Category Filtering
+document.querySelectorAll('.menu-cat-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    playAudioChime('clink');
-    const guests = parseInt(btn.dataset.guests);
-    const type = btn.dataset.type;
-    document.getElementById('form-guest-count').value = guests;
-
-    const candidate = appState.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && appState.availableTableIds.includes(t.id));
-    if (candidate) {
-      formTableSelect.value = String(candidate.id);
-    } else {
-      formTableSelect.value = '0';
-    }
+    playAudioChime('click');
+    document.querySelectorAll('.menu-cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderVisualMenu(btn.dataset.cat);
   });
 });
 
@@ -1185,126 +575,26 @@ headerSlotChips.addEventListener('click', (e) => {
     document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     appState.selectedTime = chip.dataset.time;
-    document.getElementById('form-booking-time').value = appState.selectedTime;
     evaluateSlotState();
-    renderMasterView();
-  }
-});
-
-// Global Date Field
-globalDateInput.addEventListener('change', () => {
-  appState.selectedDate = globalDateInput.value.trim() || '24/05/2026';
-  document.getElementById('form-booking-date').value = appState.selectedDate;
-  evaluateSlotState();
-  renderMasterView();
-});
-
-// Zone Pills on Floor Plan
-document.querySelectorAll('.zone-pill').forEach(pill => {
-  pill.addEventListener('click', () => {
-    playAudioChime('click');
-    document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
-    pill.classList.add('active');
-    appState.selectedZone = pill.dataset.zone;
+    renderFloorPlan(dashboardFloorPreview, false);
     renderFloorPlan(masterFloorCanvas, true);
-    if (window.lucide) window.lucide.createIcons();
-  });
-});
-
-// Search in Reservations
-reservationsSearchInput.addEventListener('input', renderReservationsTable);
-
-// CSV Export & Manifest Triggers
-document.getElementById('btn-export-csv').addEventListener('click', exportReservationsCSV);
-document.getElementById('btn-print-manifest').addEventListener('click', openHostRunSheetModal);
-document.getElementById('btn-close-manifest').addEventListener('click', () => modalHostManifest.classList.remove('open'));
-document.getElementById('btn-print-manifest-action').addEventListener('click', () => window.print());
-
-// Edit Layout Trigger
-document.getElementById('btn-toggle-edit-mode').addEventListener('click', toggleEditLayoutMode);
-
-// Drawer Actions
-drawerBtnSeatWalkin.addEventListener('click', () => {
-  if (appState.activeDrawerTable) {
-    document.getElementById('walkin-table-choice').value = String(appState.activeDrawerTable.id);
-    modalWalkinDialog.classList.add('open');
-    closeTableDrawer();
   }
 });
 
-drawerBtnToggleStatus.addEventListener('click', async () => {
-  if (appState.activeDrawerTable) {
-    const target = appState.activeDrawerTable.status === 'Available' ? 'Maintenance' : 'Available';
-    await handleToggleTableStatus(appState.activeDrawerTable.id, target);
-  }
-});
-
-drawerBtnReleaseTable.addEventListener('click', async () => {
-  if (appState.activeDrawerTable) {
-    const booking = appState.bookings.find(b => b.tableId === appState.activeDrawerTable.id && b.date === appState.selectedDate && b.time === appState.selectedTime);
-    if (booking) {
-      await handleCancelReservation(booking.bookingId || booking.id);
-    }
-  }
-});
-
+// Drawer Close Handlers
 document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
 drawerBackdrop.addEventListener('click', closeTableDrawer);
 
-// Modals Trigger
-document.getElementById('btn-open-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
-document.getElementById('btn-floor-walkin-seat').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
-document.getElementById('btn-close-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
-document.getElementById('btn-cancel-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
+// Print Handlers
+document.getElementById('btn-print-manifest').addEventListener('click', () => modalHostManifest.classList.add('open'));
+document.getElementById('btn-close-manifest').addEventListener('click', () => modalHostManifest.classList.remove('open'));
+document.getElementById('btn-print-manifest-action').addEventListener('click', () => window.print());
+document.getElementById('manual-sync-btn').addEventListener('click', () => { syncWithCoreEngine(); showToastNotification('State synchronized.', 'info'); });
 
-document.getElementById('btn-floor-add-table').addEventListener('click', () => modalTableDialog.classList.add('open'));
-document.getElementById('btn-open-add-table-dialog').addEventListener('click', () => modalTableDialog.classList.add('open'));
-document.getElementById('btn-close-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
-document.getElementById('btn-cancel-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
-
-document.getElementById('btn-close-pass-action').addEventListener('click', () => modalReceiptPass.classList.remove('open'));
-document.getElementById('btn-print-pass-action').addEventListener('click', () => window.print());
-
-document.getElementById('manual-sync-btn').addEventListener('click', () => {
-  syncWithCoreEngine();
-  showToastNotification('State synchronized.', 'info');
-});
-
-// Responsive Sidebar Toggle (3-lines hamburger menu)
-const btnMobileToggle = document.getElementById('btn-mobile-toggle');
-const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-const appLayout = document.querySelector('.app-layout');
-
-function toggleSidebarMenu() {
-  playAudioChime('click');
-  if (window.innerWidth <= 1024) {
-    appSidebar.classList.toggle('mobile-open');
-    if (sidebarBackdrop) {
-      sidebarBackdrop.classList.toggle('active', appSidebar.classList.contains('mobile-open'));
-    }
-  } else {
-    if (appLayout) {
-      appLayout.classList.toggle('sidebar-collapsed');
-    }
-  }
-}
-
-if (btnMobileToggle) {
-  btnMobileToggle.addEventListener('click', toggleSidebarMenu);
-}
-
-if (sidebarBackdrop) {
-  sidebarBackdrop.addEventListener('click', () => {
-    appSidebar.classList.remove('mobile-open');
-    sidebarBackdrop.classList.remove('active');
-  });
-}
-
-// Auto Background Polling every 3.5s
-setInterval(syncWithCoreEngine, 3500);
-
-// Initialize Theme, Audio UI & First Load
-document.documentElement.setAttribute('data-theme', appState.currentTheme);
-updateThemeToggleUI();
+// Initialize Platform
+applyLuxuryTheme(appState.currentTheme);
 updateSoundToggleUI();
+update3DFloorTransform();
 syncWithCoreEngine();
+
+console.log('⚜️ The Royal Spice 3.0+ Spatial OS Initialized.');

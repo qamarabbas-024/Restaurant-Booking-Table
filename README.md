@@ -1,147 +1,86 @@
-# 🍽️ The Royal Spice — Restaurant Table Booking & Management System
+# ⚜️ THE ROYAL SPICE 3.0 — 3D Spatial Restaurant Operations & Table Management OS
 
-[![C++ Core & Test Suite CI](https://github.com/qamarabbas-024/Restaurant-Booking-Table/actions/workflows/ci.yml/badge.svg)](https://github.com/qamarabbas-024/Restaurant-Booking-Table/actions/workflows/ci.yml)
-![Language](https://img.shields.io/badge/Language-C%2B%2B17-blue.svg)
-![Standards](https://img.shields.io/badge/Standard-ISO%20C%2B%2B17-emerald.svg)
-![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen.svg)
-![License](https://img.shields.io/badge/License-MIT-amber.svg)
+[![CI Pipeline](https://github.com/qamarabbas-024/Restaurant-Booking-Table/actions/workflows/ci.yml/badge.svg)](https://github.com/qamarabbas-024/Restaurant-Booking-Table/actions)
+[![Language](https://img.shields.io/badge/Language-C%2B%2B17%20%7C%20Vanilla%20Web-blue.svg)](https://github.com/qamarabbas-024/Restaurant-Booking-Table)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Web-emerald.svg)](https://github.com/qamarabbas-024/Restaurant-Booking-Table)
+[![Themes](https://img.shields.io/badge/Themes-5%20Luxury%20Palettes-purple.svg)](Code/web/style.css)
 
-A modular, dual-interface **Restaurant Table Booking & Floor Management System** built in standard C++17 with a luxury visual operations platform. Designed as an exemplary 2nd-semester BSCS Object-Oriented Programming (OOP) project demonstrating the principle of **"One Source of Truth, Multiple Interfaces"**:
-1. **Interactive Console Terminal Interface**: Fast, keyboard-driven, stream-safe terminal interface.
-2. **Visual Web Operations Platform**: SevenRooms/Resy-inspired spatial floor plan, 5-state CAD table fixtures, contextual action drawer, 5-stage allocation pipeline visualizer, CSV export, daily host run-sheet, and live activity stream.
-
-Both interfaces share 100% of the C++ business logic, scheduling engine, and file persistence layer (`tables.txt`, `bookings.txt`).
+> **The Royal Spice 3.0** is an industry-defining **3D Spatial Restaurant Table Management, AI Sommelier & Reservation Operating System** powered by a dual-engine architecture: a high-performance C++17 Core Engine and an immersive, zero-lag Web Companion Platform.
 
 ---
 
-## ⚡ Quick 1-Click Launch (Windows)
-
-Simply double-click **`launch.bat`** (or run `.\start.ps1` in PowerShell):
-- Automatically builds `system.exe` if not present.
-- Starts the embedded background server daemon on port `8080`.
-- Launches your default web browser to **`http://localhost:8080`**.
-
----
-
-## 📌 Features
-
-### 🏢 Table & Spatial Floor Management
-- **Interactive Spatial Floor Layout**: Multi-zone architectural blueprint (Main Dining Room, VIP Imperial Suite, Couples Alcove, Grand Banquet Room).
-- **Realistic CAD Table Geometries**: Round bistro 2-tops, leather 4-top booths, hexagonal 6-top VIP suites, and banquet long tables with symmetrical chair fixtures.
-- **5-State Operational System**: `Available` (Green), `Reserved` (Blue), `Seated` (Purple), `Needs Cleaning` (Amber), and `Maintenance` (Slate).
-- **Contextual Table Details Drawer**: Slide-out action drawer to seat walk-in guests, flip maintenance status, release occupied tables, and view active party information.
-- **Interactive Layout Customizer**: "Edit Layout" mode to configure table zones and capacities.
-
-### 📅 Reservation & Booking Management
-- **Smart Best-Fit Table Allocation**: Automatically assigns the table with the smallest adequate capacity (`capacity >= party size`) that has no scheduling conflicts for the requested date and time slot.
-- **Allocation Pipeline Visualizer**: Animates the internal 5-stage allocation algorithm step-by-step:
-  `[Input Validation] -> [Slot Check] -> [Conflict Scan] -> [Best-Fit Match] -> [File Persist]`.
-- **Conflict-Free Scheduling**: Precise slot-based conflict detection preventing double-booking of any table for the same date and time.
-- **Multi-Criteria Search & Filter**: Search by unique **Booking ID**, **Guest Name** substring, or **Reservation Date**.
-- **Shift Manifest CSV Export & Daily Host Run-Sheet**: 1-click CSV download and print-ready daily manifest run-sheet for head chef/host stand.
-- **Official VIP Dining Pass**: Formatted printable booking receipt with QR seal.
-
-### 📊 Dashboard & System Analytics
-- **Live Metrics Ribbon**: Real-time gauge of Total Installed Tables, Seated Covers, Active Reservations, and Shift Revenue Yield Forecast.
-- **Live Operational Activity Stream**: Real-time event timeline logging every creation, cancellation, table modification, and conflict check.
-
-### 💾 Robust Persistence & Network Architecture
-- **Zero External Runtime Dependencies**: Embedded lightweight C++ HTTP server (`winsock2.h` on Windows / POSIX sockets) compiled directly into the binary. No Node.js, Python, or npm required.
-- **Pipe-Delimited File Storage**: Automatically serializes tables and bookings to `tables.txt` and `bookings.txt`.
-- **Exception Safety**: Guarded against corrupted or malformed data files with `try-catch` blocks.
-
----
-
-## 📚 Core OOP Concepts Demonstrated
-
-| Concept | Implementation in Code |
-|---|---|
-| **Encapsulation & Data Hiding** | All attributes in `Table` and `Booking` are `private`, accessible only via invariant-preserving constructors, getters, and validated mutators. |
-| **Abstraction** | Both Console Menus and REST API handlers interact with `BookingManager` without needing to know internal container details or file serialization mechanisms. |
-| **Composition** | `BookingManager` owns and manages collections of `Table`, `Booking`, and `ActivityLog` objects. |
-| **Const-Correctness** | Non-mutating methods and getters are marked `const`, and non-primitive arguments are passed as `const Type &`. |
-| **Separation of Concerns** | Distinct modular tiers: Entity Tier (`Table`, `Booking`), Logic Tier (`BookingManager`), Bridge Tier (`Server`), Persistence Tier (`FileHandler`), and Presentation Tier (`main`, `Utils`, `Code/web/`). |
-| **Namespace Cleanliness** | Header files (`.h`) contain zero global namespace pollution (`using namespace std;` strictly avoided in headers). |
-
-> 📖 **Detailed Defense Guide**: See **[`VIVA_DEFENSE_GUIDE.md`](VIVA_DEFENSE_GUIDE.md)** for full academic OOP breakdown, Big-O algorithmic proofs, and likely examiner questions.
-
----
-
-## 📂 Project Structure
+## 🌟 Core Pillars & Operational Capabilities
 
 ```text
-Restaurant-Booking-Table/
-├── .github/
-│   └── workflows/
-│       └── ci.yml             # GitHub Actions CI multi-platform workflow
-├── Code/
-│   ├── Table.h                # Table entity declarations & encapsulation
-│   ├── Table.cpp              # Table method implementations & formatting
-│   ├── Booking.h              # Booking entity declarations & domain queries
-│   ├── Booking.cpp            # Booking method implementations & receipts
-│   ├── BookingManager.h       # Controller, scheduling engine & API methods
-│   ├── BookingManager.cpp     # Allocation, search, conflict detection logic
-│   ├── FileHandler.h          # Persistence interface declarations
-│   ├── FileHandler.cpp        # Exception-safe file parser & serializer
-│   ├── Server.h               # Embedded HTTP companion server header
-│   ├── Server.cpp             # Embedded C++ HTTP/REST server & router
-│   ├── Utils.h                # Console, input validation & formatting helpers
-│   ├── Utils.cpp              # Stream sanitization & UI helper routines
-│   ├── main.cpp               # Entry point and interactive console menus
-│   ├── test_suite.cpp         # Automated unit & integration test runner
-│   ├── tables.txt             # Table persistent records
-│   ├── bookings.txt           # Booking persistent records
-│   ├── system.exe             # Compiled release executable
-│   └── web/                   # Visual Companion Web Application
-│       ├── index.html         # Visual platform layout & spatial floor plan
-│       ├── style.css          # Design system tokens, light/dark mode & CAD styles
-│       └── app.js             # State manager, spatial canvas & dual sync engine
-├── launch.bat                 # 1-Click Windows batch launcher
-├── start.ps1                  # 1-Click PowerShell launcher
-├── VIVA_DEFENSE_GUIDE.md      # Academic Viva defense & OOP analysis guide
-├── PRD.md                     # Product Requirements Document
-├── PRODUCT_PLAN.md            # Product Scope & Release Roadmap
-├── TECHNICAL_ARCHITECTURE.md  # System Design & Class Architecture
-├── SECURITY_SPECIFICATION.md  # Threat Modeling & Input Sanitization
-├── FRONTEND_SPECIFICATION.md  # Console UI & Visual Platform Specifications
-├── FEATURE_TICKETS.md         # Engineering Tickets & Acceptance Criteria
-├── TEST_PLAN.md               # Test Matrix & Verification Cases
-├── PERFORMANCE_PLAN.md        # Theoretical Complexity & Resource Plan
-├── DATA_MODEL.md              # Data Schemas & Storage Invariants
-├── DECISION_LOG.md            # Architectural Decision Records
-├── PROJECT_STATE.md           # Operational Checkpoint & Status
-└── README.md                  # Project Documentation & Setup Guide
+THE ROYAL SPICE 3.0+ ECOSYSTEM
+├── 1. 🌌 3D Spatial Floor Plan (Isometric View, Orbit/Tilt/Zoom Camera, 3D Table Nodes)
+├── 2. 🤖 AI Dining Sommelier & Concierge (Chef Auguste: Wine Pairings, Instant Booking)
+├── 3. 🍷 Visual Photo Menu & Dish Showcase (Michelin 3-Star Catalog with Allergen Tags)
+├── 4. 👑 VIP Guest CRM & Loyalty Directory (Visit Frequency, Lifetime Spend, Notes)
+├── 5. 📄 High-Fidelity Vector PDF Dining Pass & Run-Sheet (Printable Guest Passes)
+├── 6. 🎨 5 Curated Luxury Themes (Imperial Onyx, Royal Emerald, Champagne Pearl, etc.)
+├── 7. 🎧 Web Audio Synthesizer (Crystal Toast, Service Bell Chimes, Tactile Feedback)
+└── 8. ⚡ C++17 Core REST Server (Zero-Latency File Persistence in tables.txt & bookings.txt)
 ```
 
 ---
 
-## ⚙️ Compilation & Running
+## 🚀 Quick Start & 1-Click Launch
 
-### Option 1: Quick Launcher (Recommended)
+### Option 1: Web Companion (Standalone or Live C++ Sync)
 Double-click `launch.bat` or run:
 ```powershell
 .\start.ps1
 ```
+Or open [`Code/web/index.html`](Code/web/index.html) in any browser.
 
-### Option 2: Manual Terminal Compilation
-```bash
+### Option 2: Live Embedded C++ REST Companion Server
+Compile and launch the embedded HTTP server on port 8080:
+```powershell
 cd Code
-g++ -Wall -Wextra -Wpedantic -std=c++17 main.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -lws2_32 -o system.exe
+g++ -std=c++17 main.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -lws2_32 -o system.exe
+.\system.exe --serve
+```
+Open **[http://localhost:8080](http://localhost:8080)** in your browser.
+
+---
+
+## 🎨 5 Curated Luxury Themes
+1. **🌌 Imperial Onyx & Gold (Default Dark)**: Deep obsidian canvas with gold leaf accents and champagne highlights.
+2. **👑 Royal Emerald Palace**: Deep forest emerald `#031c10` with antique brass highlights.
+3. **🥂 Champagne Pearl (Luxury Light)**: Warm ivory `#fdfbf7` with cognac accents and soft alabaster cards.
+4. **🌙 Tokyo Midnight Velvet**: Deep sapphire `#03071e` with neon violet glows.
+5. **🏛️ Nordic Minimalist Slate**: Scandinavian crisp white `#f8fafc` with charcoal slate typography.
+
+---
+
+## 🗺️ 10-Version Mega Evolution Roadmap (v3.0 to v4.0)
+
+```mermaid
+graph TD
+    V30[v3.0: 3D Spatial Floor Plan & Camera Engine] --> V31[v3.1: Luxury 5-Theme Design System]
+    V31 --> V32[v3.2: AI Dining Concierge & Sommelier Bot]
+    V32 --> V33[v3.3: Visual Photo Menu & Dish Gallery]
+    V33 --> V34[v3.4: High-Fidelity Vector PDF Dining Pass]
+    V34 --> V35[v3.5: Guest CRM & VIP Loyalty Directory]
+    V35 --> V36[v3.6: Dynamic Shift Yield & Table Turnover]
+    V36 --> V37[v3.7: Spatial Soundscapes & Synthesized Audio]
+    V37 --> V38[v3.8: Shift Audit Vault & Disaster Recovery]
+    V38 --> V39[v3.9: Sub-50ms Zero-Lag Performance Polish]
+    V39 --> V40[v4.0: Master Unified Release & CI Verification]
 ```
 
-- **Run Console Interface**:
-  ```bash
-  .\system.exe
-  ```
-- **Run Visual Companion Server**:
-  ```bash
-  .\system.exe --serve
-  ```
-  Open `http://localhost:8080` in your browser.
+---
 
-### Option 3: Automated Test Runner
-```bash
+## 🧪 Automated Testing
+Run the 6/6 automated C++ unit and integration test suites:
+```powershell
 cd Code
 g++ -Wall -Wextra -Wpedantic -std=c++17 test_suite.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -lws2_32 -o test_suite.exe
 .\test_suite.exe
 ```
+
+---
+
+## 📄 License & Attribution
+Designed & Built for fine dining hospitality operators. Licensed under the MIT License.

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="obsidian">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Royal Spice — Premium Restaurant Table Management, Interactive Floor Plan & Reservation Operating System">
-  <title>The Royal Spice — Restaurant Operations & Table Management System</title>
+  <meta name="description" content="The Royal Spice — 3D Spatial Restaurant Operations, Interactive Table Floor Plan, AI Sommelier & VIP Reservation OS">
+  <title>The Royal Spice — 3D Spatial Restaurant & Table Management OS</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
 </head>
 <body>
 
-  <div class="app-layout">
+  <div class="app-layout" id="app-layout">
     
     <!-- Left Navigation Sidebar -->
     <aside class="app-sidebar" id="app-sidebar">
@@ -37,8 +37,8 @@
           <span>Live Dashboard</span>
         </button>
         <button class="nav-item" data-view="floorplan">
-          <i data-lucide="map"></i>
-          <span>Floor Plan</span>
+          <i data-lucide="box"></i>
+          <span>3D Floor Plan</span>
           <span class="nav-pill green" id="nav-open-tables-pill">0 Open</span>
         </button>
         <button class="nav-item" data-view="reservations">
@@ -49,6 +49,15 @@
         <button class="nav-item" data-view="booking">
           <i data-lucide="plus-circle"></i>
           <span>New Reservation</span>
+        </button>
+        <button class="nav-item" data-view="menu">
+          <i data-lucide="utensils"></i>
+          <span>Visual Dish Menu</span>
+          <span class="nav-pill gold">Michelin</span>
+        </button>
+        <button class="nav-item" data-view="crm">
+          <i data-lucide="crown"></i>
+          <span>VIP Guest CRM</span>
         </button>
         <button class="nav-item" data-view="tables">
           <i data-lucide="grid-3x3"></i>
@@ -79,7 +88,7 @@
           <div class="user-avatar">QA</div>
           <div class="user-meta">
             <strong>Host Stand</strong>
-            <small>Table Manager v2.5</small>
+            <small>Table Manager v3.0</small>
           </div>
         </div>
       </div>
@@ -122,79 +131,110 @@
         </div>
 
         <div class="header-right">
+          <!-- C++ Engine Connection Indicator -->
           <div class="core-sync-indicator" id="core-sync-indicator" title="C++ Core Engine & Persistence Status">
             <span class="sync-dot"></span>
             <span class="sync-label">C++ Live</span>
           </div>
-          <button class="btn btn-secondary btn-icon" id="theme-mode-toggle" title="Toggle Light/Dark Theme">
-            <span id="theme-icon-wrap"><i data-lucide="sun"></i></span>
+
+          <!-- 5 Luxury Themes Selector -->
+          <div class="theme-select-wrap">
+            <select id="theme-selector" class="clean-select-theme" title="Select Luxury Visual Theme">
+              <option value="obsidian">🌌 Imperial Onyx & Gold</option>
+              <option value="emerald">👑 Royal Emerald Palace</option>
+              <option value="champagne">🥂 Champagne Pearl (Light)</option>
+              <option value="midnight">🌙 Tokyo Midnight Velvet</option>
+              <option value="nordic">🏛️ Nordic Minimalist Slate</option>
+            </select>
+          </div>
+
+          <!-- AI Dining Sommelier & Concierge Trigger -->
+          <button class="btn btn-secondary btn-sm ai-concierge-btn" id="btn-open-ai-concierge" title="AI Sommelier & Concierge">
+            <i data-lucide="sparkles" class="gold-icon"></i>
+            <span>AI Concierge</span>
           </button>
+
+          <!-- Sound Feedback Toggle -->
           <button class="btn btn-secondary btn-icon btn-sound-toggle sound-active" id="sound-feedback-toggle" title="Audio Feedback: ON (Click to Mute)">
             <span id="sound-icon-wrap"><i data-lucide="volume-2"></i></span>
             <span class="sound-status-dot active" id="sound-status-dot"></span>
           </button>
+
           <button class="btn btn-secondary btn-icon" id="manual-sync-btn" title="Synchronize State">
             <i data-lucide="refresh-cw"></i>
           </button>
+
           <button class="btn btn-primary" id="btn-open-walkin-dialog">
             <i data-lucide="user-plus"></i>
-            <span>+ Quick Walk-In</span>
+            <span>Walk-In</span>
           </button>
         </div>
       </header>
 
-      <!-- View Containers -->
+      <!-- Workspace Body (Dynamic Paneling) -->
       <div class="workspace-body">
-
+        
         <!-- ============================================================= -->
-        <!-- VIEW 1: LIVE DASHBOARD                                         -->
+        <!-- VIEW 1: LIVE DASHBOARD OVERVIEW                                -->
         <!-- ============================================================= -->
         <section class="view-panel active" id="view-dashboard">
           
-          <!-- Key Operational Radar Metrics -->
+          <!-- Key Metrics Deck -->
           <div class="metrics-deck">
             <div class="metric-card">
-              <div class="metric-icon-box bg-emerald">
-                <i data-lucide="check-circle-2"></i>
+              <div class="metric-header">
+                <span class="metric-title">Available Tables</span>
+                <span class="metric-icon-wrap green"><i data-lucide="check-circle-2"></i></span>
               </div>
-              <div class="metric-info">
-                <span class="metric-title">AVAILABLE TABLES</span>
-                <div class="metric-number"><span id="metric-available-tables">0</span><small id="metric-total-tables-denom">/0</small></div>
+              <div class="metric-value-row">
+                <h3 class="metric-value" id="metric-available-tables">5</h3>
+                <span class="metric-denom" id="metric-total-tables-denom">/ 6 Fleet</span>
               </div>
-              <div class="metric-status-tag green" id="metric-tables-status-tag">Ready to Seat</div>
+              <div class="metric-footer">
+                <span class="trend-badge positive">Instant Seating Ready</span>
+              </div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-icon-box bg-purple">
-                <i data-lucide="utensils"></i>
+              <div class="metric-header">
+                <span class="metric-title">Seated Covers</span>
+                <span class="metric-icon-wrap blue"><i data-lucide="users"></i></span>
               </div>
-              <div class="metric-info">
-                <span class="metric-title">SEATED COVERS</span>
-                <div class="metric-number"><span id="metric-seated-covers">0</span> <small>Guests</small></div>
+              <div class="metric-value-row">
+                <h3 class="metric-value" id="metric-seated-covers">0</h3>
+                <span class="metric-denom">Guests In-House</span>
               </div>
-              <div class="metric-status-tag purple" id="metric-capacity-tag">0% Capacity</div>
+              <div class="metric-footer">
+                <span class="metric-subtext" id="metric-capacity-tag">Capacity: 26 Max</span>
+              </div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-icon-box bg-blue">
-                <i data-lucide="calendar"></i>
+              <div class="metric-header">
+                <span class="metric-title">Confirmed Bookings</span>
+                <span class="metric-icon-wrap gold"><i data-lucide="calendar"></i></span>
               </div>
-              <div class="metric-info">
-                <span class="metric-title">TOTAL RESERVATIONS</span>
-                <div class="metric-number" id="metric-total-bookings-count">0</div>
+              <div class="metric-value-row">
+                <h3 class="metric-value" id="metric-total-bookings-count">0</h3>
+                <span class="metric-denom">Reservations</span>
               </div>
-              <div class="metric-status-tag blue" id="metric-slot-bookings-tag">0 in Slot</div>
+              <div class="metric-footer">
+                <span class="metric-subtext" id="metric-slot-bookings-tag">Slot: 8:00 PM</span>
+              </div>
             </div>
 
             <div class="metric-card">
-              <div class="metric-icon-box bg-amber">
-                <i data-lucide="clock"></i>
+              <div class="metric-header">
+                <span class="metric-title">Projected Shift Revenue</span>
+                <span class="metric-icon-wrap purple"><i data-lucide="trending-up"></i></span>
               </div>
-              <div class="metric-info">
-                <span class="metric-title">EST. REVENUE YIELD</span>
-                <div class="metric-number" id="metric-est-revenue">$0</div>
+              <div class="metric-value-row">
+                <h3 class="metric-value" id="metric-est-revenue">$0</h3>
+                <span class="metric-denom">Estimated Yield</span>
               </div>
-              <div class="metric-status-tag amber">Shift Forecast</div>
+              <div class="metric-footer">
+                <span class="trend-badge gold">Avg $85 / Cover</span>
+              </div>
             </div>
           </div>
 
@@ -248,12 +288,12 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 2: SPATIAL FLOOR PLAN (THE HEART OF THE PRODUCT)          -->
+        <!-- VIEW 2: SPATIAL 3D FLOOR PLAN (THE HEART OF THE PRODUCT)       -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-floorplan">
           <div class="surface-card floor-master-card">
             
-            <!-- Floor Plan Filter Bar -->
+            <!-- Floor Plan Filter & 3D Camera Bar -->
             <div class="card-top-bar floor-control-header">
               <div class="zone-filter-pills" id="floor-zone-pills">
                 <button class="zone-pill active" data-zone="ALL">All Dining Rooms</button>
@@ -264,6 +304,16 @@
               </div>
 
               <div class="floor-action-controls">
+                <!-- 3D Camera Controls -->
+                <button class="btn btn-secondary btn-sm" id="btn-toggle-3d-mode" title="Toggle 3D Perspective">
+                  <i data-lucide="layers"></i>
+                  <span id="btn-3d-label">Isometric 3D</span>
+                </button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-orbit-left" title="Orbit Left"><i data-lucide="rotate-ccw"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-orbit-right" title="Orbit Right"><i data-lucide="rotate-cw"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-zoom-in" title="Zoom In"><i data-lucide="zoom-in"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-floor-zoom-out" title="Zoom Out"><i data-lucide="zoom-out"></i></button>
+
                 <button class="btn btn-secondary btn-sm" id="btn-toggle-edit-mode">
                   <i data-lucide="edit-3"></i>
                   <span id="edit-mode-label">Edit Layout</span>
@@ -273,9 +323,11 @@
               </div>
             </div>
 
-            <!-- Interactive Dining Room Architectural Canvas -->
-            <div class="floor-plan-full-canvas" id="master-floor-canvas">
-              <!-- Dynamically rendered table pod fixtures -->
+            <!-- Interactive Dining Room 3D Canvas -->
+            <div class="floor-plan-3d-stage" id="floor-plan-3d-stage">
+              <div class="floor-plan-full-canvas is-isometric" id="master-floor-canvas">
+                <!-- Dynamically rendered 3D table pod fixtures -->
+              </div>
             </div>
 
             <div class="floor-footer-info">
@@ -500,7 +552,52 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 5: TABLE FLEET MANAGEMENT                                 -->
+        <!-- VIEW 5: VISUAL PHOTO MENU & DISH SHOWCASE                     -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-menu">
+          <div class="surface-card">
+            <div class="card-top-bar">
+              <div>
+                <h3 class="card-title">Michelin 3-Star Visual Dining Menu</h3>
+                <p class="card-subtitle">Signature dishes, sommelier wine pairings, and dietary allergen tags</p>
+              </div>
+              <div class="menu-filter-strip">
+                <button class="menu-cat-btn active" data-cat="ALL">All Courses</button>
+                <button class="menu-cat-btn" data-cat="Starters">Starters</button>
+                <button class="menu-cat-btn" data-cat="Mains">Chef Specialties</button>
+                <button class="menu-cat-btn" data-cat="Steaks">Steaks & Grills</button>
+                <button class="menu-cat-btn" data-cat="Desserts">Desserts</button>
+                <button class="menu-cat-btn" data-cat="Cellar">Vintage Cellar</button>
+              </div>
+            </div>
+
+            <div class="dish-cards-grid" id="dish-cards-grid">
+              <!-- Dynamically populated dish cards -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 6: VIP GUEST CRM & LOYALTY DIRECTORY                     -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-crm">
+          <div class="surface-card">
+            <div class="card-top-bar">
+              <div>
+                <h3 class="card-title">VIP Guest CRM & Hospitality Profiles</h3>
+                <p class="card-subtitle">Track visit frequency, lifetime spend, dietary preferences, and milestones</p>
+              </div>
+              <span class="badge-pill gold"><i data-lucide="crown" class="icon-sm"></i> VIP Concierge Active</span>
+            </div>
+
+            <div class="crm-guest-grid" id="crm-guest-grid">
+              <!-- Dynamically populated VIP guest cards -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 7: TABLE FLEET MANAGEMENT                                 -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-tables">
           <div class="surface-card">
@@ -534,7 +631,7 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 6: LIVE ACTIVITY STREAM                                   -->
+        <!-- VIEW 8: LIVE ACTIVITY STREAM                                   -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-activity">
           <div class="surface-card">
@@ -619,6 +716,44 @@
     </div>
   </div>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <!-- ================================================================= -->
+  <!-- AI CONCIERGE & SOMMELIER CHAT DRAWER                              -->
+  <!-- ================================================================= -->
+  <div class="ai-concierge-drawer" id="ai-concierge-drawer">
+    <div class="drawer-header ai-header">
+      <div class="ai-title-wrap">
+        <div class="ai-avatar">👨‍🍳</div>
+        <div>
+          <h3>Chef Auguste — AI Sommelier</h3>
+          <small>Fine Dining & VIP Reservation Assistant</small>
+        </div>
+      </div>
+      <button class="drawer-close-btn" id="btn-close-ai-concierge">&times;</button>
+    </div>
+
+    <div class="ai-chat-messages" id="ai-chat-messages">
+      <div class="ai-msg bot">
+        <div class="msg-avatar">⚜️</div>
+        <div class="msg-bubble">
+          <strong>Greetings, Host. I am Chef Auguste.</strong>
+          <p>I can help you recommend wine pairings, check dietary restrictions, analyze table seating efficiency, or book reservations instantly. How may I assist service tonight?</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-prompts-strip">
+      <button class="prompt-chip" data-prompt="Book a VIP Suite for 4 tonight at 8:00 PM">🍾 Book VIP Suite</button>
+      <button class="prompt-chip" data-prompt="What vintage wine pairs with Wagyu Ribeye?">🍷 Wine Pairing</button>
+      <button class="prompt-chip" data-prompt="Are there any couples tables available for dinner?">💍 Couples Tables</button>
+    </div>
+
+    <form class="ai-input-bar" id="ai-chat-form">
+      <input type="text" id="ai-chat-input" class="ai-input-field" placeholder="Ask Chef Auguste or type booking prompt..." autocomplete="off">
+      <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="send"></i></button>
+    </form>
+  </div>
+  <div class="ai-drawer-backdrop" id="ai-drawer-backdrop"></div>
 
   <!-- ================================================================= -->
   <!-- MODAL: QUICK WALK-IN SEATING                                      -->
