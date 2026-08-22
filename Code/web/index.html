@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="obsidian">
+<html lang="en" data-theme="dark-blue">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +26,7 @@
       <div class="sidebar-brand">
         <div class="brand-crest">⚜️</div>
         <div class="brand-text">
-          <span class="brand-eyebrow">MICHELIN 3-STAR OS</span>
+          <span class="brand-eyebrow">FINE DINING OS</span>
           <h1 class="brand-title">THE ROYAL SPICE</h1>
         </div>
       </div>
@@ -53,7 +53,7 @@
         <button class="nav-item" data-view="menu">
           <i data-lucide="utensils"></i>
           <span>Visual Dish Menu</span>
-          <span class="nav-pill gold">Haute Cuisine</span>
+          <span class="nav-pill gold">Michelin</span>
         </button>
         <button class="nav-item" data-view="crm">
           <i data-lucide="crown"></i>
@@ -88,7 +88,7 @@
           <div class="user-avatar">QA</div>
           <div class="user-meta">
             <strong>Host Stand</strong>
-            <small>Table Manager v3.5 Pro</small>
+            <small>Table Manager v4.0</small>
           </div>
         </div>
       </div>
@@ -137,16 +137,11 @@
             <span class="sync-label">C++ Live</span>
           </div>
 
-          <!-- 5 Luxury Themes Selector -->
-          <div class="theme-select-wrap">
-            <select id="theme-selector" class="clean-select-theme" title="Select Luxury Visual Theme">
-              <option value="obsidian">🌌 Imperial Onyx & Gold</option>
-              <option value="emerald">👑 Royal Emerald Palace</option>
-              <option value="champagne">🥂 Champagne Pearl (Light)</option>
-              <option value="midnight">🌙 Tokyo Midnight Velvet</option>
-              <option value="nordic">🏛️ Nordic Minimalist Slate</option>
-            </select>
-          </div>
+          <!-- Clean 2-Theme Switcher (Dark Blue vs Luxury White) -->
+          <button class="btn btn-secondary btn-sm theme-switch-btn" id="btn-theme-toggle" title="Switch Theme (Dark Blue / White)">
+            <span id="theme-btn-icon"><i data-lucide="sun"></i></span>
+            <span id="theme-btn-label">Pure White</span>
+          </button>
 
           <!-- AI Dining Sommelier & Concierge Trigger -->
           <button class="btn btn-secondary btn-sm ai-concierge-btn" id="btn-open-ai-concierge" title="AI Sommelier & Concierge">

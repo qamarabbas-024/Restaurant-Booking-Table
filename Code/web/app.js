@@ -1,6 +1,6 @@
 // ==========================================================================
-// THE ROYAL SPICE 3.5 PRO — MASTER CONTROLLER
-// 5-Theme Engine, CAD Floor Plan Geometries, AI Sommelier & C++ REST Sync
+// THE ROYAL SPICE 4.0 — MASTER RESTAURANT MANAGEMENT CONTROLLER
+// 2 Luxury Themes (Dark Blue & Pure White), CAD Floor Plan, AI Sommelier & CRM
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
@@ -43,7 +43,7 @@ const DEFAULT_VIP_GUESTS = [
 // Master Application State
 const appState = {
   currentView: 'dashboard',
-  currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'obsidian',
+  currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) === 'white' ? 'white' : 'dark-blue',
   soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
   selectedOccasion: 'Romantic Dinner',
   selectedZone: 'ALL',
@@ -68,7 +68,9 @@ const headerDateBadge = document.getElementById('header-date-badge');
 const globalDateInput = document.getElementById('global-date-input');
 const headerSlotChips = document.getElementById('header-slot-chips');
 const coreSyncIndicator = document.getElementById('core-sync-indicator');
-const themeSelector = document.getElementById('theme-selector');
+const btnThemeToggle = document.getElementById('btn-theme-toggle');
+const themeBtnIcon = document.getElementById('theme-btn-icon');
+const themeBtnLabel = document.getElementById('theme-btn-label');
 const soundFeedbackToggle = document.getElementById('sound-feedback-toggle');
 const soundIconWrap = document.getElementById('sound-icon-wrap');
 const soundStatusDot = document.getElementById('sound-status-dot');
@@ -189,12 +191,22 @@ function showToastNotification(message, type = 'info') {
   }, 3200);
 }
 
-// ================= 5 LUXURY THEMES =================
-function applyLuxuryTheme(themeName) {
+// ================= 2-THEME ENGINE (DARK BLUE & PURE WHITE) =================
+function applyTheme(themeName) {
   appState.currentTheme = themeName;
   document.documentElement.setAttribute('data-theme', themeName);
   localStorage.setItem(STORAGE_KEYS.THEME, themeName);
-  if (themeSelector) themeSelector.value = themeName;
+
+  if (themeBtnIcon && themeBtnLabel) {
+    if (themeName === 'white') {
+      themeBtnIcon.innerHTML = '<i data-lucide="moon"></i>';
+      themeBtnLabel.textContent = 'Dark Blue';
+    } else {
+      themeBtnIcon.innerHTML = '<i data-lucide="sun"></i>';
+      themeBtnLabel.textContent = 'Pure White';
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
 }
 
 function updateSoundToggleUI() {
@@ -240,6 +252,7 @@ function switchAppView(viewName) {
   };
   if (currentViewTitle) currentViewTitle.textContent = titles[viewName] || 'The Royal Spice';
 
+  // Render view-specific data
   if (viewName === 'menu') renderVisualMenu('ALL');
   if (viewName === 'crm') renderVIPGuests();
   if (viewName === 'floorplan') renderFloorPlan(masterFloorCanvas, true);
@@ -304,7 +317,6 @@ function renderFloorPlan(canvasElement, isMaster = false) {
     // Generate CAD Architectural Geometry Visual
     let geoHtml = '';
     if (tbl.capacity <= 2) {
-      // Round Couple Table with 2 Facing Chairs
       geoHtml = `
         <div class="cad-geo-round">
           <div class="cad-chair-top"></div>
@@ -313,7 +325,6 @@ function renderFloorPlan(canvasElement, isMaster = false) {
         </div>
       `;
     } else if (tbl.capacity <= 4) {
-      // Family Booth with Leather Banquette Seats
       geoHtml = `
         <div class="cad-geo-booth">
           <div class="cad-booth-seat-top"></div>
@@ -322,14 +333,12 @@ function renderFloorPlan(canvasElement, isMaster = false) {
         </div>
       `;
     } else if (tbl.capacity <= 6) {
-      // VIP Imperial Suite Oval Table
       geoHtml = `
         <div class="cad-geo-suite">
           <span>👑 VIP #${tbl.id}</span>
         </div>
       `;
     } else {
-      // Banquet 8-Seat Grand Table
       geoHtml = `
         <div class="cad-geo-booth" style="width: 140px; border-color: var(--primary-500);">
           <div class="cad-booth-seat-top" style="width: 130px;"></div>
@@ -811,8 +820,13 @@ document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
   }
 });
 
-// Theme Selector
-themeSelector.addEventListener('change', (e) => applyLuxuryTheme(e.target.value));
+// Theme Toggle Button (Dark Blue <-> Pure White)
+btnThemeToggle.addEventListener('click', () => {
+  playAudioChime('click');
+  const nextTheme = appState.currentTheme === 'white' ? 'dark-blue' : 'white';
+  applyTheme(nextTheme);
+  showToastNotification(`Switched to ${nextTheme === 'white' ? 'Pristine White' : 'Midnight Sapphire'} theme.`, 'info');
+});
 
 // Sound Toggle
 soundFeedbackToggle.addEventListener('click', () => {
@@ -966,12 +980,23 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
   showToastNotification('Downloaded reservations CSV manifest.', 'success');
 });
 
+// Pre-render ALL view components on load
+evaluateSlotState();
+renderFloorPlan(dashboardFloorPreview, false);
+renderFloorPlan(masterFloorCanvas, true);
+renderVisualMenu('ALL');
+renderVIPGuests();
+renderReservationsTable();
+renderFleetTableList();
+renderActivityTimeline();
+populateBookingFormDropdown();
+
 // Auto Background Polling every 3.5s
 setInterval(syncWithCoreEngine, 3500);
 
 // Initialize Platform
-applyLuxuryTheme(appState.currentTheme);
+applyTheme(appState.currentTheme);
 updateSoundToggleUI();
 syncWithCoreEngine();
 
-console.log('⚜️ The Royal Spice 3.5 Pro Initialized.');
+console.log('⚜️ The Royal Spice 4.0 Pro Initialized with 2 Curated Themes.');

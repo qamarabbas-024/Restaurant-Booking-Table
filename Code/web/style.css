@@ -1,20 +1,20 @@
 /* ==========================================================================
-   THE ROYAL SPICE 3.5 PRO — MASTER LUXURY HOSPITALITY DESIGN SYSTEM
-   5 Refined Theme Palettes, CAD Table Geometries & Architectural Floor Plan
+   THE ROYAL SPICE 4.0 — MASTER LUXURY HOSPITALITY DESIGN SYSTEM
+   2 Curated Luxury Themes: Midnight Sapphire (Dark Blue) & Pristine White
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   THEME 1: IMPERIAL ONYX & GOLD (DEFAULT MICHELIN 3-STAR DARK)
+   THEME 1: MIDNIGHT SAPPHIRE (DARK BLUE - DEFAULT)
    -------------------------------------------------------------------------- */
-:root, [data-theme="obsidian"] {
-  --bg-app: #060911;
-  --bg-sidebar: #04060c;
+:root, [data-theme="dark-blue"] {
+  --bg-app: #0b132b;
+  --bg-sidebar: #070d1f;
   --bg-sidebar-hover: rgba(245, 158, 11, 0.08);
-  --bg-surface: #0c1322;
-  --bg-surface-hover: #141e34;
-  --bg-canvas: #070b16;
-  --bg-input: #10192d;
-  --bg-glass: rgba(12, 19, 34, 0.88);
+  --bg-surface: #111c38;
+  --bg-surface-hover: #19274d;
+  --bg-canvas: #080e22;
+  --bg-input: #152244;
+  --bg-glass: rgba(17, 28, 56, 0.92);
 
   --text-main: #f8fafc;
   --text-body: #cbd5e1;
@@ -22,11 +22,11 @@
   --text-sidebar: #cbd5e1;
   --text-sidebar-muted: #64748b;
 
-  --border-subtle: #1e293b;
-  --border-input: #293854;
+  --border-subtle: #1e2f56;
+  --border-input: #293f70;
   --border-focus: #f59e0b;
 
-  /* 24k Imperial Gold Accents */
+  /* 24k Imperial Gold & Cyan Accents */
   --primary-500: #f59e0b;
   --primary-600: #d97706;
   --primary-700: #b45309;
@@ -37,8 +37,8 @@
   --c-available-bg: rgba(16, 185, 129, 0.15);
   --c-reserved: #f59e0b;
   --c-reserved-bg: rgba(245, 158, 11, 0.15);
-  --c-seated: #3b82f6;
-  --c-seated-bg: rgba(59, 130, 246, 0.15);
+  --c-seated: #38bdf8;
+  --c-seated-bg: rgba(56, 189, 248, 0.15);
   --c-cleaning: #a855f7;
   --c-cleaning-bg: rgba(168, 85, 247, 0.15);
   --c-maintenance: #ef4444;
@@ -59,102 +59,9 @@
 }
 
 /* --------------------------------------------------------------------------
-   THEME 2: ROYAL EMERALD PALACE
+   THEME 2: PRISTINE LUXURY WHITE (LIGHT)
    -------------------------------------------------------------------------- */
-[data-theme="emerald"] {
-  --bg-app: #021a0e;
-  --bg-sidebar: #011109;
-  --bg-sidebar-hover: rgba(234, 179, 8, 0.1);
-  --bg-surface: #042f1a;
-  --bg-surface-hover: #084728;
-  --bg-canvas: #032113;
-  --bg-input: #063c22;
-  --bg-glass: rgba(4, 47, 26, 0.9);
-
-  --text-main: #f0fdf4;
-  --text-body: #bbf7d0;
-  --text-muted: #86efac;
-  --text-sidebar: #dcfce7;
-  --text-sidebar-muted: #4ade80;
-
-  --border-subtle: #0f5132;
-  --border-input: #157347;
-  --border-focus: #eab308;
-
-  --primary-500: #eab308;
-  --primary-600: #ca8a04;
-  --primary-700: #a16207;
-  --primary-light: rgba(234, 179, 8, 0.18);
-  --primary-glow: rgba(234, 179, 8, 0.45);
-}
-
-/* --------------------------------------------------------------------------
-   THEME 3: CHAMPAGNE PEARL (LUXURY LIGHT)
-   -------------------------------------------------------------------------- */
-[data-theme="champagne"] {
-  --bg-app: #fbf9f5;
-  --bg-sidebar: #18130e;
-  --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #f7f3ec;
-  --bg-canvas: #f5f0e6;
-  --bg-input: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.95);
-
-  --text-main: #1c1917;
-  --text-body: #44403c;
-  --text-muted: #78716c;
-  --text-sidebar: #f5f5f4;
-  --text-sidebar-muted: #a8a29e;
-
-  --border-subtle: #e7e5e4;
-  --border-input: #d6d3d1;
-  --border-focus: #b45309;
-
-  --primary-500: #b45309;
-  --primary-600: #92400e;
-  --primary-700: #78350f;
-  --primary-light: #fef3c7;
-  --primary-glow: rgba(180, 83, 9, 0.25);
-
-  --shadow-card: 0 4px 20px -2px rgba(28, 25, 23, 0.06);
-  --shadow-modal: 0 25px 50px -12px rgba(28, 25, 23, 0.25);
-}
-
-/* --------------------------------------------------------------------------
-   THEME 4: TOKYO MIDNIGHT VELVET
-   -------------------------------------------------------------------------- */
-[data-theme="midnight"] {
-  --bg-app: #020617;
-  --bg-sidebar: #01030d;
-  --bg-sidebar-hover: rgba(139, 92, 246, 0.12);
-  --bg-surface: #0a1128;
-  --bg-surface-hover: #121c40;
-  --bg-canvas: #050b1d;
-  --bg-input: #0f1a3a;
-  --bg-glass: rgba(10, 17, 40, 0.88);
-
-  --text-main: #f5f3ff;
-  --text-body: #ddd6fe;
-  --text-muted: #a78bfa;
-  --text-sidebar: #ede9fe;
-  --text-sidebar-muted: #7c3aed;
-
-  --border-subtle: #1e1b4b;
-  --border-input: #312e81;
-  --border-focus: #8b5cf6;
-
-  --primary-500: #8b5cf6;
-  --primary-600: #7c3aed;
-  --primary-700: #6d28d9;
-  --primary-light: rgba(139, 92, 246, 0.2);
-  --primary-glow: rgba(139, 92, 246, 0.5);
-}
-
-/* --------------------------------------------------------------------------
-   THEME 5: NORDIC MINIMALIST SLATE
-   -------------------------------------------------------------------------- */
-[data-theme="nordic"] {
+[data-theme="white"] {
   --bg-app: #f8fafc;
   --bg-sidebar: #0f172a;
   --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
@@ -162,7 +69,7 @@
   --bg-surface-hover: #f1f5f9;
   --bg-canvas: #f1f5f9;
   --bg-input: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.95);
 
   --text-main: #0f172a;
   --text-body: #334155;
@@ -172,15 +79,27 @@
 
   --border-subtle: #e2e8f0;
   --border-input: #cbd5e1;
-  --border-focus: #3b82f6;
+  --border-focus: #b45309;
 
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-glow: rgba(59, 130, 246, 0.25);
+  --primary-500: #b45309;
+  --primary-600: #92400e;
+  --primary-700: #78350f;
+  --primary-light: #fef3c7;
+  --primary-glow: rgba(180, 83, 9, 0.25);
 
-  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+  --c-available: #059669;
+  --c-available-bg: #d1fae5;
+  --c-reserved: #d97706;
+  --c-reserved-bg: #fef3c7;
+  --c-seated: #2563eb;
+  --c-seated-bg: #dbeafe;
+  --c-cleaning: #7c3aed;
+  --c-cleaning-bg: #ede9fe;
+  --c-maintenance: #dc2626;
+  --c-maintenance-bg: #fee2e2;
+
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  --shadow-hover: 0 10px 25px -4px rgba(15, 23, 42, 0.12);
   --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
 }
 
@@ -199,7 +118,7 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.22s ease, color 0.22s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Master Layout */
@@ -386,6 +305,7 @@ body {
   display: flex;
   flex-direction: column;
   transition: margin-left 0.25s ease;
+  width: calc(100% - 260px);
 }
 
 .app-layout.sidebar-collapsed .app-sidebar {
@@ -393,6 +313,7 @@ body {
 }
 .app-layout.sidebar-collapsed .app-workspace {
   margin-left: 0;
+  width: 100%;
 }
 
 .sidebar-backdrop {
@@ -525,16 +446,12 @@ body {
   box-shadow: 0 0 6px var(--c-available);
 }
 
-.clean-select-theme {
-  background: var(--bg-input);
-  border: 1px solid var(--border-input);
-  color: var(--text-main);
-  padding: 6px 10px;
-  border-radius: var(--radius-xs);
-  font-size: 11.5px;
-  font-weight: 600;
-  font-family: inherit;
-  outline: none;
+.theme-switch-btn {
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .ai-concierge-btn {
@@ -595,9 +512,21 @@ body {
 .btn-danger-sm { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
 /* Workspace Panels */
-.workspace-body { padding: 24px 28px 60px 28px; flex: 1; }
-.view-panel { display: none; }
-.view-panel.active { display: block; animation: viewFade 0.22s ease; }
+.workspace-body {
+  padding: 24px 28px 60px 28px;
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.view-panel {
+  display: none;
+  width: 100%;
+}
+.view-panel.active {
+  display: block;
+  animation: viewFade 0.2s ease;
+}
 
 @keyframes viewFade {
   from { opacity: 0; transform: translateY(4px); }
@@ -612,6 +541,7 @@ body {
   padding: 20px;
   box-shadow: var(--shadow-card);
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .card-top-bar {
@@ -631,6 +561,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .metric-card {
@@ -661,6 +592,7 @@ body {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 20px;
+  width: 100%;
 }
 
 .status-legend-bar { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); font-weight: 600; flex-wrap: wrap; }
@@ -675,7 +607,7 @@ body {
 /* ==========================================================================
    VIEW 2: PHOTOREALISTIC CAD FLOOR PLAN & ARCHITECTURAL GEOMETRIES
    ========================================================================== */
-.floor-master-card { min-height: 680px; display: flex; flex-direction: column; }
+.floor-master-card { width: 100%; min-height: 640px; display: flex; flex-direction: column; }
 .zone-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
 .zone-pill {
   background: var(--bg-canvas);
@@ -704,6 +636,7 @@ body {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   min-height: 480px;
+  width: 100%;
 }
 
 /* CAD Table Node Fixture */
@@ -734,7 +667,7 @@ body {
 .cad-table-pod.status-maintenance { border-top: 4px solid var(--c-maintenance); }
 
 .cad-pod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.cad-table-num { font-family: var(--font-display); font-size: 15px; font-weight: 800; color: var(--text-main); }
+.cad-table-num { font-family: var(--font-serif); font-size: 14px; font-weight: 800; color: var(--text-main); }
 .cad-status-tag { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
 
 .cad-geometry-visual {
@@ -809,7 +742,7 @@ body {
   justify-content: center;
   font-weight: 800;
   font-size: 12px;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .cad-pod-meta {
@@ -847,6 +780,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 .dish-card {
@@ -874,6 +808,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 .crm-card {
@@ -1001,6 +936,7 @@ body {
 .exp-preset-btn:hover { background: var(--bg-surface-hover); border-color: var(--primary-500); }
 
 /* Tables & Modals */
+.table-responsive-container { width: 100%; overflow-x: auto; }
 .master-data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .master-data-table th { background: var(--bg-canvas); color: var(--text-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); text-align: left; }
 .master-data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); color: var(--text-main); }
@@ -1051,7 +987,7 @@ body {
 @media (max-width: 1024px) {
   .app-sidebar { transform: translateX(-100%); }
   .app-sidebar.mobile-open { transform: translateX(0); }
-  .app-workspace { margin-left: 0; }
+  .app-workspace { margin-left: 0; width: 100%; }
   .metrics-deck { grid-template-columns: repeat(2, 1fr); }
   .dashboard-grid-split, .booking-flow-grid { grid-template-columns: 1fr; }
 }
@@ -1059,5 +995,5 @@ body {
 @media print {
   body { background: #fff !important; color: #000 !important; }
   .app-sidebar, .workspace-header, .no-print, .toast-stream { display: none !important; }
-  .app-workspace { margin: 0 !important; }
+  .app-workspace { margin: 0 !important; width: 100% !important; }
 }
