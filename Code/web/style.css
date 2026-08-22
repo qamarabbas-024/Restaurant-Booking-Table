@@ -136,9 +136,7 @@ body {
   position: relative;
 }
 
-/* ==========================================================================
-   LEFT SIDEBAR NAVIGATION (Executive Dark Shell)
-   ========================================================================== */
+/* Left Sidebar Navigation */
 .app-sidebar {
   width: 260px;
   background-color: var(--bg-sidebar);
@@ -335,9 +333,7 @@ body {
   color: var(--text-sidebar-muted);
 }
 
-/* ==========================================================================
-   MAIN WORKSPACE & HEADER
-   ========================================================================== */
+/* Main Workspace */
 .app-workspace {
   flex: 1;
   margin-left: 260px;
@@ -382,7 +378,6 @@ body {
   font-weight: 600;
 }
 
-/* Header Slot Switcher */
 .service-slot-bar {
   display: flex;
   align-items: center;
@@ -553,9 +548,7 @@ body {
   color: #ffffff;
 }
 
-/* ==========================================================================
-   WORKSPACE BODY & VIEWS
-   ========================================================================== */
+/* Workspace Body */
 .workspace-body {
   padding: 24px 28px 60px 28px;
   flex: 1;
@@ -574,7 +567,6 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Surface Cards */
 .surface-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -713,9 +705,7 @@ body {
 .color-dot.cleaning { background: var(--c-cleaning); }
 .color-dot.maintenance { background: var(--c-maintenance); }
 
-/* ==========================================================================
-   SPATIAL FLOOR PLAN (THE HEART OF THE PRODUCT)
-   ========================================================================== */
+/* Spatial Floor Plan */
 .floor-canvas-wrapper, .floor-plan-full-canvas {
   background: var(--bg-canvas);
   border: 1px solid var(--border-subtle);
@@ -731,7 +721,11 @@ body {
   min-height: 520px;
 }
 
-/* Table Pod Fixtures */
+.floor-plan-full-canvas.edit-mode-active {
+  border: 2px dashed var(--primary-500);
+  background-color: var(--primary-light);
+}
+
 .table-pod-node {
   background: var(--bg-surface);
   border: 2px solid var(--border-subtle);
@@ -752,7 +746,6 @@ body {
   border-color: var(--primary-500);
 }
 
-/* State Classes */
 .table-pod-node.state-available { border-color: var(--c-available); }
 .table-pod-node.state-reserved { border-color: var(--c-reserved); }
 .table-pod-node.state-seated { border-color: var(--c-seated); }
@@ -789,7 +782,6 @@ body {
 .state-cleaning .pod-status-pill { background: var(--c-cleaning-bg); color: var(--primary-700); }
 .state-maintenance .pod-status-pill { background: var(--c-maintenance-bg); color: var(--c-maintenance); }
 
-/* Table CAD Geometry & Chairs */
 .table-fixture-stage {
   margin: 24px 0 12px 0;
   width: 86px;
@@ -831,9 +823,7 @@ body {
 .pod-name-text { font-size: 12.5px; font-weight: 700; color: var(--text-main); text-align: center; }
 .pod-cap-text { font-size: 10.5px; color: var(--text-muted); text-align: center; }
 .pod-guest-banner { font-size: 10px; color: var(--c-reserved); font-weight: 700; text-align: center; margin-top: 2px; }
-.pod-timer-banner { font-size: 9.5px; color: var(--c-seated); font-family: var(--font-mono); font-weight: 700; text-align: center; margin-top: 2px; }
 
-/* Zone Filter Pills */
 .zone-filter-pills {
   display: flex;
   gap: 6px;
@@ -889,9 +879,7 @@ body {
   color: var(--text-main);
 }
 
-/* ==========================================================================
-   CONTEXTUAL TABLE ACTION DRAWER
-   ========================================================================== */
+/* Contextual Table Details Drawer */
 .table-context-drawer {
   position: fixed;
   top: 0;
@@ -1004,9 +992,7 @@ body {
   margin-top: auto;
 }
 
-/* ==========================================================================
-   MASTER RESERVATIONS LEDGER & TABLES
-   ========================================================================== */
+/* Master Data Table */
 .table-responsive-container {
   overflow-x: auto;
 }
@@ -1054,11 +1040,12 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .search-input-box {
   position: relative;
-  width: 280px;
+  width: 260px;
 }
 .search-icon {
   position: absolute;
@@ -1095,9 +1082,7 @@ body {
   font-family: inherit;
 }
 
-/* ==========================================================================
-   SMART BOOKING FLOW & PIPELINE
-   ========================================================================== */
+/* Smart Booking Form */
 .booking-flow-grid {
   display: grid;
   grid-template-columns: 1.25fr 1fr;
@@ -1291,9 +1276,7 @@ body {
   border-color: var(--primary-500);
 }
 
-/* ==========================================================================
-   LIVE ACTIVITY TIMELINE
-   ========================================================================== */
+/* Activity Stream */
 .activity-timeline-stream, .mini-activity-timeline {
   display: flex;
   flex-direction: column;
@@ -1344,9 +1327,7 @@ body {
 .arrival-guest { font-size: 12.5px; font-weight: 700; color: var(--text-main); }
 .arrival-meta { font-size: 10.5px; color: var(--text-muted); }
 
-/* ==========================================================================
-   MODAL WINDOWS & PASS
-   ========================================================================== */
+/* Modals */
 .modal-layer {
   position: fixed;
   top: 0;
@@ -1462,6 +1443,76 @@ body {
   margin-top: 14px;
 }
 
+/* Daily Host Manifest Modal */
+.host-manifest-card {
+  max-width: 820px;
+  padding: 30px;
+}
+
+.manifest-printable-area {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.manifest-header {
+  border-bottom: 2px solid var(--primary-500);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.manifest-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.manifest-title-row h2 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.manifest-title-row p {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--primary-600);
+}
+
+.manifest-meta-box {
+  text-align: right;
+}
+.manifest-meta-box strong { font-size: 12.5px; color: #0f172a; display: block; }
+.manifest-meta-box small { font-size: 10px; color: var(--text-muted); }
+
+.manifest-table-wrap {
+  overflow-x: auto;
+}
+
+.manifest-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.manifest-data-table th {
+  background: var(--bg-canvas);
+  color: #334155;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.manifest-data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
 /* Toast Notifications */
 .toast-stream {
   position: fixed;
@@ -1490,48 +1541,27 @@ body {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* ==========================================================================
-   RESPONSIVE LAYOUTS
-   ========================================================================== */
+/* Responsive Layouts */
 @media (max-width: 1024px) {
-  .app-sidebar {
-    transform: translateX(-100%);
-  }
-  .app-sidebar.mobile-open {
-    transform: translateX(0);
-  }
-  .app-workspace {
-    margin-left: 0;
-  }
-  .mobile-menu-toggle {
-    display: inline-flex;
-  }
-  .metrics-deck {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .dashboard-grid-split, .booking-flow-grid {
-    grid-template-columns: 1fr;
-  }
+  .app-sidebar { transform: translateX(-100%); }
+  .app-sidebar.mobile-open { transform: translateX(0); }
+  .app-workspace { margin-left: 0; }
+  .mobile-menu-toggle { display: inline-flex; }
+  .metrics-deck { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-grid-split, .booking-flow-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
-  .metrics-deck {
-    grid-template-columns: 1fr;
-  }
-  .workspace-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .header-right {
-    justify-content: flex-end;
-  }
+  .metrics-deck { grid-template-columns: 1fr; }
+  .workspace-header { flex-direction: column; align-items: stretch; }
+  .header-right { justify-content: flex-end; }
 }
 
 /* Print Stylesheet */
 @media print {
-  body { background: #fff !important; }
+  body { background: #fff !important; color: #000 !important; }
   .app-sidebar, .workspace-header, .no-print, .toast-stream { display: none !important; }
   .app-workspace { margin: 0 !important; }
   .modal-layer { position: static !important; opacity: 1 !important; display: block !important; }
-  .modal-card { box-shadow: none !important; border: 2px solid #000 !important; }
+  .modal-card { box-shadow: none !important; border: 2px solid #000 !important; max-width: 100% !important; }
 }

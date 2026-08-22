@@ -1,0 +1,55 @@
+name: C++ Core & Test Suite CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup Windows Environment (MinGW)
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: mingw-w64-ucrt-x86_64-gcc
+
+    - name: Compile Main Executable (Ubuntu)
+      if: runner.os == 'Linux'
+      working-directory: Code
+      run: |
+        g++ -Wall -Wextra -Wpedantic -std=c++17 main.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -o system
+
+    - name: Compile and Run Automated Test Suite (Ubuntu)
+      if: runner.os == 'Linux'
+      working-directory: Code
+      run: |
+        g++ -Wall -Wextra -Wpedantic -std=c++17 test_suite.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -o test_suite
+        ./test_suite
+
+    - name: Compile Main Executable (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      working-directory: Code
+      run: |
+        g++ -Wall -Wextra -Wpedantic -std=c++17 main.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -lws2_32 -o system.exe
+
+    - name: Compile and Run Automated Test Suite (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      working-directory: Code
+      run: |
+        g++ -Wall -Wextra -Wpedantic -std=c++17 test_suite.cpp Table.cpp Booking.cpp BookingManager.cpp FileHandler.cpp Utils.cpp Server.cpp -lws2_32 -o test_suite.exe
+        ./test_suite.exe

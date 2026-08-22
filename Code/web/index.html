@@ -260,6 +260,10 @@
               </div>
 
               <div class="floor-action-controls">
+                <button class="btn btn-secondary btn-sm" id="btn-toggle-edit-mode">
+                  <i data-lucide="edit-3"></i>
+                  <span id="edit-mode-label">Edit Layout</span>
+                </button>
                 <button class="btn btn-secondary btn-sm" id="btn-floor-add-table">+ Add Table</button>
                 <button class="btn btn-primary btn-sm" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
               </div>
@@ -291,7 +295,7 @@
             <div class="card-top-bar">
               <div>
                 <h3 class="card-title">Master Reservations Ledger</h3>
-                <p class="card-subtitle">Search, filter, check-in, and manage guest bookings</p>
+                <p class="card-subtitle">Search, filter, check-in, and export guest bookings</p>
               </div>
               <div class="reservations-filter-row">
                 <div class="search-input-box">
@@ -304,6 +308,14 @@
                   <option value="Seated">Seated</option>
                   <option value="Completed">Completed</option>
                 </select>
+                <button class="btn btn-secondary btn-sm" id="btn-export-csv" title="Download CSV Manifest">
+                  <i data-lucide="download"></i>
+                  <span>Export CSV</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-print-manifest" title="Print Daily Host Run-Sheet">
+                  <i data-lucide="printer"></i>
+                  <span>Host Run-Sheet</span>
+                </button>
                 <button class="btn btn-primary btn-sm" id="btn-nav-create-res">+ New Booking</button>
               </div>
             </div>
@@ -718,6 +730,53 @@
             <span>Accept & Close</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: DAILY HOST RUN-SHEET MANIFEST (PRINTABLE)                 -->
+  <!-- ================================================================= -->
+  <div class="modal-layer" id="modal-host-manifest">
+    <div class="modal-card host-manifest-card">
+      <div class="manifest-printable-area">
+        <div class="manifest-header">
+          <div class="manifest-title-row">
+            <div>
+              <h2>THE ROYAL SPICE</h2>
+              <p>DAILY SERVICE MANIFEST & HOST RUN-SHEET</p>
+            </div>
+            <div class="manifest-meta-box">
+              <strong id="manifest-date-slot">24/05/2026 — 8:00 PM Shift</strong>
+              <small>Generated: Host Stand OS</small>
+            </div>
+          </div>
+        </div>
+        <div class="manifest-table-wrap">
+          <table class="manifest-data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Table</th>
+                <th>Guest Full Name</th>
+                <th>Covers</th>
+                <th>Occasion / Notes</th>
+                <th>Status</th>
+                <th>Check-in</th>
+              </tr>
+            </thead>
+            <tbody id="manifest-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer-btns no-print">
+        <button class="btn btn-secondary" id="btn-close-manifest">Close</button>
+        <button class="btn btn-primary" id="btn-print-manifest-action">
+          <i data-lucide="printer"></i>
+          <span>Print Manifest</span>
+        </button>
       </div>
     </div>
   </div>

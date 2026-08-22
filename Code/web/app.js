@@ -28,6 +28,7 @@ const appState = {
   currentView: 'dashboard',
   currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'light',
   soundEnabled: true,
+  isEditLayoutMode: false,
   selectedOccasion: 'Romantic Dinner',
   selectedZone: 'ALL',
   selectedDate: '24/05/2026',
@@ -106,10 +107,13 @@ const drawerBtnToggleStatus = document.getElementById('drawer-btn-toggle-status'
 const drawerToggleStatusText = document.getElementById('drawer-toggle-status-text');
 const drawerBtnReleaseTable = document.getElementById('drawer-btn-release-table');
 
-// Modals
+// Modals & Run-Sheet
 const modalWalkinDialog = document.getElementById('modal-walkin-dialog');
 const modalTableDialog = document.getElementById('modal-table-dialog');
 const modalReceiptPass = document.getElementById('modal-receipt-pass');
+const modalHostManifest = document.getElementById('modal-host-manifest');
+const manifestTbody = document.getElementById('manifest-tbody');
+const manifestDateSlot = document.getElementById('manifest-date-slot');
 const passGridData = document.getElementById('pass-grid-data');
 const toastStream = document.getElementById('toast-stream');
 
@@ -248,14 +252,12 @@ function renderMetrics() {
   const available = appState.availableTableIds.length;
   const totalCapacity = appState.tables.reduce((acc, t) => acc + (t.capacity || 0), 0);
 
-  // Seated covers in currently selected slot
   const currentSlotBookings = appState.bookings.filter(
     b => b.date === appState.selectedDate && b.time === appState.selectedTime
   );
   const seatedCovers = currentSlotBookings.reduce((acc, b) => acc + (b.guests || 0), 0);
   const occupancyRate = totalCapacity > 0 ? Math.round((seatedCovers / totalCapacity) * 100) : 0;
 
-  // Estimated gross revenue yield ($65 avg per cover)
   const estYield = appState.bookings.reduce((acc, b) => acc + (b.guests * 65), 0);
 
   metricAvailableTables.textContent = available;
@@ -355,7 +357,7 @@ function renderFloorPlan(canvasElement, enableZoneFilter = true) {
   });
 }
 
-// 4. Contextual Table Drawer Controller (SevenRooms Pattern)
+// 4. Contextual Table Drawer Controller
 function openTableContextDrawer(table, activeBooking) {
   appState.activeDrawerTable = table;
 
@@ -549,7 +551,6 @@ function renderFleetTable() {
 // 8. Master Reservations Table
 function renderReservationsTable() {
   const query = (reservationsSearchInput.value || '').trim().toLowerCase();
-  const statusFilter = reservationsStatusFilter.value;
   masterReservationsTbody.innerHTML = '';
 
   const list = appState.bookings.filter(b => {
@@ -611,6 +612,83 @@ function renderReservationsTable() {
   });
 }
 
+// ================= EXPORT RESERVATIONS CSV =================
+function exportReservationsCSV() {
+  playAudioChime('click');
+  if (appState.bookings.length === 0) {
+    showToastNotification('No reservations available to export.', 'info');
+    return;
+  }
+
+  const headers = ['Booking ID', 'Table Number', 'Guest Name', 'Party Size', 'Reservation Date', 'Time Slot', 'Occasion', 'Status'];
+  const rows = appState.bookings.map(b => [
+    `"${b.bookingId || b.id}"`,
+    `"Table #${b.tableId}"`,
+    `"${b.guestName.replace(/"/g, '""')}"`,
+    b.guests,
+    `"${b.date}"`,
+    `"${b.time}"`,
+    `"${b.occasion || 'Dinner'}"`,
+    '"CONFIRMED"'
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `royal_spice_manifest_${appState.selectedDate.replace(/\//g, '-')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  showToastNotification('Manifest exported as CSV successfully!', 'success');
+}
+
+// ================= DAILY HOST RUN-SHEET MODAL =================
+function openHostRunSheetModal() {
+  playAudioChime('clink');
+  manifestDateSlot.textContent = `${appState.selectedDate} — Shift Manifest`;
+  manifestTbody.innerHTML = '';
+
+  const dayBookings = appState.bookings.filter(b => b.date === appState.selectedDate);
+  if (dayBookings.length === 0) {
+    manifestTbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">
+          No reservations found for ${appState.selectedDate}.
+        </td>
+      </tr>
+    `;
+  } else {
+    dayBookings.forEach(b => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${b.time}</strong></td>
+        <td><span class="badge-tag gold">Table #${b.tableId}</span></td>
+        <td><strong>${b.guestName}</strong></td>
+        <td>${b.guests} Covers</td>
+        <td>${b.occasion || 'Dinner Service'}</td>
+        <td><span class="badge-tag green">CONFIRMED</span></td>
+        <td><input type="checkbox" style="transform:scale(1.2);"></td>
+      `;
+      manifestTbody.appendChild(tr);
+    });
+  }
+
+  modalHostManifest.classList.add('open');
+}
+
+// ================= EDIT LAYOUT MODE =================
+function toggleEditLayoutMode() {
+  appState.isEditLayoutMode = !appState.isEditLayoutMode;
+  masterFloorCanvas.classList.toggle('edit-mode-active', appState.isEditLayoutMode);
+  document.getElementById('edit-mode-label').textContent = appState.isEditLayoutMode ? 'Done Editing' : 'Edit Layout';
+  showToastNotification(
+    appState.isEditLayoutMode ? 'Edit Mode: Click any table to configure or add tables.' : 'Layout changes finalized.',
+    'info'
+  );
+}
+
 // ================= VIEW SWITCHER =================
 function switchAppView(viewName) {
   appState.currentView = viewName;
@@ -636,7 +714,7 @@ function switchAppView(viewName) {
   }
 }
 
-// ================= 6-STAGE ALGORITHM PIPELINE =================
+// ================= 5-STAGE ALGORITHM PIPELINE =================
 function resetAlgorithmNodes() {
   for (let i = 1; i <= 5; ++i) {
     const card = document.getElementById(`pipe-card-${i}`);
@@ -760,7 +838,6 @@ masterBookingForm.addEventListener('submit', async (e) => {
       });
       result = await res.json();
     } else {
-      // Local Standalone Allocation Engine
       let candidateTable = null;
       if (tableId > 0) {
         candidateTable = appState.tables.find(t => t.id === tableId && t.status === 'Available');
@@ -1098,9 +1175,17 @@ document.querySelectorAll('.zone-pill').forEach(pill => {
   });
 });
 
-// Search & Filter in Reservations
+// Search in Reservations
 reservationsSearchInput.addEventListener('input', renderReservationsTable);
-reservationsStatusFilter.addEventListener('change', renderReservationsTable);
+
+// CSV Export & Manifest Triggers
+document.getElementById('btn-export-csv').addEventListener('click', exportReservationsCSV);
+document.getElementById('btn-print-manifest').addEventListener('click', openHostRunSheetModal);
+document.getElementById('btn-close-manifest').addEventListener('click', () => modalHostManifest.classList.remove('open'));
+document.getElementById('btn-print-manifest-action').addEventListener('click', () => window.print());
+
+// Edit Layout Trigger
+document.getElementById('btn-toggle-edit-mode').addEventListener('click', toggleEditLayoutMode);
 
 // Drawer Actions
 drawerBtnSeatWalkin.addEventListener('click', () => {
