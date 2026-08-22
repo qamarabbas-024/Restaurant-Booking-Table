@@ -1,6 +1,6 @@
 // ==========================================================================
-// THE ROYAL SPICE 4.8 PRO — MASTER CONTROLLER
-// Three.js WebGL 3D Spatial Floor Plan, AI Sommelier & 2-Theme Engine
+// THE ROYAL SPICE 5.0 PRO — MASTER CONTROLLER
+// Next-Gen Three.js 3D Spatial Engine, Camera Director & 2-Theme System
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
@@ -13,7 +13,7 @@ const STORAGE_KEYS = {
   SOUND: 'royal_spice_sound'
 };
 
-// Initial Seed Tables
+// Initial Seed Tables with 3D Spatial Coordinates
 const DEFAULT_TABLES = [
   { id: 1, capacity: 2, type: 'Couple Table', status: 'Available', x: -5, z: -3 },
   { id: 2, capacity: 4, type: 'Family Booth', status: 'Available', x: 0, z: -3 },
@@ -213,7 +213,7 @@ function applyTheme(themeName) {
 
   // Update Three.js 3D scene background if initialized
   if (threeScene) {
-    threeScene.background = new THREE.Color(themeName === 'white' ? 0xf2eee6 : 0x030712);
+    threeScene.background = new THREE.Color(themeName === 'white' ? 0xf2eee6 : 0x020617);
   }
 }
 
@@ -277,12 +277,14 @@ let raycaster, mouseVector, hoveredTableMesh = null;
 let isDragging3D = false, prevMouseX = 0, prevMouseY = 0;
 let cameraRadius = 14, cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3.5;
 let targetTheta = cameraTheta, targetPhi = cameraPhi, targetRadius = cameraRadius;
+let targetLookAt = new THREE.Vector3(0, 0, 0);
+let currentLookAt = new THREE.Vector3(0, 0, 0);
 
 function initThreeScene() {
   if (!threeCanvasContainer || !window.THREE) return;
 
   threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color(appState.currentTheme === 'white' ? 0xf2eee6 : 0x030712);
+  threeScene.background = new THREE.Color(appState.currentTheme === 'white' ? 0xf2eee6 : 0x020617);
 
   const aspect = threeCanvasContainer.clientWidth / (threeCanvasContainer.clientHeight || 480);
   threeCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
@@ -290,7 +292,7 @@ function initThreeScene() {
 
   threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   threeRenderer.setSize(threeCanvasContainer.clientWidth, threeCanvasContainer.clientHeight || 480);
-  threeRenderer.setPixelRatio(window.devicePixelRatio || 1);
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   threeRenderer.shadowMap.enabled = true;
   threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   threeCanvasContainer.appendChild(threeRenderer.domElement);
@@ -302,7 +304,7 @@ function initThreeScene() {
   const ambientLight = new THREE.AmbientLight(0xffeedd, 0.8);
   threeScene.add(ambientLight);
 
-  // Main Chandelier Directional Light
+  // Main Chandelier Directional Spotlight
   const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.4);
   dirLight.position.set(10, 20, 10);
   dirLight.castShadow = true;
@@ -313,7 +315,7 @@ function initThreeScene() {
   // Dining Room Parquet Floor Mesh
   const floorGeo = new THREE.PlaneGeometry(24, 18);
   const floorMat = new THREE.MeshStandardMaterial({
-    color: appState.currentTheme === 'white' ? 0xd1d5db : 0x080e1e,
+    color: appState.currentTheme === 'white' ? 0xd1d5db : 0x070d1d,
     roughness: 0.25,
     metalness: 0.25
   });
@@ -322,12 +324,43 @@ function initThreeScene() {
   floorMesh.receiveShadow = true;
   threeScene.add(floorMesh);
 
+  // Perimeter Wainscoting Walls
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(24, 6, 0.5), wallMat);
+  backWall.position.set(0, 3, -9);
+  backWall.receiveShadow = true;
+  threeScene.add(backWall);
+
+  const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 6, 18), wallMat);
+  leftWall.position.set(-12, 3, 0);
+  leftWall.receiveShadow = true;
+  threeScene.add(leftWall);
+
+  // Chandelier Geometric Fixture in 3D
+  const chCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.1 }));
+  chCenter.position.set(0, 5.5, 0);
+  threeScene.add(chCenter);
+
+  // Floating Ambient Light Particles
+  const partCount = 40;
+  const partGeo = new THREE.BufferGeometry();
+  const partPositions = new Float32Array(partCount * 3);
+  for (let i = 0; i < partCount * 3; i += 3) {
+    partPositions[i] = (Math.random() - 0.5) * 20;
+    partPositions[i + 1] = Math.random() * 4 + 0.5;
+    partPositions[i + 2] = (Math.random() - 0.5) * 16;
+  }
+  partGeo.setAttribute('position', new THREE.BufferAttribute(partPositions, 3));
+  const partMat = new THREE.PointsMaterial({ color: 0xf59e0b, size: 0.15, transparent: true, opacity: 0.6 });
+  const particleSystem = new THREE.Points(partGeo, partMat);
+  threeScene.add(particleSystem);
+
   // Grid Floor Details
   const gridHelper = new THREE.GridHelper(24, 24, 0xf59e0b, 0x1e2f58);
   gridHelper.position.y = 0.01;
   threeScene.add(gridHelper);
 
-  // Build 3D Tables
+  // Build 3D Tables with Chairs & Settings
   rebuild3DTables();
 
   // Mouse & Orbit Events
@@ -341,7 +374,11 @@ function initThreeScene() {
     cameraTheta += (targetTheta - cameraTheta) * 0.12;
     cameraPhi += (targetPhi - cameraPhi) * 0.12;
     cameraRadius += (targetRadius - cameraRadius) * 0.12;
+    currentLookAt.lerp(targetLookAt, 0.1);
     update3DCameraPosition();
+
+    // Subtle particle float
+    particleSystem.rotation.y += 0.0005;
 
     threeRenderer.render(threeScene, threeCamera);
   }
@@ -350,10 +387,10 @@ function initThreeScene() {
 
 function update3DCameraPosition() {
   if (!threeCamera) return;
-  threeCamera.position.x = cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
-  threeCamera.position.y = cameraRadius * Math.cos(cameraPhi);
-  threeCamera.position.z = cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
-  threeCamera.lookAt(0, 0, 0);
+  threeCamera.position.x = currentLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+  threeCamera.position.y = currentLookAt.y + cameraRadius * Math.cos(cameraPhi);
+  threeCamera.position.z = currentLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+  threeCamera.lookAt(currentLookAt);
 }
 
 function rebuild3DTables() {
@@ -413,7 +450,7 @@ function rebuild3DTables() {
     legMesh.castShadow = true;
     group.add(legMesh);
 
-    // Glowing 3D Status Lantern
+    // Glowing 3D Status Lantern / Candle
     const lanternGeo = new THREE.SphereGeometry(0.18, 16, 16);
     const lanternMat = new THREE.MeshBasicMaterial({ color: statusHex });
     const lanternMesh = new THREE.Mesh(lanternGeo, lanternMat);
@@ -430,6 +467,30 @@ function rebuild3DTables() {
     const plate1 = new THREE.Mesh(plateGeo, plateMat);
     plate1.position.set(0, 1.08, 0.35);
     group.add(plate1);
+
+    // Procedural Velvet Chairs surrounding table
+    const chairMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 }); // Velvet Burgundy
+    const chairSeatGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 16);
+    const chairBackGeo = new THREE.BoxGeometry(0.5, 0.5, 0.08);
+
+    const numChairs = Math.min(tbl.capacity, 8);
+    for (let c = 0; c < numChairs; c++) {
+      const angle = (c / numChairs) * Math.PI * 2;
+      const radius = tbl.capacity <= 4 ? 1.2 : 1.7;
+      const chairGroup = new THREE.Group();
+      
+      const seatMesh = new THREE.Mesh(chairSeatGeo, chairMat);
+      seatMesh.position.y = 0.55;
+      chairGroup.add(seatMesh);
+
+      const backMesh = new THREE.Mesh(chairBackGeo, chairMat);
+      backMesh.position.set(0, 0.85, -0.25);
+      chairGroup.add(backMesh);
+
+      chairGroup.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
+      chairGroup.lookAt(0, 0, 0);
+      group.add(chairGroup);
+    }
 
     // Positioning
     const posX = tbl.x !== undefined ? tbl.x : (tbl.id % 3 - 1) * 5;
@@ -1058,12 +1119,36 @@ document.getElementById('btn-toggle-3d-view').addEventListener('click', () => {
   if (!appState.is3DViewMode) renderFloorPlan(masterFloorCanvas);
 });
 
-// 3D Camera Buttons
-document.getElementById('btn-camera-orbit-left').addEventListener('click', () => { targetTheta -= 0.35; });
-document.getElementById('btn-camera-orbit-right').addEventListener('click', () => { targetTheta += 0.35; });
-document.getElementById('btn-camera-zoom-in').addEventListener('click', () => { targetRadius = Math.max(6, targetRadius - 2.0); });
-document.getElementById('btn-camera-zoom-out').addEventListener('click', () => { targetRadius = Math.min(26, targetRadius + 2.0); });
-document.getElementById('btn-camera-reset').addEventListener('click', () => { targetRadius = 14; targetTheta = Math.PI / 4; targetPhi = Math.PI / 3.5; });
+// Cinematic Camera Director Presets
+document.getElementById('btn-cam-overview').addEventListener('click', () => {
+  playAudioChime('click');
+  document.querySelectorAll('.cam-preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-cam-overview').classList.add('active');
+  targetRadius = 14; targetTheta = Math.PI / 4; targetPhi = Math.PI / 3.5;
+  targetLookAt.set(0, 0, 0);
+});
+
+document.getElementById('btn-cam-vip').addEventListener('click', () => {
+  playAudioChime('click');
+  document.querySelectorAll('.cam-preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-cam-vip').classList.add('active');
+  targetRadius = 8; targetTheta = Math.PI / 3; targetPhi = Math.PI / 4;
+  targetLookAt.set(5, 0.5, -3); // Focus Table #3 VIP Suite
+});
+
+document.getElementById('btn-cam-couples').addEventListener('click', () => {
+  playAudioChime('click');
+  document.querySelectorAll('.cam-preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-cam-couples').classList.add('active');
+  targetRadius = 7; targetTheta = -Math.PI / 4; targetPhi = Math.PI / 4.2;
+  targetLookAt.set(-5, 0.5, -3); // Focus Table #1 Couples Alcove
+});
+
+document.getElementById('btn-cam-reset').addEventListener('click', () => {
+  playAudioChime('click');
+  targetRadius = 14; targetTheta = Math.PI / 4; targetPhi = Math.PI / 3.5;
+  targetLookAt.set(0, 0, 0);
+});
 
 // Stepper
 document.getElementById('btn-party-inc').addEventListener('click', () => {
@@ -1222,4 +1307,4 @@ window.addEventListener('DOMContentLoaded', () => {
   initThreeScene();
 });
 
-console.log('⚜️ The Royal Spice 4.8 Pro Initialized with Three.js 3D WebGL Engine.');
+console.log('⚜️ The Royal Spice 5.0 Pro Initialized with Three.js 3D WebGL Engine & Camera Director.');

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Royal Spice — Ultra-Luxury 3D Spatial Restaurant Operations, WebGL Table Floor Plan, AI Sommelier & VIP Reservation OS">
-  <title>The Royal Spice — 3D Spatial Restaurant & Table Management OS</title>
+  <meta name="description" content="The Royal Spice 5.0 — Next-Gen 3D Spatial WebGL Restaurant Operations OS, AI Sommelier & VIP Reservation Platform">
+  <title>The Royal Spice 5.0 — 3D Spatial Fine Dining & Table Operations OS</title>
   
   <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,7 +91,7 @@
           <div class="user-avatar">QA</div>
           <div class="user-meta">
             <strong>Host Stand</strong>
-            <small>Table Manager v4.8</small>
+            <small>Table Manager v5.0</small>
           </div>
         </div>
       </div>
@@ -286,7 +286,7 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 2: THREE.JS PHOTOREALISTIC 3D FLOOR PLAN                  -->
+        <!-- VIEW 2: THREE.JS PHOTOREALISTIC 3D FLOOR PLAN & CAMERA PRESETS -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-floorplan">
           <div class="surface-card floor-master-card">
@@ -302,16 +302,19 @@
               </div>
 
               <div class="floor-action-controls">
-                <!-- 3D Camera Controls -->
+                <!-- Cinematic Camera Director Presets -->
+                <div class="camera-preset-strip">
+                  <button class="cam-preset-btn active" id="btn-cam-overview" title="45° Grand Overview">🌐 Overview</button>
+                  <button class="cam-preset-btn" id="btn-cam-vip" title="Focus VIP Suite">👑 VIP Suite</button>
+                  <button class="cam-preset-btn" id="btn-cam-couples" title="Focus Couples Alcove">🍷 Couples</button>
+                  <button class="cam-preset-btn" id="btn-cam-reset" title="Reset Camera">🔄 Reset</button>
+                </div>
+
+                <!-- 3D vs 2D Toggle -->
                 <button class="btn btn-secondary btn-sm" id="btn-toggle-3d-view" title="Toggle 3D WebGL vs 2D CAD">
                   <i data-lucide="box"></i>
                   <span id="btn-3d-view-label">3D WebGL View</span>
                 </button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-orbit-left" title="Orbit Left"><i data-lucide="rotate-ccw"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-orbit-right" title="Orbit Right"><i data-lucide="rotate-cw"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-zoom-in" title="Zoom In"><i data-lucide="zoom-in"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-zoom-out" title="Zoom Out"><i data-lucide="zoom-out"></i></button>
-                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-reset" title="Reset Camera"><i data-lucide="compass"></i></button>
 
                 <button class="btn btn-secondary btn-sm" id="btn-floor-add-table">+ Add Table</button>
                 <button class="btn btn-primary btn-sm btn-3d" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
@@ -337,7 +340,7 @@
             <div class="floor-footer-info">
               <div class="floor-hint">
                 <i data-lucide="info" class="icon-sm"></i>
-                <span>Drag to orbit 3D dining room &bull; Scroll to zoom &bull; Click any 3D table to open the <strong>Contextual Table Action Drawer</strong>.</span>
+                <span>Drag with mouse to orbit &bull; Scroll wheel to zoom &bull; Click any 3D table to inspect in the <strong>Contextual Table Action Drawer</strong>.</span>
               </div>
               <div class="floor-stats-pill" id="floor-active-summary-pill">
                 5 Tables Available &bull; 0 Seated &bull; 0 Reserved
