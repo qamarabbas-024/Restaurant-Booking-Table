@@ -1,16 +1,14 @@
 // ==========================================================================
-// THE ROYAL SPICE — VISUAL COMPANION MASTER CONTROLLER
+// THE ROYAL SPICE — CLEAN WHITE THEME MASTER CONTROLLER
 // Seamless C++17 Core Engine REST Integration (Port 8080)
 // ==========================================================================
 
-const API_ENDPOINT = 'http://localhost:8080/api';
+const API_BASE = 'http://localhost:8080/api';
 
-const appState = {
-  activeMode: 'guest', // 'guest' | 'staff'
-  staffView: 'staff-reservations',
+const state = {
+  activeView: 'dashboard',
   soundEnabled: true,
-  currentWizardStep: 1,
-  selectedOccasion: 'Romantic Dinner',
+  selectedOccasion: 'Dinner Reservation',
   metrics: {},
   tables: [],
   bookings: [],
@@ -23,53 +21,41 @@ const appState = {
   occupiedTableIds: []
 };
 
-// Pricing model per dining zone (average spend per cover)
-const ZONE_REVENUE_RATES = {
-  'Couple': 140,
-  'Family': 280,
-  'VIP': 650,
-  'Banquet': 1200,
-  'Terrace': 220
-};
-
 // ================= DOM ELEMENT REFERENCES =================
-const guestFloorCanvas = document.getElementById('guest-floor-canvas');
-const guestSlotLabel = document.getElementById('guest-slot-label');
-const staffReservationsTbody = document.getElementById('staff-reservations-tbody');
-const staffFleetTbody = document.getElementById('staff-fleet-tbody');
-const staffZoneBreakdown = document.getElementById('staff-zone-breakdown');
-const staffSlotDemand = document.getElementById('staff-slot-demand');
-const staffActivityTimeline = document.getElementById('staff-activity-timeline');
+const dashboardFloorCanvas = document.getElementById('dashboard-floor-canvas');
+const floorSlotSubtitle = document.getElementById('floor-slot-subtitle');
+const dashboardActivityTimeline = document.getElementById('dashboard-activity-timeline');
+const tablesFleetTbody = document.getElementById('tables-fleet-tbody');
+const allReservationsTbody = document.getElementById('all-reservations-tbody');
+const navBookingsCount = document.getElementById('nav-bookings-count');
 
-// Metrics
+// KPI Metrics
 const metricTotalTables = document.getElementById('metric-total-tables');
 const metricOpTables = document.getElementById('metric-op-tables');
 const metricTotalCapacity = document.getElementById('metric-total-capacity');
-const metricProjectedRevenue = document.getElementById('metric-projected-revenue');
-const metricRevenueCovers = document.getElementById('metric-revenue-covers');
+const metricTotalBookings = document.getElementById('metric-total-bookings');
 const metricOccupancyRate = document.getElementById('metric-occupancy-rate');
 const metricOccupancyRatio = document.getElementById('metric-occupancy-ratio');
-const staffBookingBadge = document.getElementById('staff-booking-badge');
 
 // Controls & Inputs
 const slotDateInput = document.getElementById('slot-date-input');
-const slotCarousel = document.getElementById('slot-carousel');
+const timeSlotsCarousel = document.getElementById('time-slots-carousel');
 const zoneFilterSelect = document.getElementById('zone-filter-select');
-const guestReservationForm = document.getElementById('guest-reservation-form');
-const guestTableSelect = document.getElementById('guest-table-select');
-const staffSearchInput = document.getElementById('staff-search-input');
-const soundIcon = document.getElementById('sound-icon');
+const createBookingForm = document.getElementById('create-booking-form');
+const selectTableAssignment = document.getElementById('select-table-assignment');
+const reservationsSearchQuery = document.getElementById('reservations-search-query');
+const soundIconSymbol = document.getElementById('sound-icon-symbol');
 
 // Modals
-const modalTableCreate = document.getElementById('modal-table-create');
-const modalWalkinSeater = document.getElementById('modal-walkin-seater');
-const modalVipPass = document.getElementById('modal-vip-pass');
-const passDataGrid = document.getElementById('pass-data-grid');
+const modalAddTable = document.getElementById('modal-add-table');
+const modalQuickWalkin = document.getElementById('modal-quick-walkin');
+const modalBookingReceipt = document.getElementById('modal-booking-receipt');
+const receiptDataGrid = document.getElementById('receipt-data-grid');
 const toastHub = document.getElementById('toast-hub');
 
-// ================= REFINED SYNTHESIZED SOUND ENGINE =================
+// ================= SYNTHESIZED SOUND ENGINE =================
 function playSound(type = 'click') {
-  if (!appState.soundEnabled) return;
+  if (!state.soundEnabled) return;
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
@@ -78,24 +64,22 @@ function playSound(type = 'click') {
     gain.connect(audioCtx.destination);
 
     if (type === 'clink') {
-      // Wine Glass Clink (High pure crystal chime)
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime); // D6
-      osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.08); // A6
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
+      osc.frequency.exponentialRampToValueAtTime(1567.98, audioCtx.currentTime + 0.08); // G6
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.35);
+      osc.stop(audioCtx.currentTime + 0.3);
     } else if (type === 'success') {
-      // Royal 3-Tone Brass Chime
       osc.type = 'sine';
       osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-      osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.12); // G5
-      osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.25); // C6
+      osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+      osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
       gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.45);
+      osc.stop(audioCtx.currentTime + 0.4);
     } else if (type === 'pop') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(320, audioCtx.currentTime);
@@ -112,55 +96,55 @@ function playSound(type = 'click') {
       osc.stop(audioCtx.currentTime + 0.06);
     }
   } catch (e) {
-    // AudioContext blocked before gesture
+    // blocked before gesture
   }
 }
 
 // ================= TOAST NOTIFICATIONS =================
-function showToastAlert(message, type = 'info') {
+function showToast(message, type = 'info') {
   const alert = document.createElement('div');
-  alert.className = `toast-item-alert ${type}`;
+  alert.className = `toast-alert-item ${type}`;
   alert.textContent = message;
   toastHub.appendChild(alert);
   setTimeout(() => {
     alert.style.opacity = '0';
-    alert.style.transform = 'translateY(10px)';
-    setTimeout(() => alert.remove(), 300);
+    alert.style.transform = 'translateY(8px)';
+    setTimeout(() => alert.remove(), 250);
   }, 3500);
 }
 
-// ================= REST API SYNC WITH C++ CORE =================
+// ================= REST API SYNC =================
 async function syncCoreEngine() {
   try {
-    const res = await fetch(`${API_ENDPOINT}/state`);
+    const res = await fetch(`${API_BASE}/state`);
     if (!res.ok) throw new Error('C++ Server Unreachable');
     const data = await res.json();
 
-    appState.metrics = data.metrics || {};
-    appState.tables = data.tables || [];
-    appState.bookings = data.bookings || [];
-    appState.activity = data.activity || [];
+    state.metrics = data.metrics || {};
+    state.tables = data.tables || [];
+    state.bookings = data.bookings || [];
+    state.activity = data.activity || [];
 
-    document.getElementById('core-beacon-pill').style.borderColor = 'rgba(16, 185, 129, 0.3)';
-    document.getElementById('core-beacon-pill').querySelector('.beacon-text').textContent = 'C++ Engine Live';
+    document.getElementById('core-status-pill').style.borderColor = 'rgba(22, 163, 74, 0.3)';
+    document.getElementById('core-status-pill').querySelector('.status-text').textContent = 'C++ Engine Live';
 
-    await updateSlotMatrix();
+    await updateSlotAvailability();
   } catch (err) {
-    document.getElementById('core-beacon-pill').style.borderColor = 'rgba(244, 63, 94, 0.4)';
-    document.getElementById('core-beacon-pill').querySelector('.beacon-text').textContent = '⚠️ Backend Offline';
+    document.getElementById('core-status-pill').style.borderColor = 'rgba(225, 29, 72, 0.4)';
+    document.getElementById('core-status-pill').querySelector('.status-text').textContent = '⚠️ Backend Offline';
   }
 }
 
-async function updateSlotMatrix() {
+async function updateSlotAvailability() {
   try {
-    const res = await fetch(`${API_ENDPOINT}/availability?date=${encodeURIComponent(appState.selectedDate)}&time=${encodeURIComponent(appState.selectedTime)}`);
+    const res = await fetch(`${API_BASE}/availability?date=${encodeURIComponent(state.selectedDate)}&time=${encodeURIComponent(state.selectedTime)}`);
     if (res.ok) {
       const data = await res.json();
-      appState.availableTableIds = data.available || [];
-      appState.occupiedTableIds = data.occupied || [];
+      state.availableTableIds = data.available || [];
+      state.occupiedTableIds = data.occupied || [];
     }
   } catch (err) {
-    console.error('Failed to update slot matrix:', err);
+    console.error('Slot check failed:', err);
   }
 
   renderAllViews();
@@ -168,55 +152,36 @@ async function updateSlotMatrix() {
 
 // ================= MASTER RENDER =================
 function renderAllViews() {
-  renderMetricsRow();
-  renderGuestFloorPlan();
-  renderTableDropdownOptions();
-  renderStaffReservations();
-  renderStaffFleet();
-  renderStaffAnalytics();
-  renderStaffActivityTrail();
+  renderKpiMetrics();
+  renderFloorPlanCanvas();
+  renderTableDropdowns();
+  renderTablesFleetTable();
+  renderAllReservationsTable();
+  renderActivityTimeline();
 
-  guestSlotLabel.textContent = `Viewing availability for ${appState.selectedDate} at ${appState.selectedTime}`;
-  staffBookingBadge.textContent = appState.bookings.length;
+  floorSlotSubtitle.textContent = `Live availability for ${state.selectedDate} at ${state.selectedTime}`;
+  navBookingsCount.textContent = state.bookings.length;
 }
 
-// 1. KPI Metrics Ribbon with Live Revenue Yield Calculation
-function renderMetricsRow() {
-  const total = appState.tables.length;
-  const operational = appState.tables.filter(t => t.status === 'Available').length;
-  const capacity = appState.metrics.totalCapacity || 0;
-  const occupiedCount = appState.occupiedTableIds.length;
-  const rate = operational > 0 ? Math.round((occupiedCount / operational) * 100) : 0;
-
-  // Calculate total projected revenue from active bookings
-  let totalRevenue = 0;
-  let totalGuestsBooked = 0;
-  appState.bookings.forEach(b => {
-    totalGuestsBooked += b.guests;
-    const tbl = appState.tables.find(t => t.id === b.tableId);
-    if (tbl) {
-      for (const [key, rateVal] of Object.entries(ZONE_REVENUE_RATES)) {
-        if (tbl.type.toLowerCase().includes(key.toLowerCase())) {
-          totalRevenue += rateVal;
-          break;
-        }
-      }
-    } else {
-      totalRevenue += 200;
-    }
-  });
+// 1. KPI Statistics (Scene 2 & 3)
+function renderKpiMetrics() {
+  const total = state.tables.length;
+  const operational = state.tables.filter(t => t.status === 'Available').length;
+  const capacity = state.metrics.totalCapacity || 0;
+  const totalBookings = state.bookings.length;
+  const occupiedCount = state.occupiedTableIds.length;
+  const occRate = operational > 0 ? Math.round((occupiedCount / operational) * 100) : 0;
 
   metricTotalTables.textContent = total;
-  metricOpTables.textContent = `${operational} Open`;
+  metricOpTables.textContent = `${operational} Operational`;
   metricTotalCapacity.textContent = capacity;
-  metricProjectedRevenue.textContent = `$${totalRevenue.toLocaleString()}`;
-  metricRevenueCovers.textContent = `${totalGuestsBooked} Guests`;
-  metricOccupancyRate.textContent = `${rate}%`;
+  metricTotalBookings.textContent = totalBookings;
+  metricOccupancyRate.textContent = `${occRate}%`;
   metricOccupancyRatio.textContent = `${occupiedCount}/${operational} Booked`;
 }
 
-// 2. Table Geometry & Fixture Icons
-function getFixtureDetails(type, capacity) {
+// 2. Table CAD Geometries
+function getTableShape(type, capacity) {
   const t = type.toLowerCase();
   if (t.includes('vip')) return { shape: 'shape-vip', icon: '👑' };
   if (t.includes('couple') || capacity <= 2) return { shape: 'shape-round', icon: '🍷' };
@@ -224,19 +189,19 @@ function getFixtureDetails(type, capacity) {
   return { shape: 'shape-booth', icon: '🍽️' };
 }
 
-// 3. Guest Floor Plan Canvas (CAD Blueprint)
-function renderGuestFloorPlan() {
-  guestFloorCanvas.innerHTML = '';
+// 3. Seating Floor Plan Blueprint
+function renderFloorPlanCanvas() {
+  dashboardFloorCanvas.innerHTML = '';
 
-  let filtered = appState.tables;
-  if (appState.selectedZone !== 'ALL') {
-    filtered = appState.tables.filter(t => t.type.toLowerCase().includes(appState.selectedZone.toLowerCase()));
+  let filtered = state.tables;
+  if (state.selectedZone !== 'ALL') {
+    filtered = state.tables.filter(t => t.type.toLowerCase().includes(state.selectedZone.toLowerCase()));
   }
 
   if (filtered.length === 0) {
-    guestFloorCanvas.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 50px;">
-        No tables found in section "${appState.selectedZone}".
+    dashboardFloorCanvas.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">
+        No tables found for category "${state.selectedZone}".
       </div>
     `;
     return;
@@ -244,101 +209,85 @@ function renderGuestFloorPlan() {
 
   filtered.forEach(table => {
     const isMaintenance = table.status === 'Maintenance';
-    const isOccupied = appState.occupiedTableIds.includes(table.id);
-    const isSelected = appState.selectedTableId === table.id;
+    const isOccupied = state.occupiedTableIds.includes(table.id);
+    const isSelected = state.selectedTableId === table.id;
 
-    let podClass = 'pod-available';
-    let statusText = 'FREE';
+    let statusClass = 'status-available';
+    let statusLabel = 'AVAILABLE';
 
     if (isMaintenance) {
-      podClass = 'pod-offline';
-      statusText = 'OFFLINE';
+      statusClass = 'status-offline';
+      statusLabel = 'MAINTENANCE';
     } else if (isOccupied) {
-      podClass = 'pod-reserved';
-      statusText = 'RESERVED';
+      statusClass = 'status-reserved';
+      statusLabel = 'BOOKED';
     }
 
-    const { shape, icon } = getFixtureDetails(table.type, table.capacity);
+    const { shape, icon } = getTableShape(table.type, table.capacity);
 
-    const pod = document.createElement('div');
-    pod.className = `table-pod-fixture ${podClass} ${isSelected ? 'pod-locked' : ''}`;
-    pod.dataset.id = table.id;
+    const card = document.createElement('div');
+    card.className = `table-pod-card ${statusClass} ${isSelected ? 'status-selected' : ''}`;
+    card.dataset.id = table.id;
 
-    // Symmetrical Chairs around perimeter
-    let chairsHtml = '<div class="chair-piece seat-top"></div><div class="chair-piece seat-bot"></div>';
-    if (table.capacity >= 4) {
-      chairsHtml += '<div class="chair-piece seat-left"></div><div class="chair-piece seat-right"></div>';
-    }
-    if (table.capacity >= 6) {
-      chairsHtml += '<div class="chair-piece seat-tl"></div><div class="chair-piece seat-tr"></div>';
-    }
-    if (table.capacity >= 8) {
-      chairsHtml += '<div class="chair-piece seat-bl"></div><div class="chair-piece seat-br"></div>';
-    }
-
-    // Reservation Tooltip & Dining Elapsed Clock
     let activeBooking = null;
     if (isOccupied) {
-      activeBooking = appState.bookings.find(b => b.tableId === table.id && b.date === appState.selectedDate && b.time === appState.selectedTime);
+      activeBooking = state.bookings.find(b => b.tableId === table.id && b.date === state.selectedDate && b.time === state.selectedTime);
     }
 
-    pod.innerHTML = `
-      <span class="fixture-top-tag">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
-      <span class="fixture-status-pill">${statusText}</span>
+    card.innerHTML = `
+      <span class="pod-id-tag">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
+      <span class="pod-status-badge">${statusLabel}</span>
 
-      <div class="table-geometry-wrap">
-        <div class="table-surface-3d ${shape}">
+      <div class="table-cad-fixture">
+        <div class="table-top-3d ${shape}">
           <span>${icon}</span>
         </div>
-        ${chairsHtml}
+        <div class="chair-node chair-t"></div>
+        <div class="chair-node chair-b"></div>
+        ${table.capacity >= 4 ? '<div class="chair-node chair-l"></div><div class="chair-node chair-r"></div>' : ''}
       </div>
 
-      <div class="fixture-caption">
-        <div class="fixture-name">${table.type}</div>
-        <div class="fixture-cap">${table.capacity} Guest Seats</div>
-        ${activeBooking ? `<div class="fixture-guest-name">Reserved: ${activeBooking.guestName}</div>` : ''}
-      </div>
+      <div class="pod-title">${table.type}</div>
+      <div class="pod-capacity">${table.capacity} Guest Seats</div>
+      ${activeBooking ? `<div class="pod-guest-tag">Reserved: ${activeBooking.guestName}</div>` : ''}
     `;
 
-    // Click handler to select table directly
-    pod.addEventListener('click', () => {
+    card.addEventListener('click', () => {
       playSound('clink');
-
       if (isMaintenance) {
-        showToastAlert(`Table #${table.id} is currently under maintenance.`, 'error');
+        showToast(`Table #${table.id} is currently under maintenance.`, 'error');
         return;
       }
-
       if (isOccupied) {
-        showToastAlert(`Table #${table.id} is booked by "${activeBooking?.guestName || 'Guest'}" for this time slot.`, 'info');
+        showToast(`Table #${table.id} is booked by "${activeBooking?.guestName || 'Guest'}".`, 'info');
       } else {
-        appState.selectedTableId = table.id;
-        guestTableSelect.value = String(table.id);
-        document.getElementById('party-size-input').value = Math.min(table.capacity, 4);
-        setWizardStep(2);
-        showToastAlert(`Table #${table.id} (${table.type}, ${table.capacity} seats) selected.`, 'success');
-        renderGuestFloorPlan();
+        state.selectedTableId = table.id;
+        selectTableAssignment.value = String(table.id);
+        document.getElementById('input-guest-count').value = Math.min(table.capacity, 4);
+        switchView('booking');
+        showToast(`Selected Table #${table.id} (${table.type}, ${table.capacity} seats).`, 'success');
+        renderFloorPlanCanvas();
       }
     });
 
-    guestFloorCanvas.appendChild(pod);
+    dashboardFloorCanvas.appendChild(card);
   });
 }
 
-// 4. Dropdown Table Options (Wizard & Walk-in Modal)
-function renderTableDropdownOptions() {
-  const current = guestTableSelect.value;
-  guestTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
-  const walkinSelect = document.getElementById('walkin-table-choice');
-  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Allocation</option>';
+// 4. Dropdowns
+function renderTableDropdowns() {
+  const current = selectTableAssignment.value;
+  selectTableAssignment.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
+  const walkinSelect = document.getElementById('walkin-table-select');
+  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Table</option>';
 
-  appState.tables.forEach(t => {
+  state.tables.forEach(t => {
     if (t.status === 'Available') {
       const opt = document.createElement('option');
       opt.value = t.id;
-      const isOcc = appState.occupiedTableIds.includes(t.id);
-      opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked in slot' : '✅ Free'}`;
-      guestTableSelect.appendChild(opt);
+      const isOcc = state.occupiedTableIds.includes(t.id);
+      opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked' : '✅ Free'}`;
+      selectTableAssignment.appendChild(opt);
 
       const walkOpt = document.createElement('option');
       walkOpt.value = t.id;
@@ -347,15 +296,60 @@ function renderTableDropdownOptions() {
     }
   });
 
-  guestTableSelect.value = current || '0';
+  selectTableAssignment.value = current || '0';
 }
 
-// 5. Staff Reservations Ledger
-function renderStaffReservations() {
-  const query = staffSearchInput.value.trim().toLowerCase();
-  staffReservationsTbody.innerHTML = '';
+// 5. Tables Fleet Management (Scene 4)
+function renderTablesFleetTable() {
+  tablesFleetTbody.innerHTML = '';
+  state.tables.forEach(t => {
+    const isAvail = t.status === 'Available';
+    const isOccupied = state.occupiedTableIds.includes(t.id);
+    const tr = document.createElement('tr');
 
-  const list = appState.bookings.filter(b => {
+    let slotText = isOccupied ? '<span class="tag-pill red">Occupied</span>' : (isAvail ? '<span class="tag-pill green">Free</span>' : '<span class="tag-pill">Offline</span>');
+
+    tr.innerHTML = `
+      <td><strong>#T-${t.id}</strong></td>
+      <td>${t.capacity} Guests</td>
+      <td>${t.type}</td>
+      <td>${slotText}</td>
+      <td><span class="tag-pill ${isAvail ? 'green' : 'red'}">${t.status}</span></td>
+      <td>
+        <button class="btn-status-toggle btn-flip-status" data-id="${t.id}" data-current="${t.status}">
+          ${isAvail ? 'Set Maintenance' : 'Set Available'}
+        </button>
+      </td>
+      <td>
+        <button class="btn-danger-sm btn-del-tbl" data-id="${t.id}">Delete</button>
+      </td>
+    `;
+    tablesFleetTbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.btn-flip-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = parseInt(btn.dataset.id);
+      const current = btn.dataset.current;
+      const target = (current === 'Available') ? 'Maintenance' : 'Available';
+      await handleToggleTableStatus(id, target);
+    });
+  });
+
+  document.querySelectorAll('.btn-del-tbl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = parseInt(btn.dataset.id);
+      await handleDeleteTable(id);
+    });
+  });
+}
+
+// 6. Master Reservations Table (Scene 5 & 8: Search & Check-in)
+function renderAllReservationsTable() {
+  const query = reservationsSearchQuery.value.trim().toLowerCase();
+  allReservationsTbody.innerHTML = '';
+
+  const list = state.bookings.filter(b => {
     if (!query) return true;
     return b.guestName.toLowerCase().includes(query) ||
            String(b.bookingId).includes(query) ||
@@ -364,10 +358,10 @@ function renderStaffReservations() {
   });
 
   if (list.length === 0) {
-    staffReservationsTbody.innerHTML = `
+    allReservationsTbody.innerHTML = `
       <tr>
         <td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">
-          No reservations found matching criteria.
+          No reservations found matching search.
         </td>
       </tr>
     `;
@@ -378,31 +372,31 @@ function renderStaffReservations() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>#${b.bookingId}</strong></td>
-      <td><span class="pill-tag gold">Table #${b.tableId}</span></td>
+      <td><span class="tag-pill gold">Table #${b.tableId}</span></td>
       <td><strong>${b.guestName}</strong></td>
       <td>${b.guests} Guests</td>
       <td><code>${b.date}</code></td>
       <td><code>${b.time}</code></td>
-      <td><span class="pill-tag green">CONFIRMED</span></td>
+      <td><span class="tag-pill green">CONFIRMED</span></td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-glass btn-xs btn-view-pass" data-id="${b.bookingId}">View Pass</button>
-          <button class="btn-danger-xs btn-cancel-b" data-id="${b.bookingId}">Cancel</button>
+          <button class="btn btn-secondary btn-sm btn-view-receipt" data-id="${b.bookingId}">View Receipt</button>
+          <button class="btn-danger-sm btn-cancel-res" data-id="${b.bookingId}">Cancel</button>
         </div>
       </td>
     `;
-    staffReservationsTbody.appendChild(tr);
+    allReservationsTbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-view-pass').forEach(btn => {
+  document.querySelectorAll('.btn-view-receipt').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
-      const b = appState.bookings.find(x => x.bookingId === id);
-      if (b) showVipPassModal(b);
+      const b = state.bookings.find(x => x.bookingId === id);
+      if (b) showBookingReceiptModal(b);
     });
   });
 
-  document.querySelectorAll('.btn-cancel-b').forEach(btn => {
+  document.querySelectorAll('.btn-cancel-res').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = parseInt(btn.dataset.id);
       handleCancelReservation(id);
@@ -410,311 +404,191 @@ function renderStaffReservations() {
   });
 }
 
-// 6. Staff Physical Table Fleet Controls (With Turnover Clocks)
-function renderStaffFleet() {
-  staffFleetTbody.innerHTML = '';
-  appState.tables.forEach(t => {
-    const isAvail = t.status === 'Available';
-    const isOccupied = appState.occupiedTableIds.includes(t.id);
-    const tr = document.createElement('tr');
-
-    let turnoverText = 'Ready for Guests';
-    if (isOccupied) {
-      turnoverText = '⏱️ Dining (est. 60m left)';
-    } else if (!isAvail) {
-      turnoverText = '⚠️ Maintenance';
-    }
-
-    tr.innerHTML = `
-      <td><strong>#T-${t.id}</strong></td>
-      <td>${t.capacity} Guests</td>
-      <td>${t.type}</td>
-      <td><span class="turnover-badge">${turnoverText}</span></td>
-      <td><span class="pill-tag ${isAvail ? 'green' : 'red'}">${t.status}</span></td>
-      <td>
-        <button class="btn-status-toggle btn-toggle-status" data-id="${t.id}" data-current="${t.status}">
-          ${isAvail ? 'Set Maintenance' : 'Set Available'}
-        </button>
-      </td>
-      <td>
-        <button class="btn-danger-xs btn-delete-table" data-id="${t.id}">Delete</button>
-      </td>
-    `;
-    staffFleetTbody.appendChild(tr);
-  });
-
-  document.querySelectorAll('.btn-toggle-status').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = parseInt(btn.dataset.id);
-      const current = btn.dataset.current;
-      const target = (current === 'Available') ? 'Maintenance' : 'Available';
-      await handleToggleTableStatus(id, target);
-    });
-  });
-
-  document.querySelectorAll('.btn-delete-table').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = parseInt(btn.dataset.id);
-      await handleDeleteTable(id);
-    });
-  });
-}
-
-// 7. Staff Analytics & Revenue Breakdown
-function renderStaffAnalytics() {
-  staffZoneBreakdown.innerHTML = '';
-  const counts = {};
-  appState.tables.forEach(t => {
-    counts[t.type] = (counts[t.type] || 0) + 1;
-  });
-
-  for (const [type, count] of Object.entries(counts)) {
-    const rate = ZONE_REVENUE_RATES[type.split(' ')[0]] || 200;
-    const div = document.createElement('div');
-    div.className = 'breakdown-row';
-    div.innerHTML = `
-      <span><strong>${type}</strong> ($${rate} / service)</span>
-      <span class="pill-tag gold">${count} Tables &bull; Est. $${count * rate}</span>
-    `;
-    staffZoneBreakdown.appendChild(div);
-  }
-
-  // Hourly slot demand
-  staffSlotDemand.innerHTML = '';
-  const slotCounts = {};
-  appState.bookings.forEach(b => {
-    slotCounts[b.time] = (slotCounts[b.time] || 0) + 1;
-  });
-
-  ['12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM', '8:00 PM', '10:00 PM'].forEach(slot => {
-    const count = slotCounts[slot] || 0;
-    const div = document.createElement('div');
-    div.className = 'breakdown-row';
-    div.innerHTML = `
-      <span><strong>${slot}</strong></span>
-      <span class="pill-tag ${count > 0 ? 'green' : 'gold'}">${count} Bookings</span>
-    `;
-    staffSlotDemand.appendChild(div);
-  });
-}
-
-// 8. Staff Activity Audit Trail
-function renderStaffActivityTrail() {
-  staffActivityTimeline.innerHTML = '';
-  if (appState.activity.length === 0) {
-    staffActivityTimeline.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No audit events recorded.</div>';
+// 7. Activity Timeline
+function renderActivityTimeline() {
+  dashboardActivityTimeline.innerHTML = '';
+  if (state.activity.length === 0) {
+    dashboardActivityTimeline.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No recent audit activity.</div>';
     return;
   }
 
-  const reversed = [...appState.activity].reverse();
+  const reversed = [...state.activity].reverse();
   reversed.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'timeline-card';
-    card.innerHTML = `
-      <div class="time-stamp">${item.timestamp}</div>
+    const entry = document.createElement('div');
+    entry.className = 'timeline-entry';
+    entry.innerHTML = `
+      <div class="entry-time">${item.timestamp}</div>
       <div>
-        <div class="event-type-badge">${item.type}</div>
-        <div class="event-desc">${item.message}</div>
+        <div class="entry-tag">${item.type}</div>
+        <div class="entry-msg">${item.message}</div>
       </div>
     `;
-    staffActivityTimeline.appendChild(card);
+    dashboardActivityTimeline.appendChild(entry);
   });
 }
 
-// ================= 4-STEP WIZARD STEPPER CONTROLLER =================
-function setWizardStep(step) {
-  appState.currentWizardStep = step;
-  for (let i = 1; i <= 4; ++i) {
-    const bubble = document.getElementById(`step-bubble-${i}`);
-    if (bubble) bubble.classList.toggle('active', i <= step);
-  }
+// ================= VIEW SWITCHER =================
+function switchView(viewName) {
+  state.activeView = viewName;
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+  document.querySelectorAll('.app-view').forEach(view => {
+    view.classList.toggle('active', view.id === `view-${viewName}`);
+  });
 }
 
-// ================= 6-STAGE ALGORITHM VISUALIZER ANIMATION =================
-function resetPipelineAnimation() {
+// ================= 6-STAGE ALGORITHM PIPELINE =================
+function resetPipeline() {
   for (let i = 1; i <= 5; ++i) {
-    const node = document.getElementById(`pipe-node-${i}`);
-    node.className = 'pipeline-node';
+    const card = document.getElementById(`pipe-step-${i}`);
+    if (card) card.className = 'pipe-step-card';
   }
-  document.getElementById('pipeline-status').textContent = 'Allocating...';
-  document.getElementById('pipeline-status').style.color = '#fbbf24';
+  document.getElementById('pipeline-status-badge').textContent = 'Allocating...';
+  document.getElementById('pipeline-status-badge').className = 'pill-badge gold';
 }
 
-function setPipelineStep(step, status, text = null) {
-  const node = document.getElementById(`pipe-node-${step}`);
-  if (!node) return;
-  node.className = `pipeline-node node-${status}`;
+function setPipelineNode(step, status, text = null) {
+  const card = document.getElementById(`pipe-step-${step}`);
+  if (!card) return;
+  card.className = `pipe-step-card step-${status}`;
   if (text) {
     document.getElementById(`pipe-sub-${step}`).textContent = text;
   }
 }
 
 async function runAllocationSequence(trace, success, createdBooking, errorMsg) {
-  resetPipelineAnimation();
+  resetPipeline();
 
-  // Step 1: Sanitization
-  setPipelineStep(1, 'running', 'Validating guest parameters');
-  await new Promise(r => setTimeout(r, 200));
-  setPipelineStep(1, 'success', 'Input verified');
+  setPipelineNode(1, 'running', 'Validating guest parameters');
+  await new Promise(r => setTimeout(r, 180));
+  setPipelineNode(1, 'success', 'Input verified');
 
-  // Step 2: Slot Window
-  setPipelineStep(2, 'running', 'Checking date & time boundaries');
-  await new Promise(r => setTimeout(r, 200));
-  setPipelineStep(2, 'success', `${createdBooking?.date || appState.selectedDate} @ ${createdBooking?.time || appState.selectedTime}`);
+  setPipelineNode(2, 'running', 'Checking date & time boundaries');
+  await new Promise(r => setTimeout(r, 180));
+  setPipelineNode(2, 'success', `${createdBooking?.date || state.selectedDate} @ ${createdBooking?.time || state.selectedTime}`);
 
-  // Step 3: Conflict Scan
-  setPipelineStep(3, 'running', 'Scanning slot collisions in active records');
+  setPipelineNode(3, 'running', 'Scanning slot collisions');
+  await new Promise(r => setTimeout(r, 220));
+  setPipelineNode(3, 'success', 'No conflict detected');
+
+  setPipelineNode(4, 'running', 'Matching best suitable capacity');
   await new Promise(r => setTimeout(r, 240));
-  setPipelineStep(3, 'success', 'Slot conflict scan complete');
-
-  // Step 4: Best-Fit Match
-  setPipelineStep(4, 'running', 'Matching optimal seating capacity');
-  await new Promise(r => setTimeout(r, 280));
 
   if (!success) {
-    setPipelineStep(4, 'running', errorMsg || 'No table match');
-    document.getElementById('pipeline-status').textContent = 'Allocation Failed';
-    document.getElementById('pipeline-status').style.color = '#f43f5e';
-    showToastAlert(errorMsg || 'Reservation failed: No table available.', 'error');
+    setPipelineNode(4, 'running', errorMsg || 'No table match');
+    document.getElementById('pipeline-status-badge').textContent = 'Failed';
+    document.getElementById('pipeline-status-badge').className = 'pill-badge';
+    showToast(errorMsg || 'No suitable table available for this slot.', 'error');
     return;
   }
 
-  setPipelineStep(4, 'success', `Matched Table #${createdBooking.tableId}`);
+  setPipelineNode(4, 'success', `Assigned Table #${createdBooking.tableId}`);
 
-  // Step 5: Disk Persist
-  setPipelineStep(5, 'running', 'Writing to tables.txt & bookings.txt');
-  await new Promise(r => setTimeout(r, 200));
-  setPipelineStep(5, 'success', 'Disk persistence confirmed');
+  setPipelineNode(5, 'running', 'Saving to tables.txt & bookings.txt');
+  await new Promise(r => setTimeout(r, 180));
+  setPipelineNode(5, 'success', 'Saved to permanent storage');
 
-  document.getElementById('pipeline-status').textContent = 'Confirmed';
-  document.getElementById('pipeline-status').style.color = '#10b981';
+  document.getElementById('pipeline-status-badge').textContent = 'Success';
+  document.getElementById('pipeline-status-badge').className = 'pill-badge green';
 
-  setWizardStep(4);
   playSound('success');
-  showVipPassModal(createdBooking);
+  showBookingReceiptModal(createdBooking);
 }
 
-// ================= VIP DINING PASS MODAL =================
-function showVipPassModal(b) {
-  passDataGrid.innerHTML = `
-    <div class="pass-field-cell">
-      <label>Booking Reference</label>
+// ================= OFFICIAL RECEIPT MODAL (Scene 7) =================
+function showBookingReceiptModal(b) {
+  receiptDataGrid.innerHTML = `
+    <div class="receipt-cell">
+      <label>Booking ID</label>
       <strong>#${b.bookingId}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Assigned Dining Table</label>
-      <strong style="color:var(--gold-400);">Table #${b.tableId}</strong>
+    <div class="receipt-cell">
+      <label>Assigned Table</label>
+      <strong style="color:var(--gold-600);">Table #${b.tableId}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Guest Full Name</label>
+    <div class="receipt-cell">
+      <label>Customer Name</label>
       <strong>${b.guestName}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Party Size</label>
-      <strong>${b.guests} Guest(s)</strong>
+    <div class="receipt-cell">
+      <label>Number of Guests</label>
+      <strong>${b.guests} Guests</strong>
     </div>
-    <div class="pass-field-cell">
+    <div class="receipt-cell">
       <label>Reservation Date</label>
       <strong>${b.date}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Dining Time Slot</label>
+    <div class="receipt-cell">
+      <label>Reservation Time</label>
       <strong>${b.time}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Dining Occasion</label>
-      <strong style="color:var(--gold-300);">${appState.selectedOccasion}</strong>
+    <div class="receipt-cell">
+      <label>Occasion</label>
+      <strong style="color:var(--gold-700);">${state.selectedOccasion}</strong>
     </div>
-    <div class="pass-field-cell">
-      <label>Service Standard</label>
-      <strong>Michelin 3-Star Pairing</strong>
+    <div class="receipt-cell">
+      <label>Status</label>
+      <strong style="color:var(--c-emerald);">CONFIRMED</strong>
     </div>
   `;
-  modalVipPass.classList.add('open');
+  modalBookingReceipt.classList.add('open');
 }
 
-// ================= ACTIONS & EVENT HANDLERS =================
+// ================= EVENT LISTENERS & ACTIONS =================
 
-// 1. Dual Mode Switching (Guest Portal vs Staff Host Stand)
-document.getElementById('btn-mode-guest').addEventListener('click', () => {
-  playSound('click');
-  document.getElementById('btn-mode-guest').classList.add('active');
-  document.getElementById('btn-mode-staff').classList.remove('active');
-  document.getElementById('view-mode-guest').classList.add('active');
-  document.getElementById('view-mode-staff').classList.remove('active');
-});
-
-document.getElementById('btn-mode-staff').addEventListener('click', () => {
-  playSound('click');
-  document.getElementById('btn-mode-staff').classList.add('active');
-  document.getElementById('btn-mode-guest').classList.remove('active');
-  document.getElementById('view-mode-staff').classList.add('active');
-  document.getElementById('view-mode-guest').classList.remove('active');
-});
-
-// Staff Subview Switching
-document.querySelectorAll('.staff-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
+// Navigation Tabs
+document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
     playSound('click');
-    document.querySelectorAll('.staff-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const view = tab.dataset.staffView;
-    document.querySelectorAll('.staff-subview').forEach(sv => {
-      sv.classList.toggle('active', sv.id === `subview-${view}`);
-    });
+    switchView(btn.dataset.view);
   });
 });
 
-// 2. Occasion Selector Pills
-document.querySelectorAll('.occasion-pill').forEach(pill => {
+// Occasion Pills
+document.querySelectorAll('.occ-pill').forEach(pill => {
   pill.addEventListener('click', () => {
     playSound('pop');
-    document.querySelectorAll('.occasion-pill').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.occ-pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
-    appState.selectedOccasion = pill.dataset.occ;
-    setWizardStep(3);
+    state.selectedOccasion = pill.dataset.occ;
   });
 });
 
-// 3. Quick Experience Booking Buttons
-document.querySelectorAll('.btn-quick-experience').forEach(btn => {
+// Quick Experience Buttons
+document.querySelectorAll('.btn-quick-book').forEach(btn => {
   btn.addEventListener('click', () => {
     playSound('clink');
     const guests = parseInt(btn.dataset.guests);
     const type = btn.dataset.type;
-    document.getElementById('party-size-input').value = guests;
-    
-    // Find free table matching type
-    const candidate = appState.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && appState.availableTableIds.includes(t.id));
+    document.getElementById('input-guest-count').value = guests;
+
+    const candidate = state.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && state.availableTableIds.includes(t.id));
     if (candidate) {
-      appState.selectedTableId = candidate.id;
-      guestTableSelect.value = String(candidate.id);
-      showToastAlert(`Selected Table #${candidate.id} (${candidate.type}).`, 'success');
-      setWizardStep(2);
-      renderGuestFloorPlan();
+      state.selectedTableId = candidate.id;
+      selectTableAssignment.value = String(candidate.id);
     } else {
-      guestTableSelect.value = '0';
-      showToastAlert(`Auto-assigning optimal ${type} table.`, 'info');
-      setWizardStep(1);
+      selectTableAssignment.value = '0';
     }
+    switchView('booking');
   });
 });
 
-// 4. Guest Booking Submission
-guestReservationForm.addEventListener('submit', async (e) => {
+// Create Reservation Form Submission (Scene 6 & 7)
+createBookingForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const guestName = document.getElementById('guest-name-input').value.trim();
-  const guests = parseInt(document.getElementById('party-size-input').value);
-  const date = document.getElementById('guest-date-input').value.trim();
-  const time = document.getElementById('guest-time-select').value;
-  const tableId = parseInt(guestTableSelect.value);
+  const guestName = document.getElementById('input-guest-name').value.trim();
+  const guests = parseInt(document.getElementById('input-guest-count').value);
+  const date = document.getElementById('input-booking-date').value.trim();
+  const time = document.getElementById('select-booking-time').value;
+  const tableId = parseInt(selectTableAssignment.value);
 
-  const btn = document.getElementById('btn-book-submit');
-  btn.disabled = true;
+  const submitBtn = document.getElementById('btn-submit-reservation');
+  submitBtn.disabled = true;
 
   try {
-    const res = await fetch(`${API_ENDPOINT}/bookings`, {
+    const res = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guestName, guests, date, time, tableId })
@@ -724,26 +598,26 @@ guestReservationForm.addEventListener('submit', async (e) => {
     await runAllocationSequence(data.trace || [], data.success, data.booking, data.error);
 
     if (data.success) {
-      guestReservationForm.reset();
-      document.getElementById('party-size-input').value = '4';
-      document.getElementById('guest-date-input').value = appState.selectedDate;
-      document.getElementById('guest-time-select').value = appState.selectedTime;
-      appState.selectedTableId = 0;
+      createBookingForm.reset();
+      document.getElementById('input-guest-count').value = '4';
+      document.getElementById('input-booking-date').value = state.selectedDate;
+      document.getElementById('select-booking-time').value = state.selectedTime;
+      state.selectedTableId = 0;
       await syncCoreEngine();
     }
   } catch (err) {
-    showToastAlert('Failed to communicate with C++ backend.', 'error');
+    showToast('Failed to connect to C++ backend.', 'error');
   } finally {
-    btn.disabled = false;
+    submitBtn.disabled = false;
   }
 });
 
-// 5. Cancel Reservation Action
+// Cancel Reservation (Scene 5)
 async function handleCancelReservation(id) {
   if (!confirm(`Are you sure you want to cancel Reservation #${id}?`)) return;
 
   try {
-    const res = await fetch(`${API_ENDPOINT}/cancel`, {
+    const res = await fetch(`${API_BASE}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bookingId: id })
@@ -751,20 +625,20 @@ async function handleCancelReservation(id) {
 
     const data = await res.json();
     if (data.success) {
-      showToastAlert(`Reservation #${id} cancelled.`, 'success');
+      showToast(`Reservation #${id} successfully cancelled.`, 'success');
       await syncCoreEngine();
     } else {
-      showToastAlert(data.error || 'Could not cancel reservation.', 'error');
+      showToast(data.error || 'Could not cancel reservation.', 'error');
     }
   } catch (err) {
-    showToastAlert('Backend communication error.', 'error');
+    showToast('Backend error cancelling reservation.', 'error');
   }
 }
 
-// 6. Staff Table Operational Status Toggle
+// Table Status Toggle (Scene 4)
 async function handleToggleTableStatus(id, status) {
   try {
-    const res = await fetch(`${API_ENDPOINT}/tables/status`, {
+    const res = await fetch(`${API_BASE}/tables/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status })
@@ -772,22 +646,22 @@ async function handleToggleTableStatus(id, status) {
 
     const data = await res.json();
     if (data.success) {
-      showToastAlert(`Table #${id} status updated to ${status}.`, 'success');
+      showToast(`Table #${id} status updated to ${status}.`, 'success');
       await syncCoreEngine();
     } else {
-      showToastAlert(data.error || 'Failed to update table status.', 'error');
+      showToast(data.error || 'Failed to update table status.', 'error');
     }
   } catch (err) {
-    showToastAlert('Server communication error.', 'error');
+    showToast('Server communication error.', 'error');
   }
 }
 
-// 7. Staff Delete Table Action
+// Delete Table (Scene 4)
 async function handleDeleteTable(id) {
   if (!confirm(`Are you sure you want to delete Table #${id}?`)) return;
 
   try {
-    const res = await fetch(`${API_ENDPOINT}/tables/delete`, {
+    const res = await fetch(`${API_BASE}/tables/delete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
@@ -795,27 +669,27 @@ async function handleDeleteTable(id) {
 
     const data = await res.json();
     if (data.success) {
-      showToastAlert(`Table #${id} deleted from restaurant.`, 'success');
+      showToast(`Table #${id} deleted from restaurant.`, 'success');
       await syncCoreEngine();
     } else {
-      showToastAlert(data.error || 'Cannot delete table.', 'error');
+      showToast(data.error || 'Cannot delete table.', 'error');
     }
   } catch (err) {
-    showToastAlert('Server communication error.', 'error');
+    showToast('Server error deleting table.', 'error');
   }
 }
 
-// 8. Express Walk-In Seating Handler
-document.getElementById('form-quick-walkin').addEventListener('submit', async (e) => {
+// Walk-In Seater Form
+document.getElementById('form-quick-walkin-action').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const guestName = document.getElementById('walkin-guest-name').value.trim() || 'Walk-In Guest';
-  const guests = parseInt(document.getElementById('walkin-party-size').value);
-  const tableId = parseInt(document.getElementById('walkin-table-choice').value);
-  const date = appState.selectedDate;
-  const time = appState.selectedTime;
+  const guestName = document.getElementById('walkin-guest-input').value.trim() || 'Walk-In Customer';
+  const guests = parseInt(document.getElementById('walkin-guests-count').value);
+  const tableId = parseInt(document.getElementById('walkin-table-select').value);
+  const date = state.selectedDate;
+  const time = state.selectedTime;
 
   try {
-    const res = await fetch(`${API_ENDPOINT}/bookings`, {
+    const res = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guestName, guests, date, time, tableId })
@@ -823,28 +697,28 @@ document.getElementById('form-quick-walkin').addEventListener('submit', async (e
 
     const data = await res.json();
     if (data.success) {
-      showToastAlert(`Walk-in seated at Table #${data.booking.tableId}!`, 'success');
-      modalWalkinSeater.classList.remove('open');
-      document.getElementById('form-quick-walkin').reset();
+      showToast(`Walk-in customer seated at Table #${data.booking.tableId}!`, 'success');
+      modalQuickWalkin.classList.remove('open');
+      document.getElementById('form-quick-walkin-action').reset();
       playSound('success');
       await syncCoreEngine();
     } else {
-      showToastAlert(data.error || 'No table available for walk-in party.', 'error');
+      showToast(data.error || 'No table available for walk-in party.', 'error');
     }
   } catch (err) {
-    showToastAlert('Error seating walk-in guest.', 'error');
+    showToast('Error seating walk-in customer.', 'error');
   }
 });
 
-// 9. Add Table Form
-document.getElementById('form-add-new-table').addEventListener('submit', async (e) => {
+// Add Table Form
+document.getElementById('form-create-table-action').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = parseInt(document.getElementById('new-tbl-id').value);
-  const capacity = parseInt(document.getElementById('new-tbl-capacity').value);
-  const type = document.getElementById('new-tbl-type').value.trim();
+  const id = parseInt(document.getElementById('new-table-id-input').value);
+  const capacity = parseInt(document.getElementById('new-table-capacity-input').value);
+  const type = document.getElementById('new-table-type-input').value.trim();
 
   try {
-    const res = await fetch(`${API_ENDPOINT}/tables`, {
+    const res = await fetch(`${API_BASE}/tables`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, capacity, type })
@@ -852,108 +726,107 @@ document.getElementById('form-add-new-table').addEventListener('submit', async (
 
     const data = await res.json();
     if (data.success) {
-      showToastAlert(`Table #${id} successfully added!`, 'success');
-      modalTableCreate.classList.remove('open');
-      document.getElementById('form-add-new-table').reset();
+      showToast(`Table #${id} successfully added!`, 'success');
+      modalAddTable.classList.remove('open');
+      document.getElementById('form-create-table-action').reset();
       await syncCoreEngine();
     } else {
-      showToastAlert(data.error || 'Could not add table.', 'error');
+      showToast(data.error || 'Could not add table.', 'error');
     }
   } catch (err) {
-    showToastAlert('Backend error adding table.', 'error');
+    showToast('Server error adding table.', 'error');
   }
 });
 
-// 10. Stepper Actions
-document.getElementById('btn-stepper-plus').addEventListener('click', () => {
+// Stepper buttons
+document.getElementById('btn-party-plus').addEventListener('click', () => {
   playSound('pop');
-  const inp = document.getElementById('party-size-input');
+  const inp = document.getElementById('input-guest-count');
   inp.value = Math.min(50, parseInt(inp.value || 1) + 1);
-  setWizardStep(1);
 });
 
-document.getElementById('btn-stepper-minus').addEventListener('click', () => {
+document.getElementById('btn-party-minus').addEventListener('click', () => {
   playSound('pop');
-  const inp = document.getElementById('party-size-input');
+  const inp = document.getElementById('input-guest-count');
   inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
-  setWizardStep(1);
 });
 
-slotCarousel.addEventListener('click', (e) => {
-  const chip = e.target.closest('.slot-chip');
-  if (chip) {
+// Time Slot Carousel
+timeSlotsCarousel.addEventListener('click', (e) => {
+  const btn = e.target.closest('.time-slot-btn');
+  if (btn) {
     playSound('clink');
-    document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    appState.selectedTime = chip.dataset.time;
-    document.getElementById('guest-time-select').value = appState.selectedTime;
-    updateSlotMatrix();
+    document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.selectedTime = btn.dataset.time;
+    document.getElementById('select-booking-time').value = state.selectedTime;
+    updateSlotAvailability();
   }
 });
 
+// Date input & quick pills
 slotDateInput.addEventListener('change', () => {
-  appState.selectedDate = slotDateInput.value.trim() || '24/05/2026';
-  document.getElementById('guest-date-input').value = appState.selectedDate;
-  updateSlotMatrix();
+  state.selectedDate = slotDateInput.value.trim() || '24/05/2026';
+  document.getElementById('input-booking-date').value = state.selectedDate;
+  updateSlotAvailability();
 });
 
-document.querySelectorAll('.pill').forEach(btn => {
+document.querySelectorAll('.date-pill').forEach(btn => {
   btn.addEventListener('click', () => {
     playSound('click');
-    document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.date-pill').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const preset = btn.dataset.date;
     if (preset === 'TODAY') {
       const now = new Date();
-      appState.selectedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+      state.selectedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
     } else if (preset === 'TOMORROW') {
       const tm = new Date();
       tm.setDate(tm.getDate() + 1);
-      appState.selectedDate = `${String(tm.getDate()).padStart(2,'0')}/${String(tm.getMonth()+1).padStart(2,'0')}/${tm.getFullYear()}`;
+      state.selectedDate = `${String(tm.getDate()).padStart(2,'0')}/${String(tm.getMonth()+1).padStart(2,'0')}/${tm.getFullYear()}`;
     } else {
-      appState.selectedDate = preset;
+      state.selectedDate = preset;
     }
-    slotDateInput.value = appState.selectedDate;
-    document.getElementById('guest-date-input').value = appState.selectedDate;
-    updateSlotMatrix();
+    slotDateInput.value = state.selectedDate;
+    document.getElementById('input-booking-date').value = state.selectedDate;
+    updateSlotAvailability();
   });
 });
 
 zoneFilterSelect.addEventListener('change', () => {
-  appState.selectedZone = zoneFilterSelect.value;
-  renderGuestFloorPlan();
+  state.selectedZone = zoneFilterSelect.value;
+  renderFloorPlanCanvas();
 });
 
-staffSearchInput.addEventListener('input', renderStaffReservations);
+reservationsSearchQuery.addEventListener('input', renderAllReservationsTable);
 
-document.getElementById('btn-refresh-state').addEventListener('click', () => {
+document.getElementById('btn-sync-engine').addEventListener('click', () => {
   syncCoreEngine();
-  showToastAlert('Synchronized with C++ Core Engine.', 'info');
+  showToast('Synchronized with C++ Core Engine.', 'info');
 });
 
-document.getElementById('btn-toggle-sound').addEventListener('click', () => {
-  appState.soundEnabled = !appState.soundEnabled;
-  soundIcon.textContent = appState.soundEnabled ? '🔊' : '🔇';
-  showToastAlert(appState.soundEnabled ? 'Audio feedback enabled.' : 'Audio feedback muted.', 'info');
+document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+  state.soundEnabled = !state.soundEnabled;
+  soundIconSymbol.textContent = state.soundEnabled ? '🔊' : '🔇';
+  showToast(state.soundEnabled ? 'Sound enabled.' : 'Sound muted.', 'info');
 });
 
 // Modals
-document.getElementById('btn-open-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.add('open'));
-document.getElementById('btn-staff-walkin-quick').addEventListener('click', () => modalWalkinSeater.classList.add('open'));
-document.getElementById('btn-close-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.remove('open'));
-document.getElementById('btn-cancel-walkin-modal').addEventListener('click', () => modalWalkinSeater.classList.remove('open'));
+document.getElementById('btn-quick-walkin').addEventListener('click', () => modalQuickWalkin.classList.add('open'));
+document.getElementById('btn-close-walkin-modal').addEventListener('click', () => modalQuickWalkin.classList.remove('open'));
+document.getElementById('btn-cancel-walkin-modal').addEventListener('click', () => modalQuickWalkin.classList.remove('open'));
 
-document.getElementById('btn-staff-add-table').addEventListener('click', () => modalTableCreate.classList.add('open'));
-document.getElementById('btn-close-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
-document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalTableCreate.classList.remove('open'));
+document.getElementById('btn-add-new-table-modal').addEventListener('click', () => modalAddTable.classList.add('open'));
+document.getElementById('btn-close-table-modal').addEventListener('click', () => modalAddTable.classList.remove('open'));
+document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalAddTable.classList.remove('open'));
 
-document.getElementById('btn-dismiss-pass').addEventListener('click', () => modalVipPass.classList.remove('open'));
-document.getElementById('btn-print-pass').addEventListener('click', () => {
+document.getElementById('btn-close-receipt-action').addEventListener('click', () => modalBookingReceipt.classList.remove('open'));
+document.getElementById('btn-print-receipt-action').addEventListener('click', () => {
   window.print();
 });
 
-// Background auto-sync every 3.5s
+// Auto-sync every 3.5s
 setInterval(syncCoreEngine, 3500);
 
-// Initialize on page load
+// Initial call
 syncCoreEngine();
