@@ -1,607 +1,731 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Royal Spice — Restaurant Table Booking System & Management Dashboard">
-  <title>The Royal Spice — Restaurant Table Booking System</title>
+  <meta name="description" content="The Royal Spice — Premium Restaurant Table Management, Interactive Floor Plan & Reservation Operating System">
+  <title>The Royal Spice — Restaurant Operations & Table Management System</title>
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Top Ambient Glows -->
-  <div class="ambient-glow glow-warm"></div>
-  <div class="ambient-glow glow-subtle"></div>
-
-  <!-- Master Application Container -->
   <div class="app-layout">
-
-    <!-- Top Luxury Navigation Bar (Clean White) -->
-    <header class="top-navbar">
-      <div class="navbar-brand">
+    
+    <!-- Left Navigation Sidebar -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
         <div class="brand-crest">⚜️</div>
-        <div>
-          <div class="brand-eyebrow">RESTAURANT MANAGEMENT SYSTEM</div>
+        <div class="brand-text">
+          <span class="brand-eyebrow">FINE DINING OS</span>
           <h1 class="brand-title">THE ROYAL SPICE</h1>
         </div>
       </div>
 
-      <!-- Main Navigation Menu (Matching Document Structure) -->
-      <nav class="main-menu-tabs">
-        <button class="nav-tab-btn active" data-view="dashboard">
-          <span class="tab-icon">📊</span>
-          <span>Dashboard</span>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Live Dashboard</span>
         </button>
-        <button class="nav-tab-btn" data-view="tables">
-          <span class="tab-icon">🪑</span>
-          <span>Table Management</span>
+        <button class="nav-item" data-view="floorplan">
+          <i data-lucide="map"></i>
+          <span>Floor Plan</span>
+          <span class="nav-pill green" id="nav-open-tables-pill">0 Open</span>
         </button>
-        <button class="nav-tab-btn" data-view="booking">
-          <span class="tab-icon">📝</span>
-          <span>Create Booking</span>
+        <button class="nav-item" data-view="reservations">
+          <i data-lucide="calendar-check"></i>
+          <span>Reservations</span>
+          <span class="nav-pill" id="nav-bookings-pill">0</span>
         </button>
-        <button class="nav-tab-btn" data-view="reservations">
-          <span class="tab-icon">📋</span>
-          <span>All Bookings</span>
-          <span class="nav-badge" id="nav-bookings-count">0</span>
+        <button class="nav-item" data-view="booking">
+          <i data-lucide="plus-circle"></i>
+          <span>New Reservation</span>
+        </button>
+        <button class="nav-item" data-view="tables">
+          <i data-lucide="grid-3x3"></i>
+          <span>Table Fleet</span>
+        </button>
+        <button class="nav-item" data-view="activity">
+          <i data-lucide="activity"></i>
+          <span>Live Activity</span>
         </button>
       </nav>
 
-      <!-- Right Header Actions -->
-      <div class="navbar-actions">
-        <div class="core-status-pill" id="core-status-pill" title="Connected to C++ Core Engine">
-          <span class="status-pulse"></span>
-          <span class="status-text">C++ Engine Live</span>
-        </div>
-        <button class="btn btn-secondary btn-icon" id="btn-sound-toggle" title="Toggle Sound Feedback">
-          <span id="sound-icon-symbol">🔊</span>
-        </button>
-        <button class="btn btn-secondary btn-icon" id="btn-sync-engine" title="Refresh System State">
-          <span>🔄</span>
-        </button>
-        <button class="btn btn-primary btn-sm" id="btn-quick-walkin">
-          <span>+ Walk-In</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Global Slot & Date Filter Ribbon -->
-    <section class="slot-filter-strip">
-      <div class="filter-strip-grid">
-        
-        <!-- Date Selector Block -->
-        <div class="filter-card">
-          <label class="filter-label">
-            <span>📅 RESERVATION DATE</span>
-          </label>
-          <div class="date-input-row">
-            <input type="text" id="slot-date-input" class="clean-date-input" value="24/05/2026" placeholder="DD/MM/YYYY">
-            <div class="pill-group">
-              <button class="date-pill" data-date="TODAY">Today</button>
-              <button class="date-pill" data-date="TOMORROW">Tomorrow</button>
-              <button class="date-pill active" data-date="24/05/2026">24 May</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dining Time Slots Carousel -->
-        <div class="filter-card">
-          <label class="filter-label">
-            <span>⏰ DINING SERVICE TIME SLOT</span>
-          </label>
-          <div class="slots-row" id="time-slots-carousel">
-            <button class="time-slot-btn" data-time="12:00 PM">
-              <span class="slot-tag">LUNCH</span>
-              <span class="slot-time">12:00 PM</span>
-            </button>
-            <button class="time-slot-btn" data-time="2:00 PM">
-              <span class="slot-tag">LUNCH</span>
-              <span class="slot-time">2:00 PM</span>
-            </button>
-            <button class="time-slot-btn" data-time="4:00 PM">
-              <span class="slot-tag">AFTERNOON</span>
-              <span class="slot-time">4:00 PM</span>
-            </button>
-            <button class="time-slot-btn" data-time="6:00 PM">
-              <span class="slot-tag">DINNER</span>
-              <span class="slot-time">6:00 PM</span>
-            </button>
-            <button class="time-slot-btn active" data-time="8:00 PM">
-              <span class="slot-tag">PRIME DINNER</span>
-              <span class="slot-time">8:00 PM</span>
-            </button>
-            <button class="time-slot-btn" data-time="10:00 PM">
-              <span class="slot-tag">LATE NIGHT</span>
-              <span class="slot-time">10:00 PM</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Dining Zone Filter -->
-        <div class="filter-card">
-          <label class="filter-label">
-            <span>🥂 DINING CATEGORY</span>
-          </label>
-          <select id="zone-filter-select" class="clean-select">
-            <option value="ALL">All Categories & Zones</option>
-            <option value="Couple">Couple Table (2 Seats)</option>
-            <option value="Family">Family Booth (4 Seats)</option>
-            <option value="VIP">VIP Suite (6 Seats)</option>
-            <option value="Banquet">Banquet Table (8 Seats)</option>
-          </select>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Key Statistics Metric Cards (Scene 2 & 3: Dashboard Overview) -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon-box bg-gold">🪑</div>
-        <div class="kpi-body">
-          <div class="kpi-label">TOTAL TABLES</div>
-          <div class="kpi-val" id="metric-total-tables">0</div>
-        </div>
-        <div class="kpi-pill green" id="metric-op-tables">0 Operational</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box bg-emerald">👥</div>
-        <div class="kpi-body">
-          <div class="kpi-label">TOTAL CAPACITY</div>
-          <div class="kpi-val"><span id="metric-total-capacity">0</span> <small>Seats</small></div>
-        </div>
-        <div class="kpi-pill gray">Full Service</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box bg-blue">📋</div>
-        <div class="kpi-body">
-          <div class="kpi-label">TOTAL BOOKINGS</div>
-          <div class="kpi-val" id="metric-total-bookings">0</div>
-        </div>
-        <div class="kpi-pill gold">Confirmed</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon-box bg-rose">⚡</div>
-        <div class="kpi-body">
-          <div class="kpi-label">SLOT OCCUPANCY</div>
-          <div class="kpi-val" id="metric-occupancy-rate">0%</div>
-        </div>
-        <div class="kpi-pill" id="metric-occupancy-ratio">0/0 Booked</div>
-      </div>
-    </section>
-
-    <!-- ================================================================= -->
-    <!-- VIEW 1: DASHBOARD & OVERVIEW                                      -->
-    <!-- ================================================================= -->
-    <div class="app-view active" id="view-dashboard">
-      
-      <!-- Experience Showcase Grid -->
-      <section class="experience-deck">
-        <div class="experience-card" data-guests="2" data-type="Couple">
-          <div class="exp-icon-wrap">🍷</div>
-          <div class="exp-info">
-            <h3>Couple Table</h3>
-            <p>Intimate candlelit seating designed for 2 guests.</p>
-            <span class="exp-tag">2 Guests &bull; Private Alcove</span>
-          </div>
-          <button class="btn btn-secondary btn-sm btn-quick-book" data-guests="2" data-type="Couple">Book Table</button>
-        </div>
-
-        <div class="experience-card" data-guests="4" data-type="Family">
-          <div class="exp-icon-wrap">🍽️</div>
-          <div class="exp-info">
-            <h3>Family Booth</h3>
-            <p>Comfortable center hall booths for family dining.</p>
-            <span class="exp-tag">4 Guests &bull; Main Hall</span>
-          </div>
-          <button class="btn btn-secondary btn-sm btn-quick-book" data-guests="4" data-type="Family">Book Table</button>
-        </div>
-
-        <div class="experience-card highlight-card" data-guests="6" data-type="VIP">
-          <div class="exp-icon-wrap">👑</div>
-          <div class="exp-info">
-            <h3>VIP Suite</h3>
-            <p>Luxury gold-trimmed private dining suite.</p>
-            <span class="exp-tag gold">6 Guests &bull; Exclusive Lounge</span>
-          </div>
-          <button class="btn btn-primary btn-sm btn-quick-book" data-guests="6" data-type="VIP">Book Table</button>
-        </div>
-
-        <div class="experience-card" data-guests="8" data-type="Banquet">
-          <div class="exp-icon-wrap">🍾</div>
-          <div class="exp-info">
-            <h3>Banquet Table</h3>
-            <p>Grand feast table for business and gala events.</p>
-            <span class="exp-tag">8+ Guests &bull; Grand Feast</span>
-          </div>
-          <button class="btn btn-secondary btn-sm btn-quick-book" data-guests="8" data-type="Banquet">Book Table</button>
-        </div>
-      </section>
-
-      <!-- Dual Section: Live Seating Floor Plan + Activity Timeline -->
-      <div class="dashboard-dual-grid">
-        
-        <!-- Live Seating Floor Plan Card -->
-        <div class="white-card">
-          <div class="card-header-row">
-            <div>
-              <h2 class="card-heading">Restaurant Seating Floor Plan</h2>
-              <p class="card-subheading" id="floor-slot-subtitle">Live availability for 24/05/2026 at 8:00 PM</p>
-            </div>
-            <div class="status-legend">
-              <span class="dot dot-green"></span> Available
-              <span class="dot dot-red"></span> Booked
-              <span class="dot dot-gray"></span> Maintenance
-            </div>
-          </div>
-
-          <!-- Floor Plan Blueprint Canvas (Clean Light Theme) -->
-          <div class="floor-blueprint-canvas" id="dashboard-floor-canvas">
-            <!-- Table Pod Cards rendered dynamically -->
-          </div>
-
-          <div class="canvas-footer-hint">
-            <span>💡 <strong>Tip:</strong> Click any <span style="color:var(--c-emerald); font-weight:700;">Green Table</span> to instantly select it for reservation.</span>
-          </div>
-        </div>
-
-        <!-- Activity Stream Timeline -->
-        <div class="white-card">
-          <div class="card-header-row">
-            <div>
-              <h2 class="card-heading">Live Activity Stream</h2>
-              <p class="card-subheading">System event log & audit trail</p>
-            </div>
-            <span class="pill-badge green">LIVE SYNC</span>
-          </div>
-          <div class="activity-timeline-box" id="dashboard-activity-timeline">
-            <!-- Event stream items -->
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ================================================================= -->
-    <!-- VIEW 2: TABLE MANAGEMENT (Scene 4)                                -->
-    <!-- ================================================================= -->
-    <div class="app-view" id="view-tables">
-      <div class="white-card">
-        <div class="card-header-row">
+      <div class="sidebar-status-card">
+        <div class="service-shift-row">
+          <span class="shift-indicator"></span>
           <div>
-            <h2 class="card-heading">Restaurant Table Fleet & Capacity Management</h2>
-            <p class="card-subheading">Manage physical tables, toggle operational status, and check slot availability</p>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button class="btn btn-primary btn-sm" id="btn-add-new-table-modal">+ Add New Table</button>
+            <strong>DINNER SERVICE</strong>
+            <small>17:00 – 23:30</small>
           </div>
         </div>
-
-        <div class="clean-table-responsive">
-          <table class="clean-data-table">
-            <thead>
-              <tr>
-                <th>Table ID</th>
-                <th>Seating Capacity</th>
-                <th>Table Type / Category</th>
-                <th>Slot Status</th>
-                <th>Operational Status</th>
-                <th>Status Toggle</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="tables-fleet-tbody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+        <div class="shift-stats-mini">
+          <div><small>Seated Now</small><strong id="mini-seated-count">0</strong></div>
+          <div><small>Upcoming</small><strong id="mini-upcoming-count">0</strong></div>
         </div>
       </div>
-    </div>
 
-    <!-- ================================================================= -->
-    <!-- VIEW 3: CREATE BOOKING (Scene 6 & 7: Smart Table Assignment)       -->
-    <!-- ================================================================= -->
-    <div class="app-view" id="view-booking">
-      <div class="booking-wizard-grid">
-        
-        <!-- Reservation Form Card -->
-        <div class="white-card">
-          <div class="card-header-row">
-            <div>
-              <h2 class="card-heading">Create New Reservation</h2>
-              <p class="card-subheading">Smart automatic table allocation & slot validation</p>
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar">QA</div>
+          <div class="user-meta">
+            <strong>Host Stand</strong>
+            <small>Table Manager v2.5</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Viewport -->
+    <main class="app-workspace">
+      
+      <!-- Top Control Bar -->
+      <header class="workspace-header">
+        <div class="header-left">
+          <button class="btn btn-ghost btn-icon mobile-menu-toggle" id="btn-mobile-toggle" aria-label="Toggle Menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="header-view-title">
+            <h2 id="current-view-title">Live Dashboard</h2>
+            <span class="current-date-badge" id="header-date-badge">24 May 2026</span>
+          </div>
+        </div>
+
+        <div class="header-center">
+          <!-- Quick Date & Shift Slot Switcher -->
+          <div class="service-slot-bar">
+            <div class="slot-date-picker-wrap">
+              <i data-lucide="calendar" class="icon-sm"></i>
+              <input type="text" id="global-date-input" class="slot-date-field" value="24/05/2026" placeholder="DD/MM/YYYY">
             </div>
-            <span class="pill-badge gold">Smart C++ Engine</span>
+            <div class="slot-chips-strip" id="header-slot-chips">
+              <button class="slot-chip" data-time="12:00 PM">12:00 PM</button>
+              <button class="slot-chip" data-time="2:00 PM">2:00 PM</button>
+              <button class="slot-chip" data-time="4:00 PM">4:00 PM</button>
+              <button class="slot-chip" data-time="6:00 PM">6:00 PM</button>
+              <button class="slot-chip active" data-time="8:00 PM">8:00 PM</button>
+              <button class="slot-chip" data-time="10:00 PM">10:00 PM</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="core-sync-indicator" id="core-sync-indicator" title="C++ Core Engine & Persistence Status">
+            <span class="sync-dot"></span>
+            <span class="sync-label">C++ Live</span>
+          </div>
+          <button class="btn btn-secondary btn-icon" id="theme-mode-toggle" title="Toggle Light/Dark Theme">
+            <i data-lucide="sun" id="theme-toggle-icon"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon" id="sound-feedback-toggle" title="Toggle Audio Feedback">
+            <i data-lucide="volume-2" id="sound-toggle-icon"></i>
+          </button>
+          <button class="btn btn-secondary btn-icon" id="manual-sync-btn" title="Synchronize State">
+            <i data-lucide="refresh-cw"></i>
+          </button>
+          <button class="btn btn-primary" id="btn-open-walkin-dialog">
+            <i data-lucide="user-plus"></i>
+            <span>+ Quick Walk-In</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <div class="workspace-body">
+
+        <!-- ============================================================= -->
+        <!-- VIEW 1: LIVE DASHBOARD                                         -->
+        <!-- ============================================================= -->
+        <section class="view-panel active" id="view-dashboard">
+          
+          <!-- Key Operational Radar Metrics -->
+          <div class="metrics-deck">
+            <div class="metric-card">
+              <div class="metric-icon-box bg-emerald">
+                <i data-lucide="check-circle-2"></i>
+              </div>
+              <div class="metric-info">
+                <span class="metric-title">AVAILABLE TABLES</span>
+                <div class="metric-number"><span id="metric-available-tables">0</span><small id="metric-total-tables-denom">/0</small></div>
+              </div>
+              <div class="metric-status-tag green" id="metric-tables-status-tag">Ready to Seat</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box bg-purple">
+                <i data-lucide="utensils"></i>
+              </div>
+              <div class="metric-info">
+                <span class="metric-title">SEATED COVERS</span>
+                <div class="metric-number"><span id="metric-seated-covers">0</span> <small>Guests</small></div>
+              </div>
+              <div class="metric-status-tag purple" id="metric-capacity-tag">0% Capacity</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box bg-blue">
+                <i data-lucide="calendar"></i>
+              </div>
+              <div class="metric-info">
+                <span class="metric-title">TOTAL RESERVATIONS</span>
+                <div class="metric-number" id="metric-total-bookings-count">0</div>
+              </div>
+              <div class="metric-status-tag blue" id="metric-slot-bookings-tag">0 in Slot</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box bg-amber">
+                <i data-lucide="clock"></i>
+              </div>
+              <div class="metric-info">
+                <span class="metric-title">EST. REVENUE YIELD</span>
+                <div class="metric-number" id="metric-est-revenue">$0</div>
+              </div>
+              <div class="metric-status-tag amber">Shift Forecast</div>
+            </div>
           </div>
 
-          <form id="create-booking-form" class="clean-form-body">
+          <!-- Main Dashboard Split: Floor Plan Preview (Left) + Service Timeline (Right) -->
+          <div class="dashboard-grid-split">
             
-            <div class="form-field-group">
-              <label for="input-guest-name">Customer Full Name</label>
-              <div class="input-with-icon">
-                <span class="field-icon">👤</span>
-                <input type="text" id="input-guest-name" class="clean-input" placeholder="e.g. Qamar Abbas / Sarah Jenkins" required>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div class="form-field-group">
-                <label>Number of Guests (Party Size)</label>
-                <div class="clean-stepper">
-                  <button type="button" class="stepper-btn" id="btn-party-minus">−</button>
-                  <input type="number" id="input-guest-count" class="stepper-num" min="1" max="50" value="4" required>
-                  <button type="button" class="stepper-btn" id="btn-party-plus">+</button>
+            <!-- Floor Plan Command Card -->
+            <div class="surface-card floor-preview-card">
+              <div class="card-top-bar">
+                <div>
+                  <h3 class="card-title">Live Seating Command Center</h3>
+                  <p class="card-subtitle" id="dashboard-slot-subtitle">Service Slot: 24/05/2026 at 8:00 PM</p>
+                </div>
+                <div class="status-legend-bar">
+                  <span class="legend-item"><span class="color-dot available"></span> Available</span>
+                  <span class="legend-item"><span class="color-dot reserved"></span> Reserved</span>
+                  <span class="legend-item"><span class="color-dot seated"></span> Seated</span>
+                  <span class="legend-item"><span class="color-dot cleaning"></span> Cleaning</span>
+                  <span class="legend-item"><span class="color-dot maintenance"></span> Blocked</span>
                 </div>
               </div>
 
-              <div class="form-field-group">
-                <label for="select-table-assignment">Table Assignment</label>
-                <select id="select-table-assignment" class="clean-select">
-                  <option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>
-                  <!-- Populated dynamically -->
+              <div class="floor-canvas-wrapper" id="dashboard-floor-preview">
+                <!-- Interactive Table Pods -->
+              </div>
+            </div>
+
+            <!-- Service Stream & Upcoming Bookings -->
+            <div class="surface-card stream-card">
+              <div class="card-top-bar">
+                <div>
+                  <h3 class="card-title">Today's Service Flow</h3>
+                  <p class="card-subtitle">Upcoming arrivals & table turnovers</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btn-view-all-reservations">View All</button>
+              </div>
+
+              <div class="upcoming-arrivals-list" id="dashboard-upcoming-list">
+                <!-- Injected via JavaScript -->
+              </div>
+
+              <div class="recent-events-stream">
+                <h4 class="stream-header-label">Recent Operational Events</h4>
+                <div class="mini-activity-timeline" id="dashboard-mini-activity">
+                  <!-- Mini event timeline -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 2: SPATIAL FLOOR PLAN (THE HEART OF THE PRODUCT)          -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-floorplan">
+          <div class="surface-card floor-master-card">
+            
+            <!-- Floor Plan Filter Bar -->
+            <div class="card-top-bar floor-control-header">
+              <div class="zone-filter-pills" id="floor-zone-pills">
+                <button class="zone-pill active" data-zone="ALL">All Dining Rooms</button>
+                <button class="zone-pill" data-zone="Main Dining">Main Dining Room</button>
+                <button class="zone-pill" data-zone="VIP Suite">VIP Imperial Suite</button>
+                <button class="zone-pill" data-zone="Alcove">Couples Alcove</button>
+                <button class="zone-pill" data-zone="Banquet">Grand Banquet Room</button>
+              </div>
+
+              <div class="floor-action-controls">
+                <button class="btn btn-secondary btn-sm" id="btn-floor-add-table">+ Add Table</button>
+                <button class="btn btn-primary btn-sm" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
+              </div>
+            </div>
+
+            <!-- Interactive Dining Room Architectural Canvas -->
+            <div class="floor-plan-full-canvas" id="master-floor-canvas">
+              <!-- Dynamically rendered table pod fixtures -->
+            </div>
+
+            <div class="floor-footer-info">
+              <div class="floor-hint">
+                <i data-lucide="info" class="icon-sm"></i>
+                <span>Click any table to open the <strong>Contextual Table Action Drawer</strong> (Seat Guests, Change Status, View Booking, or Release).</span>
+              </div>
+              <div class="floor-stats-pill" id="floor-active-summary-pill">
+                5 Tables Available &bull; 0 Seated &bull; 0 Reserved
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 3: RESERVATIONS LEDGER                                    -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-reservations">
+          <div class="surface-card">
+            <div class="card-top-bar">
+              <div>
+                <h3 class="card-title">Master Reservations Ledger</h3>
+                <p class="card-subtitle">Search, filter, check-in, and manage guest bookings</p>
+              </div>
+              <div class="reservations-filter-row">
+                <div class="search-input-box">
+                  <i data-lucide="search" class="search-icon"></i>
+                  <input type="text" id="reservations-search-input" class="search-field" placeholder="Search Guest, Booking ID, Table...">
+                </div>
+                <select id="reservations-status-filter" class="clean-select-sm">
+                  <option value="ALL">All Statuses</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Seated">Seated</option>
+                  <option value="Completed">Completed</option>
                 </select>
+                <button class="btn btn-primary btn-sm" id="btn-nav-create-res">+ New Booking</button>
               </div>
             </div>
 
-            <div class="form-row-2">
-              <div class="form-field-group">
-                <label for="input-booking-date">Reservation Date</label>
-                <input type="text" id="input-booking-date" class="clean-input" value="24/05/2026" required>
-              </div>
-
-              <div class="form-field-group">
-                <label for="select-booking-time">Dining Time Slot</label>
-                <select id="select-booking-time" class="clean-select">
-                  <option value="12:00 PM">12:00 PM (Lunch)</option>
-                  <option value="2:00 PM">2:00 PM (Lunch)</option>
-                  <option value="4:00 PM">4:00 PM (Afternoon)</option>
-                  <option value="6:00 PM">6:00 PM (Dinner)</option>
-                  <option value="8:00 PM" selected>8:00 PM (Prime Dinner)</option>
-                  <option value="10:00 PM">10:00 PM (Late Night)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-field-group">
-              <label>Dining Occasion</label>
-              <div class="occasion-pills" id="occasion-pills-list">
-                <button type="button" class="occ-pill active" data-occ="Dinner Reservation">🍽️ Dinner</button>
-                <button type="button" class="occ-pill" data-occ="Anniversary Celebration">💍 Anniversary</button>
-                <button type="button" class="occ-pill" data-occ="Birthday Party">🎂 Birthday</button>
-                <button type="button" class="occ-pill" data-occ="Business Meeting">💼 Business</button>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-reservation">
-              <span>⚡ Confirm Reservation & Generate Receipt</span>
-            </button>
-          </form>
-        </div>
-
-        <!-- 6-Stage Algorithm Visualizer -->
-        <div class="white-card">
-          <div class="card-header-row">
-            <div>
-              <h2 class="card-heading">Smart Allocation Pipeline</h2>
-              <p class="card-subheading">Real-time C++ conflict detection & allocation trace</p>
-            </div>
-            <span class="pill-badge" id="pipeline-status-badge">Standby</span>
-          </div>
-
-          <div class="algorithm-pipeline-track" id="algorithm-pipeline-track">
-            <div class="pipe-step-card" id="pipe-step-1">
-              <div class="step-circle">1</div>
-              <div class="step-details">
-                <strong>Input Sanitization</strong>
-                <span id="pipe-sub-1">Validating guest name and party size</span>
-              </div>
-            </div>
-
-            <div class="pipe-step-card" id="pipe-step-2">
-              <div class="step-circle">2</div>
-              <div class="step-details">
-                <strong>Slot Window Verification</strong>
-                <span id="pipe-sub-2">Checking date & time boundaries</span>
-              </div>
-            </div>
-
-            <div class="pipe-step-card" id="pipe-step-3">
-              <div class="step-circle">3</div>
-              <div class="step-details">
-                <strong>Conflict Detection Scan</strong>
-                <span id="pipe-sub-3">Checking for existing slot collisions</span>
-              </div>
-            </div>
-
-            <div class="pipe-step-card" id="pipe-step-4">
-              <div class="step-circle">4</div>
-              <div class="step-details">
-                <strong>Smart Best-Fit Matching</strong>
-                <span id="pipe-sub-4">Selecting smallest suitable capacity</span>
-              </div>
-            </div>
-
-            <div class="pipe-step-card" id="pipe-step-5">
-              <div class="step-circle">5</div>
-              <div class="step-details">
-                <strong>Data Persistence</strong>
-                <span id="pipe-sub-5">Committing to tables.txt and bookings.txt</span>
-              </div>
+            <div class="table-responsive-container">
+              <table class="master-data-table">
+                <thead>
+                  <tr>
+                    <th>Ref ID</th>
+                    <th>Table</th>
+                    <th>Guest Name</th>
+                    <th>Party</th>
+                    <th>Date</th>
+                    <th>Time Slot</th>
+                    <th>Occasion</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="master-reservations-tbody">
+                  <!-- Dynamic Reservations Rows -->
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        </section>
 
-      </div>
-    </div>
+        <!-- ============================================================= -->
+        <!-- VIEW 4: CREATE RESERVATION (INTELLIGENT BOOKING FLOW)          -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-booking">
+          <div class="booking-flow-grid">
+            
+            <!-- Reservation Form Card -->
+            <div class="surface-card">
+              <div class="card-top-bar">
+                <div>
+                  <h3 class="card-title">New Guest Reservation</h3>
+                  <p class="card-subtitle">C++ Smart Best-Fit Algorithm & Real-Time Conflict Detection</p>
+                </div>
+                <span class="badge-pill gold">Smart Allocation</span>
+              </div>
 
-    <!-- ================================================================= -->
-    <!-- VIEW 4: ALL RESERVATIONS & SEARCH (Scene 5 & 8)                   -->
-    <!-- ================================================================= -->
-    <div class="app-view" id="view-reservations">
-      <div class="white-card">
-        <div class="card-header-row">
-          <div>
-            <h2 class="card-heading">Master Bookings Ledger & Search</h2>
-            <p class="card-subheading">Search by Customer Name, Booking ID, or Date when customer arrives</p>
+              <form id="master-booking-form" class="smart-booking-form">
+                
+                <div class="form-group">
+                  <label for="form-guest-name">Guest Full Name</label>
+                  <div class="input-icon-wrap">
+                    <i data-lucide="user" class="input-icon"></i>
+                    <input type="text" id="form-guest-name" class="form-input" placeholder="e.g. Lord Sterling / Sarah Jenkins" required>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label>Party Size (Guests)</label>
+                    <div class="stepper-box">
+                      <button type="button" class="stepper-ctrl" id="btn-party-dec">−</button>
+                      <input type="number" id="form-guest-count" class="stepper-val" min="1" max="30" value="4" required>
+                      <button type="button" class="stepper-ctrl" id="btn-party-inc">+</button>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="form-table-select">Table Allocation</label>
+                    <select id="form-table-select" class="form-select">
+                      <option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="form-booking-date">Reservation Date</label>
+                    <input type="text" id="form-booking-date" class="form-input" value="24/05/2026" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="form-booking-time">Dining Time Slot</label>
+                    <select id="form-booking-time" class="form-select">
+                      <option value="12:00 PM">12:00 PM (Lunch)</option>
+                      <option value="2:00 PM">2:00 PM (Lunch)</option>
+                      <option value="4:00 PM">4:00 PM (Afternoon)</option>
+                      <option value="6:00 PM">6:00 PM (Dinner)</option>
+                      <option value="8:00 PM" selected>8:00 PM (Prime Dinner)</option>
+                      <option value="10:00 PM">10:00 PM (Late Night)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Dining Occasion</label>
+                  <div class="occasion-selector-strip" id="booking-occasion-strip">
+                    <button type="button" class="occ-pill-btn active" data-occ="Romantic Dinner">💍 Romantic</button>
+                    <button type="button" class="occ-pill-btn" data-occ="Birthday Celebration">🎂 Birthday</button>
+                    <button type="button" class="occ-pill-btn" data-occ="Executive Business">💼 Business</button>
+                    <button type="button" class="occ-pill-btn" data-occ="Casual Fine Dining">🥂 Casual</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="form-special-notes">Special Requests & Dietary Notes</label>
+                  <input type="text" id="form-special-notes" class="form-input" placeholder="e.g. Window preference, Nut allergy, Sommelier wine pairing">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-booking-action">
+                  <span>⚡ Confirm Reservation & Generate Pass</span>
+                </button>
+
+              </form>
+            </div>
+
+            <!-- Algorithm Trace & Confirmation Pass Card -->
+            <div class="surface-card">
+              <div class="card-top-bar">
+                <div>
+                  <h3 class="card-title">C++ Allocation Pipeline</h3>
+                  <p class="card-subtitle">Real-time trace & disk persistence</p>
+                </div>
+                <span class="badge-pill" id="trace-pipeline-badge">Standby</span>
+              </div>
+
+              <div class="pipeline-flow-track" id="booking-pipeline-flow">
+                <div class="pipeline-card-node" id="pipe-card-1">
+                  <div class="node-num">1</div>
+                  <div class="node-text">
+                    <strong>Input Boundary Validation</strong>
+                    <span id="pipe-desc-1">Validating guest name & capacity</span>
+                  </div>
+                </div>
+
+                <div class="pipeline-card-node" id="pipe-card-2">
+                  <div class="node-num">2</div>
+                  <div class="node-text">
+                    <strong>Slot Boundary Verification</strong>
+                    <span id="pipe-desc-2">Checking date & time boundaries</span>
+                  </div>
+                </div>
+
+                <div class="pipeline-card-node" id="pipe-card-3">
+                  <div class="node-num">3</div>
+                  <div class="node-text">
+                    <strong>Conflict Detection Scan</strong>
+                    <span id="pipe-desc-3">Scanning active collisions</span>
+                  </div>
+                </div>
+
+                <div class="pipeline-card-node" id="pipe-card-4">
+                  <div class="node-num">4</div>
+                  <div class="node-text">
+                    <strong>Smart Best-Fit Matching</strong>
+                    <span id="pipe-desc-4">Minimizing unused seats</span>
+                  </div>
+                </div>
+
+                <div class="pipeline-card-node" id="pipe-card-5">
+                  <div class="node-num">5</div>
+                  <div class="node-text">
+                    <strong>Data Persistence Engine</strong>
+                    <span id="pipe-desc-5">Committing to tables.txt & bookings.txt</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="quick-experience-shortcuts">
+                <h4 class="shortcut-title">1-Click Signature Experiences</h4>
+                <div class="experience-pills-row">
+                  <button class="exp-preset-btn" data-guests="2" data-type="Couple">🍷 Couple Alcove (2)</button>
+                  <button class="exp-preset-btn" data-guests="4" data-type="Family">🍽️ Family Booth (4)</button>
+                  <button class="exp-preset-btn" data-guests="6" data-type="VIP">👑 VIP Suite (6)</button>
+                  <button class="exp-preset-btn" data-guests="8" data-type="Banquet">🍾 Banquet (8)</button>
+                </div>
+              </div>
+
+            </div>
+
           </div>
-          <div class="clean-search-box">
-            <span class="search-glass-icon">🔍</span>
-            <input type="text" id="reservations-search-query" class="clean-search-field" placeholder="Search Customer Name, ID, Date...">
-          </div>
-        </div>
+        </section>
 
-        <div class="clean-table-responsive">
-          <table class="clean-data-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Assigned Table</th>
-                <th>Customer Name</th>
-                <th>Guests</th>
-                <th>Date</th>
-                <th>Time Slot</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="all-reservations-tbody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        <!-- ============================================================= -->
+        <!-- VIEW 5: TABLE FLEET MANAGEMENT                                 -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-tables">
+          <div class="surface-card">
+            <div class="card-top-bar">
+              <div>
+                <h3 class="card-title">Physical Table Fleet Configuration</h3>
+                <p class="card-subtitle">Manage table inventory, seating capacities, and operational maintenance states</p>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-open-add-table-dialog">+ Add Table</button>
+            </div>
+
+            <div class="table-responsive-container">
+              <table class="master-data-table">
+                <thead>
+                  <tr>
+                    <th>Table ID</th>
+                    <th>Capacity</th>
+                    <th>Dining Category / Zone</th>
+                    <th>Current Service Status</th>
+                    <th>Operational Status</th>
+                    <th>1-Click Status Flip</th>
+                    <th>Delete</th>
+                  </tr>
+                </thead>
+                <tbody id="fleet-tables-tbody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- VIEW 6: LIVE ACTIVITY STREAM                                   -->
+        <!-- ============================================================= -->
+        <section class="view-panel" id="view-activity">
+          <div class="surface-card">
+            <div class="card-top-bar">
+              <div>
+                <h3 class="card-title">Comprehensive System Event Stream</h3>
+                <p class="card-subtitle">Real-time audit log of table assignments, check-ins, cancellations, and status changes</p>
+              </div>
+              <span class="badge-pill green">ACTIVE AUDIT</span>
+            </div>
+
+            <div class="activity-timeline-stream" id="full-activity-stream">
+              <!-- Timeline entries -->
+            </div>
+          </div>
+        </section>
+
+      </div> <!-- End Workspace Body -->
+
+    </main>
 
   </div> <!-- End App Layout -->
 
   <!-- ================================================================= -->
-  <!-- MODAL: ADD NEW DINING TABLE                                       -->
+  <!-- CONTEXTUAL TABLE DETAILS DRAWER (SEVENROOMS / OPENTABLE PATTERN)  -->
   <!-- ================================================================= -->
-  <div class="clean-modal-backdrop" id="modal-add-table">
-    <div class="clean-modal-dialog">
-      <div class="modal-dialog-header">
-        <div class="dialog-title-row">
-          <span class="dialog-icon">🪑</span>
+  <div class="table-context-drawer" id="table-context-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title-box">
+        <h3 id="drawer-table-heading">Table #T-01</h3>
+        <span class="drawer-status-badge" id="drawer-status-badge">Available</span>
+      </div>
+      <button class="drawer-close-btn" id="btn-close-drawer">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="drawer-spec-grid">
+        <div class="spec-cell">
+          <small>Capacity</small>
+          <strong id="drawer-table-capacity">4 Seats</strong>
+        </div>
+        <div class="spec-cell">
+          <small>Category</small>
+          <strong id="drawer-table-category">Family Booth</strong>
+        </div>
+        <div class="spec-cell">
+          <small>Selected Slot</small>
+          <strong id="drawer-table-slot">20:00 PM</strong>
+        </div>
+        <div class="spec-cell">
+          <small>Turnover Est.</small>
+          <strong id="drawer-table-turnover">90 mins</strong>
+        </div>
+      </div>
+
+      <!-- Active Booking on Table (if any) -->
+      <div class="drawer-booking-card" id="drawer-booking-section" style="display:none;">
+        <h4>Current / Upcoming Booking</h4>
+        <div class="drawer-booking-data">
+          <div><small>Guest Name:</small> <strong id="drawer-guest-name">-</strong></div>
+          <div><small>Booking Ref:</small> <strong id="drawer-booking-id">-</strong></div>
+          <div><small>Party Size:</small> <strong id="drawer-party-size">-</strong></div>
+          <div><small>Occasion:</small> <strong id="drawer-occasion">-</strong></div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons for this Table -->
+      <div class="drawer-actions-stack">
+        <button class="btn btn-primary btn-block" id="drawer-btn-seat-walkin">
+          <i data-lucide="user-check"></i>
+          <span>Seat Guest Here</span>
+        </button>
+        <button class="btn btn-secondary btn-block" id="drawer-btn-toggle-status">
+          <i data-lucide="toggle-left"></i>
+          <span id="drawer-toggle-status-text">Set Maintenance</span>
+        </button>
+        <button class="btn btn-danger-sm btn-block" id="drawer-btn-release-table" style="display:none;">
+          <i data-lucide="log-out"></i>
+          <span>Release / Mark Cleaned</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: QUICK WALK-IN SEATING                                      -->
+  <!-- ================================================================= -->
+  <div class="modal-layer" id="modal-walkin-dialog">
+    <div class="modal-card">
+      <div class="modal-header-row">
+        <div class="modal-title-wrap">
+          <i data-lucide="zap" class="modal-icon gold"></i>
+          <h3>Express Walk-In Seating</h3>
+        </div>
+        <button class="modal-close-icon" id="btn-close-walkin-dialog">&times;</button>
+      </div>
+      <form id="form-walkin-action" class="modal-form-content">
+        <div class="form-group">
+          <label for="walkin-guest-name">Guest / Party Name</label>
+          <input type="text" id="walkin-guest-name" class="form-input" placeholder="e.g. Walk-In Guest" required>
+        </div>
+        <div class="form-group">
+          <label for="walkin-guest-count">Number of Guests</label>
+          <input type="number" id="walkin-guest-count" class="form-input" min="1" max="20" value="2" required>
+        </div>
+        <div class="form-group">
+          <label for="walkin-table-choice">Assign Free Table</label>
+          <select id="walkin-table-choice" class="form-select">
+            <option value="0">✨ Auto Best-Fit Allocation</option>
+          </select>
+        </div>
+        <div class="modal-footer-btns">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-walkin-dialog">Cancel</button>
+          <button type="submit" class="btn btn-primary">⚡ Seat Guests Immediately</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: ADD NEW TABLE                                              -->
+  <!-- ================================================================= -->
+  <div class="modal-layer" id="modal-table-dialog">
+    <div class="modal-card">
+      <div class="modal-header-row">
+        <div class="modal-title-wrap">
+          <i data-lucide="plus-circle" class="modal-icon gold"></i>
           <h3>Add New Restaurant Table</h3>
         </div>
-        <button class="dialog-close-btn" id="btn-close-table-modal">&times;</button>
+        <button class="modal-close-icon" id="btn-close-table-dialog">&times;</button>
       </div>
-      <form id="form-create-table-action" class="modal-dialog-body">
-        <div class="form-field-group">
-          <label for="new-table-id-input">Table ID (Unique Number)</label>
-          <input type="number" id="new-table-id-input" class="clean-input" min="1" placeholder="e.g. 5" required>
+      <form id="form-add-table-action" class="modal-form-content">
+        <div class="form-group">
+          <label for="new-tbl-id-input">Table ID (Unique Number)</label>
+          <input type="number" id="new-tbl-id-input" class="form-input" min="1" placeholder="e.g. 5" required>
         </div>
-        <div class="form-field-group">
-          <label for="new-table-capacity-input">Seating Capacity (Guests)</label>
-          <input type="number" id="new-table-capacity-input" class="clean-input" min="1" max="50" value="4" required>
+        <div class="form-group">
+          <label for="new-tbl-cap-input">Seating Capacity (Guests)</label>
+          <input type="number" id="new-tbl-cap-input" class="form-input" min="1" max="50" value="4" required>
         </div>
-        <div class="form-field-group">
-          <label for="new-table-type-input">Table Type / Category</label>
-          <select id="new-table-type-input" class="clean-select">
-            <option value="Couple Table">Couple Table (2 Seats)</option>
-            <option value="Family Booth">Family Booth (4 Seats)</option>
-            <option value="VIP Suite">VIP Suite (6 Seats)</option>
-            <option value="Banquet Table">Banquet Table (8 Seats)</option>
-            <option value="Terrace Table">Terrace Table (4 Seats)</option>
+        <div class="form-group">
+          <label for="new-tbl-category-input">Dining Zone & Category</label>
+          <select id="new-tbl-category-input" class="form-select">
+            <option value="Couple Table">Couple Table (2 Seats - Intimate)</option>
+            <option value="Family Booth">Family Booth (4 Seats - Main Dining)</option>
+            <option value="VIP Suite">VIP Imperial Suite (6 Seats - Royal)</option>
+            <option value="Banquet Table">Grand Banquet (8 Seats - Feast)</option>
+            <option value="Terrace Table">Terrace Patio (4 Seats - View)</option>
           </select>
         </div>
-        <div class="modal-actions-row">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-table-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">+ Add Table</button>
+        <div class="modal-footer-btns">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-table-dialog">Cancel</button>
+          <button type="submit" class="btn btn-primary">+ Add to Restaurant</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- ================================================================= -->
-  <!-- MODAL: QUICK WALK-IN SEATER                                       -->
+  <!-- MODAL: OFFICIAL DINING RESERVATION RECEIPT PASS (PRINTABLE)       -->
   <!-- ================================================================= -->
-  <div class="clean-modal-backdrop" id="modal-quick-walkin">
-    <div class="clean-modal-dialog">
-      <div class="modal-dialog-header">
-        <div class="dialog-title-row">
-          <span class="dialog-icon">⚡</span>
-          <h3>Quick Walk-In Seating</h3>
-        </div>
-        <button class="dialog-close-btn" id="btn-close-walkin-modal">&times;</button>
-      </div>
-      <form id="form-quick-walkin-action" class="modal-dialog-body">
-        <div class="form-field-group">
-          <label for="walkin-guest-input">Customer Name</label>
-          <input type="text" id="walkin-guest-input" class="clean-input" placeholder="e.g. Walk-In Party" required>
-        </div>
-        <div class="form-field-group">
-          <label for="walkin-guests-count">Number of Guests</label>
-          <input type="number" id="walkin-guests-count" class="clean-input" min="1" max="20" value="2" required>
-        </div>
-        <div class="form-field-group">
-          <label for="walkin-table-select">Select Table</label>
-          <select id="walkin-table-select" class="clean-select">
-            <option value="0">✨ Auto Best-Fit Table</option>
-          </select>
-        </div>
-        <div class="modal-actions-row">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-walkin-modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">⚡ Seat Customers</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ================================================================= -->
-  <!-- MODAL: OFFICIAL BOOKING RECEIPT (Scene 7: Document Receipt)       -->
-  <!-- ================================================================= -->
-  <div class="clean-modal-backdrop" id="modal-booking-receipt">
-    <div class="clean-modal-dialog receipt-dialog-container">
-      <div class="official-receipt-card" id="printable-receipt-card">
-        
-        <div class="receipt-header-center">
-          <div class="receipt-logo">⚜️</div>
-          <h2 class="receipt-restaurant-name">THE ROYAL SPICE</h2>
-          <div class="receipt-subtitle">OFFICIAL DINING RESERVATION RECEIPT</div>
-          <div class="receipt-stars">★ ★ ★ ★ ★</div>
+  <div class="modal-layer" id="modal-receipt-pass">
+    <div class="modal-card receipt-card-dialog">
+      <div class="official-pass-box" id="printable-dining-pass">
+        <div class="pass-header">
+          <div class="pass-crest">⚜️</div>
+          <h2 class="pass-brand-title">THE ROYAL SPICE</h2>
+          <div class="pass-tagline">OFFICIAL DINING RESERVATION PASS</div>
+          <div class="pass-stars">★ ★ ★ ★ ★</div>
         </div>
 
-        <div class="receipt-divider"></div>
+        <div class="pass-divider"></div>
 
-        <div class="receipt-grid" id="receipt-data-grid">
+        <div class="pass-grid-data" id="pass-grid-data">
           <!-- Populated dynamically -->
         </div>
 
-        <div class="receipt-qr-box">
-          <div class="qr-matrix-sim">
+        <div class="pass-qr-section">
+          <div class="qr-sim-box">
             <span>■ ■ □ ■ ■ □ □ ■ ■</span>
             <span>□ ■ ■ □ ■ □ ■ □ ■</span>
             <span>■ ■ □ ■ ■ □ ■ ■ ■</span>
           </div>
-          <div class="receipt-meta-note">
-            <strong>C++ Core Engine Verified & Saved</strong>
-            <small>Committed to bookings.txt</small>
+          <div class="pass-meta-note">
+            <strong>C++ Core Engine Verified & Committed</strong>
+            <small>Stored permanently in bookings.txt</small>
           </div>
         </div>
 
-        <div class="receipt-actions-row no-print">
-          <button class="btn btn-secondary" id="btn-print-receipt-action">
-            <span>🖨️ Print Receipt</span>
+        <div class="pass-actions-row no-print">
+          <button class="btn btn-secondary" id="btn-print-pass-action">
+            <i data-lucide="printer"></i>
+            <span>Print Pass</span>
           </button>
-          <button class="btn btn-primary" id="btn-close-receipt-action">
-            <span>Close Receipt</span>
+          <button class="btn btn-primary" id="btn-close-pass-action">
+            <span>Accept & Close</span>
           </button>
         </div>
-
       </div>
     </div>
   </div>
 
   <!-- Toast Notification Hub -->
-  <div class="toast-hub" id="toast-hub"></div>
+  <div class="toast-stream" id="toast-stream"></div>
 
+  <!-- Main JavaScript App Controller -->
   <script src="app.js"></script>
 </body>
 </html>

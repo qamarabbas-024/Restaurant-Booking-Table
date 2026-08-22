@@ -1,293 +1,492 @@
 // ==========================================================================
-// THE ROYAL SPICE — CLEAN WHITE THEME MASTER CONTROLLER
-// Seamless C++17 Core Engine REST Integration (Port 8080)
+// THE ROYAL SPICE — RESTAURANT MANAGEMENT SYSTEM (MASTER CONTROLLER)
+// Production-Grade Dual-Architecture: Local Standalone + Live C++17 Core Engine
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
 
-const state = {
-  activeView: 'dashboard',
+// --- LOCAL STORAGE KEYS ---
+const STORAGE_KEYS = {
+  TABLES: 'royal_spice_tables',
+  BOOKINGS: 'royal_spice_bookings',
+  ACTIVITY: 'royal_spice_activity',
+  THEME: 'royal_spice_theme'
+};
+
+// Initial Seed Tables
+const DEFAULT_TABLES = [
+  { id: 1, capacity: 2, type: 'Couple Table', status: 'Available' },
+  { id: 2, capacity: 4, type: 'Family Booth', status: 'Available' },
+  { id: 3, capacity: 6, type: 'VIP Suite', status: 'Available' },
+  { id: 4, capacity: 8, type: 'Banquet Table', status: 'Available' },
+  { id: 5, capacity: 2, type: 'Couple Table', status: 'Available' },
+  { id: 6, capacity: 4, type: 'Family Booth', status: 'Available' }
+];
+
+// Master Application State
+const appState = {
+  currentView: 'dashboard',
+  currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) || 'light',
   soundEnabled: true,
-  selectedOccasion: 'Dinner Reservation',
-  metrics: {},
-  tables: [],
-  bookings: [],
-  activity: [],
+  selectedOccasion: 'Romantic Dinner',
+  selectedZone: 'ALL',
   selectedDate: '24/05/2026',
   selectedTime: '8:00 PM',
-  selectedZone: 'ALL',
   selectedTableId: 0,
+  activeDrawerTable: null,
+  isBackendConnected: false,
+  metrics: { totalCapacity: 26 },
+  tables: JSON.parse(localStorage.getItem(STORAGE_KEYS.TABLES) || 'null') || DEFAULT_TABLES,
+  bookings: JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || 'null') || [],
+  activity: JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITY) || 'null') || [
+    { timestamp: '17:30', type: 'SYSTEM_INIT', message: 'Shift started. All table fixtures calibrated.' },
+    { timestamp: '17:35', type: 'TABLE_STATUS', message: 'VIP Suite prepared for dinner service.' }
+  ],
   availableTableIds: [],
   occupiedTableIds: []
 };
 
 // ================= DOM ELEMENT REFERENCES =================
-const dashboardFloorCanvas = document.getElementById('dashboard-floor-canvas');
-const floorSlotSubtitle = document.getElementById('floor-slot-subtitle');
-const dashboardActivityTimeline = document.getElementById('dashboard-activity-timeline');
-const tablesFleetTbody = document.getElementById('tables-fleet-tbody');
-const allReservationsTbody = document.getElementById('all-reservations-tbody');
-const navBookingsCount = document.getElementById('nav-bookings-count');
+const appSidebar = document.getElementById('app-sidebar');
+const currentViewTitle = document.getElementById('current-view-title');
+const headerDateBadge = document.getElementById('header-date-badge');
+const globalDateInput = document.getElementById('global-date-input');
+const headerSlotChips = document.getElementById('header-slot-chips');
+const coreSyncIndicator = document.getElementById('core-sync-indicator');
+const themeModeToggle = document.getElementById('theme-mode-toggle');
+const themeToggleIcon = document.getElementById('theme-toggle-icon');
+const soundFeedbackToggle = document.getElementById('sound-feedback-toggle');
+const soundToggleIcon = document.getElementById('sound-toggle-icon');
 
-// KPI Metrics
-const metricTotalTables = document.getElementById('metric-total-tables');
-const metricOpTables = document.getElementById('metric-op-tables');
-const metricTotalCapacity = document.getElementById('metric-total-capacity');
-const metricTotalBookings = document.getElementById('metric-total-bookings');
-const metricOccupancyRate = document.getElementById('metric-occupancy-rate');
-const metricOccupancyRatio = document.getElementById('metric-occupancy-ratio');
+// Metric Tiles
+const metricAvailableTables = document.getElementById('metric-available-tables');
+const metricTotalTablesDenom = document.getElementById('metric-total-tables-denom');
+const metricSeatedCovers = document.getElementById('metric-seated-covers');
+const metricCapacityTag = document.getElementById('metric-capacity-tag');
+const metricTotalBookingsCount = document.getElementById('metric-total-bookings-count');
+const metricSlotBookingsTag = document.getElementById('metric-slot-bookings-tag');
+const metricEstRevenue = document.getElementById('metric-est-revenue');
+const navOpenTablesPill = document.getElementById('nav-open-tables-pill');
+const navBookingsPill = document.getElementById('nav-bookings-pill');
+const miniSeatedCount = document.getElementById('mini-seated-count');
+const miniUpcomingCount = document.getElementById('mini-upcoming-count');
 
-// Controls & Inputs
-const slotDateInput = document.getElementById('slot-date-input');
-const timeSlotsCarousel = document.getElementById('time-slots-carousel');
-const zoneFilterSelect = document.getElementById('zone-filter-select');
-const createBookingForm = document.getElementById('create-booking-form');
-const selectTableAssignment = document.getElementById('select-table-assignment');
-const reservationsSearchQuery = document.getElementById('reservations-search-query');
-const soundIconSymbol = document.getElementById('sound-icon-symbol');
+// Canvases & Lists
+const dashboardFloorPreview = document.getElementById('dashboard-floor-preview');
+const dashboardUpcomingList = document.getElementById('dashboard-upcoming-list');
+const dashboardMiniActivity = document.getElementById('dashboard-mini-activity');
+const masterFloorCanvas = document.getElementById('master-floor-canvas');
+const floorActiveSummaryPill = document.getElementById('floor-active-summary-pill');
+const masterReservationsTbody = document.getElementById('master-reservations-tbody');
+const fleetTablesTbody = document.getElementById('fleet-tables-tbody');
+const fullActivityStream = document.getElementById('full-activity-stream');
+
+// Form & Controls
+const masterBookingForm = document.getElementById('master-booking-form');
+const formTableSelect = document.getElementById('form-table-select');
+const reservationsSearchInput = document.getElementById('reservations-search-input');
+const reservationsStatusFilter = document.getElementById('reservations-status-filter');
+
+// Context Drawer
+const tableContextDrawer = document.getElementById('table-context-drawer');
+const drawerBackdrop = document.getElementById('drawer-backdrop');
+const drawerTableHeading = document.getElementById('drawer-table-heading');
+const drawerStatusBadge = document.getElementById('drawer-status-badge');
+const drawerTableCapacity = document.getElementById('drawer-table-capacity');
+const drawerTableCategory = document.getElementById('drawer-table-category');
+const drawerTableSlot = document.getElementById('drawer-table-slot');
+const drawerTableTurnover = document.getElementById('drawer-table-turnover');
+const drawerBookingSection = document.getElementById('drawer-booking-section');
+const drawerGuestName = document.getElementById('drawer-guest-name');
+const drawerBookingId = document.getElementById('drawer-booking-id');
+const drawerPartySize = document.getElementById('drawer-party-size');
+const drawerOccasion = document.getElementById('drawer-occasion');
+const drawerBtnSeatWalkin = document.getElementById('drawer-btn-seat-walkin');
+const drawerBtnToggleStatus = document.getElementById('drawer-btn-toggle-status');
+const drawerToggleStatusText = document.getElementById('drawer-toggle-status-text');
+const drawerBtnReleaseTable = document.getElementById('drawer-btn-release-table');
 
 // Modals
-const modalAddTable = document.getElementById('modal-add-table');
-const modalQuickWalkin = document.getElementById('modal-quick-walkin');
-const modalBookingReceipt = document.getElementById('modal-booking-receipt');
-const receiptDataGrid = document.getElementById('receipt-data-grid');
-const toastHub = document.getElementById('toast-hub');
+const modalWalkinDialog = document.getElementById('modal-walkin-dialog');
+const modalTableDialog = document.getElementById('modal-table-dialog');
+const modalReceiptPass = document.getElementById('modal-receipt-pass');
+const passGridData = document.getElementById('pass-grid-data');
+const toastStream = document.getElementById('toast-stream');
 
 // ================= SYNTHESIZED SOUND ENGINE =================
-function playSound(type = 'click') {
-  if (!state.soundEnabled) return;
+function playAudioChime(type = 'click') {
+  if (!appState.soundEnabled) return;
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctx.destination);
 
     if (type === 'clink') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
-      osc.frequency.exponentialRampToValueAtTime(1567.98, audioCtx.currentTime + 0.08); // G6
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      osc.frequency.setValueAtTime(1046.50, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1567.98, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.3);
+      osc.stop(ctx.currentTime + 0.28);
     } else if (type === 'success') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-      osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
-      osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.4);
-    } else if (type === 'pop') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.08);
+      osc.stop(ctx.currentTime + 0.4);
     } else {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.06);
+      osc.stop(ctx.currentTime + 0.05);
     }
   } catch (e) {
-    // blocked before gesture
+    // blocked prior to interaction
   }
 }
 
 // ================= TOAST NOTIFICATIONS =================
-function showToast(message, type = 'info') {
+function showToastNotification(message, type = 'info') {
   const alert = document.createElement('div');
-  alert.className = `toast-alert-item ${type}`;
+  alert.className = `toast-alert ${type}`;
   alert.textContent = message;
-  toastHub.appendChild(alert);
+  toastStream.appendChild(alert);
   setTimeout(() => {
     alert.style.opacity = '0';
-    alert.style.transform = 'translateY(8px)';
+    alert.style.transform = 'translateY(6px)';
     setTimeout(() => alert.remove(), 250);
   }, 3500);
 }
 
-// ================= REST API SYNC =================
-async function syncCoreEngine() {
+// ================= LOCAL PERSISTENCE LAYER =================
+function saveLocalState() {
+  localStorage.setItem(STORAGE_KEYS.TABLES, JSON.stringify(appState.tables));
+  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
+  localStorage.setItem(STORAGE_KEYS.ACTIVITY, JSON.stringify(appState.activity));
+}
+
+function logEvent(type, message) {
+  const now = new Date();
+  const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  appState.activity.unshift({ timestamp, type, message });
+  if (appState.activity.length > 50) appState.activity.pop();
+  saveLocalState();
+}
+
+// ================= REST API / C++ BACKEND SYNC =================
+async function syncWithCoreEngine() {
   try {
     const res = await fetch(`${API_BASE}/state`);
     if (!res.ok) throw new Error('C++ Server Unreachable');
     const data = await res.json();
 
-    state.metrics = data.metrics || {};
-    state.tables = data.tables || [];
-    state.bookings = data.bookings || [];
-    state.activity = data.activity || [];
+    appState.isBackendConnected = true;
+    appState.metrics = data.metrics || appState.metrics;
+    if (data.tables && data.tables.length > 0) appState.tables = data.tables;
+    if (data.bookings) appState.bookings = data.bookings;
+    if (data.activity && data.activity.length > 0) appState.activity = data.activity;
 
-    document.getElementById('core-status-pill').style.borderColor = 'rgba(22, 163, 74, 0.3)';
-    document.getElementById('core-status-pill').querySelector('.status-text').textContent = 'C++ Engine Live';
+    coreSyncIndicator.style.borderColor = 'rgba(22, 163, 74, 0.3)';
+    coreSyncIndicator.querySelector('.sync-label').textContent = 'C++ Live';
+    coreSyncIndicator.querySelector('.sync-dot').style.background = 'var(--c-available)';
 
-    await updateSlotAvailability();
+    saveLocalState();
   } catch (err) {
-    document.getElementById('core-status-pill').style.borderColor = 'rgba(225, 29, 72, 0.4)';
-    document.getElementById('core-status-pill').querySelector('.status-text').textContent = '⚠️ Backend Offline';
-  }
-}
-
-async function updateSlotAvailability() {
-  try {
-    const res = await fetch(`${API_BASE}/availability?date=${encodeURIComponent(state.selectedDate)}&time=${encodeURIComponent(state.selectedTime)}`);
-    if (res.ok) {
-      const data = await res.json();
-      state.availableTableIds = data.available || [];
-      state.occupiedTableIds = data.occupied || [];
-    }
-  } catch (err) {
-    console.error('Slot check failed:', err);
+    appState.isBackendConnected = false;
+    coreSyncIndicator.style.borderColor = 'rgba(100, 116, 139, 0.3)';
+    coreSyncIndicator.querySelector('.sync-label').textContent = 'Local Standalone';
+    coreSyncIndicator.querySelector('.sync-dot').style.background = 'var(--c-maintenance)';
   }
 
-  renderAllViews();
+  evaluateSlotState();
+  renderMasterView();
 }
 
-// ================= MASTER RENDER =================
-function renderAllViews() {
-  renderKpiMetrics();
-  renderFloorPlanCanvas();
-  renderTableDropdowns();
-  renderTablesFleetTable();
-  renderAllReservationsTable();
+function evaluateSlotState() {
+  const currentSlotBookings = appState.bookings.filter(
+    b => b.date === appState.selectedDate && b.time === appState.selectedTime
+  );
+
+  appState.occupiedTableIds = currentSlotBookings.map(b => b.tableId);
+  appState.availableTableIds = appState.tables
+    .filter(t => t.status === 'Available' && !appState.occupiedTableIds.includes(t.id))
+    .map(t => t.id);
+}
+
+// ================= MASTER RENDERER =================
+function renderMasterView() {
+  renderMetrics();
+  renderFloorPlan(dashboardFloorPreview, false);
+  renderFloorPlan(masterFloorCanvas, true);
+  renderUpcomingArrivals();
   renderActivityTimeline();
+  renderTableSelectDropdowns();
+  renderFleetTable();
+  renderReservationsTable();
 
-  floorSlotSubtitle.textContent = `Live availability for ${state.selectedDate} at ${state.selectedTime}`;
-  navBookingsCount.textContent = state.bookings.length;
+  // Update headers & pills
+  headerDateBadge.textContent = `${appState.selectedDate} (${appState.selectedTime})`;
+  navOpenTablesPill.textContent = `${appState.availableTableIds.length} Open`;
+  navBookingsPill.textContent = appState.bookings.length;
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
 }
 
-// 1. KPI Statistics (Scene 2 & 3)
-function renderKpiMetrics() {
-  const total = state.tables.length;
-  const operational = state.tables.filter(t => t.status === 'Available').length;
-  const capacity = state.metrics.totalCapacity || 0;
-  const totalBookings = state.bookings.length;
-  const occupiedCount = state.occupiedTableIds.length;
-  const occRate = operational > 0 ? Math.round((occupiedCount / operational) * 100) : 0;
+// 1. Metrics Deck
+function renderMetrics() {
+  const total = appState.tables.length;
+  const available = appState.availableTableIds.length;
+  const totalCapacity = appState.tables.reduce((acc, t) => acc + (t.capacity || 0), 0);
 
-  metricTotalTables.textContent = total;
-  metricOpTables.textContent = `${operational} Operational`;
-  metricTotalCapacity.textContent = capacity;
-  metricTotalBookings.textContent = totalBookings;
-  metricOccupancyRate.textContent = `${occRate}%`;
-  metricOccupancyRatio.textContent = `${occupiedCount}/${operational} Booked`;
+  // Seated covers in currently selected slot
+  const currentSlotBookings = appState.bookings.filter(
+    b => b.date === appState.selectedDate && b.time === appState.selectedTime
+  );
+  const seatedCovers = currentSlotBookings.reduce((acc, b) => acc + (b.guests || 0), 0);
+  const occupancyRate = totalCapacity > 0 ? Math.round((seatedCovers / totalCapacity) * 100) : 0;
+
+  // Estimated gross revenue yield ($65 avg per cover)
+  const estYield = appState.bookings.reduce((acc, b) => acc + (b.guests * 65), 0);
+
+  metricAvailableTables.textContent = available;
+  metricTotalTablesDenom.textContent = `/${total}`;
+  metricSeatedCovers.textContent = seatedCovers;
+  metricCapacityTag.textContent = `${occupancyRate}% Capacity`;
+  metricTotalBookingsCount.textContent = appState.bookings.length;
+  metricSlotBookingsTag.textContent = `${currentSlotBookings.length} in Slot`;
+  metricEstRevenue.textContent = `$${estYield.toLocaleString()}`;
+
+  miniSeatedCount.textContent = seatedCovers;
+  miniUpcomingCount.textContent = appState.bookings.length - currentSlotBookings.length;
+
+  floorActiveSummaryPill.textContent = `${available} Tables Available • ${currentSlotBookings.length} Booked • ${total - available - currentSlotBookings.length} Blocked`;
 }
 
-// 2. Table CAD Geometries
-function getTableShape(type, capacity) {
-  const t = type.toLowerCase();
+// 2. Table Fixture Shape Resolver
+function resolveFixtureGeometry(type, capacity) {
+  const t = (type || '').toLowerCase();
   if (t.includes('vip')) return { shape: 'shape-vip', icon: '👑' };
   if (t.includes('couple') || capacity <= 2) return { shape: 'shape-round', icon: '🍷' };
   if (t.includes('banquet') || capacity >= 8) return { shape: 'shape-banquet', icon: '🍾' };
   return { shape: 'shape-booth', icon: '🍽️' };
 }
 
-// 3. Seating Floor Plan Blueprint
-function renderFloorPlanCanvas() {
-  dashboardFloorCanvas.innerHTML = '';
+// 3. Interactive Spatial Floor Plan
+function renderFloorPlan(canvasElement, enableZoneFilter = true) {
+  if (!canvasElement) return;
+  canvasElement.innerHTML = '';
 
-  let filtered = state.tables;
-  if (state.selectedZone !== 'ALL') {
-    filtered = state.tables.filter(t => t.type.toLowerCase().includes(state.selectedZone.toLowerCase()));
+  let tablesToRender = appState.tables;
+  if (enableZoneFilter && appState.selectedZone !== 'ALL') {
+    tablesToRender = appState.tables.filter(t => t.type.toLowerCase().includes(appState.selectedZone.toLowerCase()));
   }
 
-  if (filtered.length === 0) {
-    dashboardFloorCanvas.innerHTML = `
+  if (tablesToRender.length === 0) {
+    canvasElement.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">
-        No tables found for category "${state.selectedZone}".
+        No tables found in section "${appState.selectedZone}".
       </div>
     `;
     return;
   }
 
-  filtered.forEach(table => {
+  tablesToRender.forEach(table => {
     const isMaintenance = table.status === 'Maintenance';
-    const isOccupied = state.occupiedTableIds.includes(table.id);
-    const isSelected = state.selectedTableId === table.id;
+    const isOccupied = appState.occupiedTableIds.includes(table.id);
+    const isSelected = appState.selectedTableId === table.id;
 
-    let statusClass = 'status-available';
+    let stateClass = 'state-available';
     let statusLabel = 'AVAILABLE';
 
     if (isMaintenance) {
-      statusClass = 'status-offline';
-      statusLabel = 'MAINTENANCE';
+      stateClass = 'state-maintenance';
+      statusLabel = 'BLOCKED';
     } else if (isOccupied) {
-      statusClass = 'status-reserved';
-      statusLabel = 'BOOKED';
+      stateClass = 'state-reserved';
+      statusLabel = 'RESERVED';
     }
 
-    const { shape, icon } = getTableShape(table.type, table.capacity);
+    const { shape, icon } = resolveFixtureGeometry(table.type, table.capacity);
 
-    const card = document.createElement('div');
-    card.className = `table-pod-card ${statusClass} ${isSelected ? 'status-selected' : ''}`;
-    card.dataset.id = table.id;
+    const activeBooking = isOccupied
+      ? appState.bookings.find(b => b.tableId === table.id && b.date === appState.selectedDate && b.time === appState.selectedTime)
+      : null;
 
-    let activeBooking = null;
-    if (isOccupied) {
-      activeBooking = state.bookings.find(b => b.tableId === table.id && b.date === state.selectedDate && b.time === state.selectedTime);
-    }
+    const pod = document.createElement('div');
+    pod.className = `table-pod-node ${stateClass} ${isSelected ? 'state-selected' : ''}`;
+    pod.dataset.tableId = table.id;
 
-    card.innerHTML = `
-      <span class="pod-id-tag">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
-      <span class="pod-status-badge">${statusLabel}</span>
+    pod.innerHTML = `
+      <span class="pod-number-label">#T-${table.id < 10 ? '0' + table.id : table.id}</span>
+      <span class="pod-status-pill">${statusLabel}</span>
 
-      <div class="table-cad-fixture">
-        <div class="table-top-3d ${shape}">
+      <div class="table-fixture-stage">
+        <div class="table-surface-shape ${shape}">
           <span>${icon}</span>
         </div>
-        <div class="chair-node chair-t"></div>
-        <div class="chair-node chair-b"></div>
-        ${table.capacity >= 4 ? '<div class="chair-node chair-l"></div><div class="chair-node chair-r"></div>' : ''}
+        <div class="chair-fixture chair-top"></div>
+        <div class="chair-fixture chair-bot"></div>
+        ${table.capacity >= 4 ? '<div class="chair-fixture chair-left"></div><div class="chair-fixture chair-right"></div>' : ''}
       </div>
 
-      <div class="pod-title">${table.type}</div>
-      <div class="pod-capacity">${table.capacity} Guest Seats</div>
-      ${activeBooking ? `<div class="pod-guest-tag">Reserved: ${activeBooking.guestName}</div>` : ''}
+      <div class="pod-name-text">${table.type}</div>
+      <div class="pod-cap-text">${table.capacity} Guests Max</div>
+      ${activeBooking ? `<div class="pod-guest-banner">Guest: ${activeBooking.guestName}</div>` : ''}
     `;
 
-    card.addEventListener('click', () => {
-      playSound('clink');
-      if (isMaintenance) {
-        showToast(`Table #${table.id} is currently under maintenance.`, 'error');
-        return;
-      }
-      if (isOccupied) {
-        showToast(`Table #${table.id} is booked by "${activeBooking?.guestName || 'Guest'}".`, 'info');
-      } else {
-        state.selectedTableId = table.id;
-        selectTableAssignment.value = String(table.id);
-        document.getElementById('input-guest-count').value = Math.min(table.capacity, 4);
-        switchView('booking');
-        showToast(`Selected Table #${table.id} (${table.type}, ${table.capacity} seats).`, 'success');
-        renderFloorPlanCanvas();
-      }
+    pod.addEventListener('click', () => {
+      playAudioChime('clink');
+      appState.selectedTableId = table.id;
+      openTableContextDrawer(table, activeBooking);
+      renderMasterView();
     });
 
-    dashboardFloorCanvas.appendChild(card);
+    canvasElement.appendChild(pod);
   });
 }
 
-// 4. Dropdowns
-function renderTableDropdowns() {
-  const current = selectTableAssignment.value;
-  selectTableAssignment.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
-  const walkinSelect = document.getElementById('walkin-table-select');
-  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Table</option>';
+// 4. Contextual Table Drawer Controller (SevenRooms Pattern)
+function openTableContextDrawer(table, activeBooking) {
+  appState.activeDrawerTable = table;
 
-  state.tables.forEach(t => {
+  drawerTableHeading.textContent = `Table #T-${table.id < 10 ? '0' + table.id : table.id}`;
+  drawerTableCapacity.textContent = `${table.capacity} Guests`;
+  drawerTableCategory.textContent = table.type;
+  drawerTableSlot.textContent = `${appState.selectedDate} @ ${appState.selectedTime}`;
+  drawerTableTurnover.textContent = table.capacity <= 2 ? '75 mins' : '90 mins';
+
+  const isMaintenance = table.status === 'Maintenance';
+  const isOccupied = !!activeBooking;
+
+  if (isMaintenance) {
+    drawerStatusBadge.textContent = 'Maintenance';
+    drawerStatusBadge.className = 'drawer-status-badge';
+    drawerToggleStatusText.textContent = 'Set Available';
+    drawerBtnSeatWalkin.disabled = true;
+    drawerBookingSection.style.display = 'none';
+    drawerBtnReleaseTable.style.display = 'none';
+  } else if (isOccupied) {
+    drawerStatusBadge.textContent = 'Reserved / Seated';
+    drawerStatusBadge.className = 'drawer-status-badge';
+    drawerStatusBadge.style.background = 'var(--c-reserved-bg)';
+    drawerStatusBadge.style.color = 'var(--c-reserved)';
+    drawerToggleStatusText.textContent = 'Set Maintenance';
+    drawerBtnSeatWalkin.disabled = true;
+
+    drawerBookingSection.style.display = 'block';
+    drawerGuestName.textContent = activeBooking.guestName;
+    drawerBookingId.textContent = `#${activeBooking.bookingId || activeBooking.id}`;
+    drawerPartySize.textContent = `${activeBooking.guests} Guests`;
+    drawerOccasion.textContent = activeBooking.occasion || 'Dinner Service';
+
+    drawerBtnReleaseTable.style.display = 'block';
+  } else {
+    drawerStatusBadge.textContent = 'Available';
+    drawerStatusBadge.className = 'drawer-status-badge';
+    drawerStatusBadge.style.background = 'var(--c-available-bg)';
+    drawerStatusBadge.style.color = 'var(--c-available)';
+    drawerToggleStatusText.textContent = 'Set Maintenance';
+    drawerBtnSeatWalkin.disabled = false;
+    drawerBookingSection.style.display = 'none';
+    drawerBtnReleaseTable.style.display = 'none';
+  }
+
+  tableContextDrawer.classList.add('open');
+  drawerBackdrop.classList.add('open');
+}
+
+function closeTableDrawer() {
+  tableContextDrawer.classList.remove('open');
+  drawerBackdrop.classList.remove('open');
+}
+
+// 5. Upcoming Arrivals & Activity Timeline
+function renderUpcomingArrivals() {
+  dashboardUpcomingList.innerHTML = '';
+  const upcoming = appState.bookings.slice(0, 4);
+
+  if (upcoming.length === 0) {
+    dashboardUpcomingList.innerHTML = `
+      <div style="text-align:center; color:var(--text-muted); padding:16px;">
+        No reservations scheduled for this service shift.
+      </div>
+    `;
+    return;
+  }
+
+  upcoming.forEach(b => {
+    const item = document.createElement('div');
+    item.className = 'arrival-row';
+    item.innerHTML = `
+      <div>
+        <div class="arrival-guest">${b.guestName} <small>(Table #${b.tableId})</small></div>
+        <div class="arrival-meta">${b.guests} Guests • ${b.date} at ${b.time}</div>
+      </div>
+      <span class="badge-tag green">CONFIRMED</span>
+    `;
+    dashboardUpcomingList.appendChild(item);
+  });
+}
+
+function renderActivityTimeline() {
+  dashboardMiniActivity.innerHTML = '';
+  fullActivityStream.innerHTML = '';
+
+  const entries = appState.activity.slice(0, 20);
+  if (entries.length === 0) {
+    dashboardMiniActivity.innerHTML = '<div style="color:var(--text-muted);">No activity recorded.</div>';
+    fullActivityStream.innerHTML = '<div style="color:var(--text-muted);">No activity recorded.</div>';
+    return;
+  }
+
+  entries.forEach((item, index) => {
+    const html = `
+      <div class="event-clock">${item.timestamp}</div>
+      <div>
+        <div class="event-type-badge">${item.type}</div>
+        <div class="event-msg-text">${item.message}</div>
+      </div>
+    `;
+
+    if (index < 4) {
+      const miniCard = document.createElement('div');
+      miniCard.className = 'activity-event-card';
+      miniCard.innerHTML = html;
+      dashboardMiniActivity.appendChild(miniCard);
+    }
+
+    const fullCard = document.createElement('div');
+    fullCard.className = 'activity-event-card';
+    fullCard.innerHTML = html;
+    fullActivityStream.appendChild(fullCard);
+  });
+}
+
+// 6. Dropdown Table Options
+function renderTableSelectDropdowns() {
+  const current = formTableSelect.value;
+  formTableSelect.innerHTML = '<option value="0">✨ Auto-Assign Best Fit (Smart Engine)</option>';
+  const walkinSelect = document.getElementById('walkin-table-choice');
+  walkinSelect.innerHTML = '<option value="0">✨ Auto Best-Fit Allocation</option>';
+
+  appState.tables.forEach(t => {
     if (t.status === 'Available') {
+      const isOcc = appState.occupiedTableIds.includes(t.id);
+      
       const opt = document.createElement('option');
       opt.value = t.id;
-      const isOcc = state.occupiedTableIds.includes(t.id);
       opt.textContent = `Table #${t.id} - ${t.type} (${t.capacity} seats) ${isOcc ? '⚠️ Booked' : '✅ Free'}`;
-      selectTableAssignment.appendChild(opt);
+      formTableSelect.appendChild(opt);
 
       const walkOpt = document.createElement('option');
       walkOpt.value = t.id;
@@ -296,47 +495,50 @@ function renderTableDropdowns() {
     }
   });
 
-  selectTableAssignment.value = current || '0';
+  formTableSelect.value = current || '0';
 }
 
-// 5. Tables Fleet Management (Scene 4)
-function renderTablesFleetTable() {
-  tablesFleetTbody.innerHTML = '';
-  state.tables.forEach(t => {
+// 7. Fleet Management Table
+function renderFleetTable() {
+  fleetTablesTbody.innerHTML = '';
+
+  appState.tables.forEach(t => {
     const isAvail = t.status === 'Available';
-    const isOccupied = state.occupiedTableIds.includes(t.id);
+    const isOccupied = appState.occupiedTableIds.includes(t.id);
     const tr = document.createElement('tr');
 
-    let slotText = isOccupied ? '<span class="tag-pill red">Occupied</span>' : (isAvail ? '<span class="tag-pill green">Free</span>' : '<span class="tag-pill">Offline</span>');
+    let serviceTag = isOccupied
+      ? '<span class="badge-tag blue">Occupied</span>'
+      : (isAvail ? '<span class="badge-tag green">Available</span>' : '<span class="badge-tag">Blocked</span>');
 
     tr.innerHTML = `
       <td><strong>#T-${t.id}</strong></td>
       <td>${t.capacity} Guests</td>
       <td>${t.type}</td>
-      <td>${slotText}</td>
-      <td><span class="tag-pill ${isAvail ? 'green' : 'red'}">${t.status}</span></td>
+      <td>${serviceTag}</td>
+      <td><span class="badge-tag ${isAvail ? 'green' : 'gold'}">${t.status}</span></td>
       <td>
-        <button class="btn-status-toggle btn-flip-status" data-id="${t.id}" data-current="${t.status}">
+        <button class="btn-status-toggle btn-toggle-fleet" data-id="${t.id}" data-current="${t.status}">
           ${isAvail ? 'Set Maintenance' : 'Set Available'}
         </button>
       </td>
       <td>
-        <button class="btn-danger-sm btn-del-tbl" data-id="${t.id}">Delete</button>
+        <button class="btn-danger-sm btn-delete-fleet" data-id="${t.id}">Delete</button>
       </td>
     `;
-    tablesFleetTbody.appendChild(tr);
+    fleetTablesTbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-flip-status').forEach(btn => {
+  document.querySelectorAll('.btn-toggle-fleet').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id);
       const current = btn.dataset.current;
-      const target = (current === 'Available') ? 'Maintenance' : 'Available';
+      const target = current === 'Available' ? 'Maintenance' : 'Available';
       await handleToggleTableStatus(id, target);
     });
   });
 
-  document.querySelectorAll('.btn-del-tbl').forEach(btn => {
+  document.querySelectorAll('.btn-delete-fleet').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id);
       await handleDeleteTable(id);
@@ -344,24 +546,27 @@ function renderTablesFleetTable() {
   });
 }
 
-// 6. Master Reservations Table (Scene 5 & 8: Search & Check-in)
-function renderAllReservationsTable() {
-  const query = reservationsSearchQuery.value.trim().toLowerCase();
-  allReservationsTbody.innerHTML = '';
+// 8. Master Reservations Table
+function renderReservationsTable() {
+  const query = (reservationsSearchInput.value || '').trim().toLowerCase();
+  const statusFilter = reservationsStatusFilter.value;
+  masterReservationsTbody.innerHTML = '';
 
-  const list = state.bookings.filter(b => {
-    if (!query) return true;
-    return b.guestName.toLowerCase().includes(query) ||
-           String(b.bookingId).includes(query) ||
-           b.date.includes(query) ||
-           String(b.tableId).includes(query);
+  const list = appState.bookings.filter(b => {
+    const matchesQuery = !query ||
+      b.guestName.toLowerCase().includes(query) ||
+      String(b.bookingId || b.id).includes(query) ||
+      String(b.tableId).includes(query) ||
+      b.date.includes(query);
+
+    return matchesQuery;
   });
 
   if (list.length === 0) {
-    allReservationsTbody.innerHTML = `
+    masterReservationsTbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align:center; color:var(--text-muted); padding:32px;">
-          No reservations found matching search.
+        <td colspan="9" style="text-align:center; color:var(--text-muted); padding:32px;">
+          No reservations found matching search criteria.
         </td>
       </tr>
     `;
@@ -370,463 +575,588 @@ function renderAllReservationsTable() {
 
   list.forEach(b => {
     const tr = document.createElement('tr');
+    const refId = b.bookingId || b.id;
     tr.innerHTML = `
-      <td><strong>#${b.bookingId}</strong></td>
-      <td><span class="tag-pill gold">Table #${b.tableId}</span></td>
+      <td><strong>#${refId}</strong></td>
+      <td><span class="badge-tag gold">Table #${b.tableId}</span></td>
       <td><strong>${b.guestName}</strong></td>
       <td>${b.guests} Guests</td>
       <td><code>${b.date}</code></td>
       <td><code>${b.time}</code></td>
-      <td><span class="tag-pill green">CONFIRMED</span></td>
+      <td>${b.occasion || 'Dinner'}</td>
+      <td><span class="badge-tag green">CONFIRMED</span></td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary btn-sm btn-view-receipt" data-id="${b.bookingId}">View Receipt</button>
-          <button class="btn-danger-sm btn-cancel-res" data-id="${b.bookingId}">Cancel</button>
+          <button class="btn btn-secondary btn-sm btn-show-pass" data-id="${refId}">View Pass</button>
+          <button class="btn-danger-sm btn-cancel-booking" data-id="${refId}">Cancel</button>
         </div>
       </td>
     `;
-    allReservationsTbody.appendChild(tr);
+    masterReservationsTbody.appendChild(tr);
   });
 
-  document.querySelectorAll('.btn-view-receipt').forEach(btn => {
+  document.querySelectorAll('.btn-show-pass').forEach(btn => {
     btn.addEventListener('click', () => {
-      const id = parseInt(btn.dataset.id);
-      const b = state.bookings.find(x => x.bookingId === id);
-      if (b) showBookingReceiptModal(b);
+      const id = btn.dataset.id;
+      const b = appState.bookings.find(x => String(x.bookingId || x.id) === String(id));
+      if (b) showVipDiningPass(b);
     });
   });
 
-  document.querySelectorAll('.btn-cancel-res').forEach(btn => {
+  document.querySelectorAll('.btn-cancel-booking').forEach(btn => {
     btn.addEventListener('click', () => {
-      const id = parseInt(btn.dataset.id);
+      const id = btn.dataset.id;
       handleCancelReservation(id);
     });
   });
 }
 
-// 7. Activity Timeline
-function renderActivityTimeline() {
-  dashboardActivityTimeline.innerHTML = '';
-  if (state.activity.length === 0) {
-    dashboardActivityTimeline.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No recent audit activity.</div>';
-    return;
-  }
-
-  const reversed = [...state.activity].reverse();
-  reversed.forEach(item => {
-    const entry = document.createElement('div');
-    entry.className = 'timeline-entry';
-    entry.innerHTML = `
-      <div class="entry-time">${item.timestamp}</div>
-      <div>
-        <div class="entry-tag">${item.type}</div>
-        <div class="entry-msg">${item.message}</div>
-      </div>
-    `;
-    dashboardActivityTimeline.appendChild(entry);
-  });
-}
-
 // ================= VIEW SWITCHER =================
-function switchView(viewName) {
-  state.activeView = viewName;
-  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+function switchAppView(viewName) {
+  appState.currentView = viewName;
+  document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === viewName);
   });
-  document.querySelectorAll('.app-view').forEach(view => {
-    view.classList.toggle('active', view.id === `view-${viewName}`);
+  document.querySelectorAll('.view-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `view-${viewName}`);
   });
+
+  const titles = {
+    dashboard: 'Live Dashboard & Service Radar',
+    floorplan: 'Spatial Dining Floor Plan',
+    reservations: 'Master Reservations Ledger',
+    booking: 'Create Guest Reservation',
+    tables: 'Physical Table Fleet Management',
+    activity: 'Live System Activity Stream'
+  };
+  currentViewTitle.textContent = titles[viewName] || 'The Royal Spice';
+  
+  if (appSidebar.classList.contains('mobile-open')) {
+    appSidebar.classList.remove('mobile-open');
+  }
 }
 
 // ================= 6-STAGE ALGORITHM PIPELINE =================
-function resetPipeline() {
+function resetAlgorithmNodes() {
   for (let i = 1; i <= 5; ++i) {
-    const card = document.getElementById(`pipe-step-${i}`);
-    if (card) card.className = 'pipe-step-card';
+    const card = document.getElementById(`pipe-card-${i}`);
+    if (card) card.className = 'pipeline-card-node';
   }
-  document.getElementById('pipeline-status-badge').textContent = 'Allocating...';
-  document.getElementById('pipeline-status-badge').className = 'pill-badge gold';
+  document.getElementById('trace-pipeline-badge').textContent = 'Allocating...';
+  document.getElementById('trace-pipeline-badge').className = 'badge-pill gold';
 }
 
-function setPipelineNode(step, status, text = null) {
-  const card = document.getElementById(`pipe-step-${step}`);
+function setAlgorithmStep(step, status, text = null) {
+  const card = document.getElementById(`pipe-card-${step}`);
   if (!card) return;
-  card.className = `pipe-step-card step-${status}`;
+  card.className = `pipeline-card-node node-${status}`;
   if (text) {
-    document.getElementById(`pipe-sub-${step}`).textContent = text;
+    document.getElementById(`pipe-desc-${step}`).textContent = text;
   }
 }
 
 async function runAllocationSequence(trace, success, createdBooking, errorMsg) {
-  resetPipeline();
+  resetAlgorithmNodes();
 
-  setPipelineNode(1, 'running', 'Validating guest parameters');
-  await new Promise(r => setTimeout(r, 180));
-  setPipelineNode(1, 'success', 'Input verified');
+  setAlgorithmStep(1, 'running', 'Validating guest parameters');
+  await new Promise(r => setTimeout(r, 160));
+  setAlgorithmStep(1, 'success', 'Input boundaries verified');
 
-  setPipelineNode(2, 'running', 'Checking date & time boundaries');
-  await new Promise(r => setTimeout(r, 180));
-  setPipelineNode(2, 'success', `${createdBooking?.date || state.selectedDate} @ ${createdBooking?.time || state.selectedTime}`);
+  setAlgorithmStep(2, 'running', 'Checking date & time slot');
+  await new Promise(r => setTimeout(r, 160));
+  setAlgorithmStep(2, 'success', `${createdBooking?.date || appState.selectedDate} @ ${createdBooking?.time || appState.selectedTime}`);
 
-  setPipelineNode(3, 'running', 'Scanning slot collisions');
+  setAlgorithmStep(3, 'running', 'Scanning slot collisions');
+  await new Promise(r => setTimeout(r, 200));
+  setAlgorithmStep(3, 'success', 'No conflict detected');
+
+  setAlgorithmStep(4, 'running', 'Matching smallest suitable table');
   await new Promise(r => setTimeout(r, 220));
-  setPipelineNode(3, 'success', 'No conflict detected');
-
-  setPipelineNode(4, 'running', 'Matching best suitable capacity');
-  await new Promise(r => setTimeout(r, 240));
 
   if (!success) {
-    setPipelineNode(4, 'running', errorMsg || 'No table match');
-    document.getElementById('pipeline-status-badge').textContent = 'Failed';
-    document.getElementById('pipeline-status-badge').className = 'pill-badge';
-    showToast(errorMsg || 'No suitable table available for this slot.', 'error');
+    setAlgorithmStep(4, 'running', errorMsg || 'No table match');
+    document.getElementById('trace-pipeline-badge').textContent = 'Failed';
+    document.getElementById('trace-pipeline-badge').className = 'badge-pill';
+    showToastNotification(errorMsg || 'No table available for this slot.', 'error');
     return;
   }
 
-  setPipelineNode(4, 'success', `Assigned Table #${createdBooking.tableId}`);
+  setAlgorithmStep(4, 'success', `Assigned Table #${createdBooking.tableId}`);
 
-  setPipelineNode(5, 'running', 'Saving to tables.txt & bookings.txt');
-  await new Promise(r => setTimeout(r, 180));
-  setPipelineNode(5, 'success', 'Saved to permanent storage');
+  setAlgorithmStep(5, 'running', 'Persisting to disk');
+  await new Promise(r => setTimeout(r, 160));
+  setAlgorithmStep(5, 'success', 'Saved permanently');
 
-  document.getElementById('pipeline-status-badge').textContent = 'Success';
-  document.getElementById('pipeline-status-badge').className = 'pill-badge green';
+  document.getElementById('trace-pipeline-badge').textContent = 'Confirmed';
+  document.getElementById('trace-pipeline-badge').className = 'badge-pill green';
 
-  playSound('success');
-  showBookingReceiptModal(createdBooking);
+  playAudioChime('success');
+  showVipDiningPass(createdBooking);
 }
 
-// ================= OFFICIAL RECEIPT MODAL (Scene 7) =================
-function showBookingReceiptModal(b) {
-  receiptDataGrid.innerHTML = `
-    <div class="receipt-cell">
-      <label>Booking ID</label>
-      <strong>#${b.bookingId}</strong>
+// ================= VIP DINING PASS MODAL =================
+function showVipDiningPass(b) {
+  passGridData.innerHTML = `
+    <div class="pass-field-node">
+      <label>Booking Reference</label>
+      <strong>#${b.bookingId || b.id}</strong>
     </div>
-    <div class="receipt-cell">
+    <div class="pass-field-node">
       <label>Assigned Table</label>
-      <strong style="color:var(--gold-600);">Table #${b.tableId}</strong>
+      <strong style="color:var(--primary-600);">Table #${b.tableId}</strong>
     </div>
-    <div class="receipt-cell">
-      <label>Customer Name</label>
+    <div class="pass-field-node">
+      <label>Guest Full Name</label>
       <strong>${b.guestName}</strong>
     </div>
-    <div class="receipt-cell">
-      <label>Number of Guests</label>
+    <div class="pass-field-node">
+      <label>Party Size</label>
       <strong>${b.guests} Guests</strong>
     </div>
-    <div class="receipt-cell">
+    <div class="pass-field-node">
       <label>Reservation Date</label>
       <strong>${b.date}</strong>
     </div>
-    <div class="receipt-cell">
-      <label>Reservation Time</label>
+    <div class="pass-field-node">
+      <label>Dining Time Slot</label>
       <strong>${b.time}</strong>
     </div>
-    <div class="receipt-cell">
+    <div class="pass-field-node">
       <label>Occasion</label>
-      <strong style="color:var(--gold-700);">${state.selectedOccasion}</strong>
+      <strong style="color:var(--primary-text);">${b.occasion || appState.selectedOccasion}</strong>
     </div>
-    <div class="receipt-cell">
+    <div class="pass-field-node">
       <label>Status</label>
-      <strong style="color:var(--c-emerald);">CONFIRMED</strong>
+      <strong style="color:var(--c-available);">CONFIRMED</strong>
     </div>
   `;
-  modalBookingReceipt.classList.add('open');
+  modalReceiptPass.classList.add('open');
 }
 
-// ================= EVENT LISTENERS & ACTIONS =================
+// ================= OPERATIONS & MUTATIONS =================
 
-// Navigation Tabs
-document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    playSound('click');
-    switchView(btn.dataset.view);
-  });
-});
-
-// Occasion Pills
-document.querySelectorAll('.occ-pill').forEach(pill => {
-  pill.addEventListener('click', () => {
-    playSound('pop');
-    document.querySelectorAll('.occ-pill').forEach(p => p.classList.remove('active'));
-    pill.classList.add('active');
-    state.selectedOccasion = pill.dataset.occ;
-  });
-});
-
-// Quick Experience Buttons
-document.querySelectorAll('.btn-quick-book').forEach(btn => {
-  btn.addEventListener('click', () => {
-    playSound('clink');
-    const guests = parseInt(btn.dataset.guests);
-    const type = btn.dataset.type;
-    document.getElementById('input-guest-count').value = guests;
-
-    const candidate = state.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && state.availableTableIds.includes(t.id));
-    if (candidate) {
-      state.selectedTableId = candidate.id;
-      selectTableAssignment.value = String(candidate.id);
-    } else {
-      selectTableAssignment.value = '0';
-    }
-    switchView('booking');
-  });
-});
-
-// Create Reservation Form Submission (Scene 6 & 7)
-createBookingForm.addEventListener('submit', async (e) => {
+// 1. Create Reservation
+masterBookingForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const guestName = document.getElementById('input-guest-name').value.trim();
-  const guests = parseInt(document.getElementById('input-guest-count').value);
-  const date = document.getElementById('input-booking-date').value.trim();
-  const time = document.getElementById('select-booking-time').value;
-  const tableId = parseInt(selectTableAssignment.value);
+  const guestName = document.getElementById('form-guest-name').value.trim();
+  const guests = parseInt(document.getElementById('form-guest-count').value);
+  const date = document.getElementById('form-booking-date').value.trim();
+  const time = document.getElementById('form-booking-time').value;
+  const tableId = parseInt(formTableSelect.value);
+  const occasion = appState.selectedOccasion;
 
-  const submitBtn = document.getElementById('btn-submit-reservation');
+  const submitBtn = document.getElementById('btn-submit-booking-action');
   submitBtn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/bookings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestName, guests, date, time, tableId })
-    });
+    let result = null;
 
-    const data = await res.json();
-    await runAllocationSequence(data.trace || [], data.success, data.booking, data.error);
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestName, guests, date, time, tableId, occasion })
+      });
+      result = await res.json();
+    } else {
+      // Local Standalone Allocation Engine
+      let candidateTable = null;
+      if (tableId > 0) {
+        candidateTable = appState.tables.find(t => t.id === tableId && t.status === 'Available');
+      } else {
+        const suitable = appState.tables
+          .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
+          .sort((a, b) => a.capacity - b.capacity);
+        if (suitable.length > 0) candidateTable = suitable[0];
+      }
 
-    if (data.success) {
-      createBookingForm.reset();
-      document.getElementById('input-guest-count').value = '4';
-      document.getElementById('input-booking-date').value = state.selectedDate;
-      document.getElementById('select-booking-time').value = state.selectedTime;
-      state.selectedTableId = 0;
-      await syncCoreEngine();
+      if (!candidateTable) {
+        throw new Error('No available table suitable for this party size.');
+      }
+
+      const newBooking = {
+        id: 'BK-' + Math.floor(1000 + Math.random() * 9000),
+        bookingId: Math.floor(100 + Math.random() * 900),
+        guestName,
+        guests,
+        date,
+        time,
+        tableId: candidateTable.id,
+        occasion
+      };
+
+      appState.bookings.push(newBooking);
+      logEvent('BOOKING_CREATED', `Reservation #${newBooking.bookingId} created for ${guestName} (Table #${candidateTable.id})`);
+      saveLocalState();
+
+      result = { success: true, booking: newBooking };
+    }
+
+    await runAllocationSequence(result.trace || [], result.success, result.booking, result.error);
+
+    if (result.success) {
+      masterBookingForm.reset();
+      document.getElementById('form-guest-count').value = '4';
+      document.getElementById('form-booking-date').value = appState.selectedDate;
+      document.getElementById('form-booking-time').value = appState.selectedTime;
+      appState.selectedTableId = 0;
+      await syncWithCoreEngine();
     }
   } catch (err) {
-    showToast('Failed to connect to C++ backend.', 'error');
+    showToastNotification(err.message || 'Error processing reservation.', 'error');
   } finally {
     submitBtn.disabled = false;
   }
 });
 
-// Cancel Reservation (Scene 5)
+// 2. Cancel Reservation
 async function handleCancelReservation(id) {
   if (!confirm(`Are you sure you want to cancel Reservation #${id}?`)) return;
 
   try {
-    const res = await fetch(`${API_BASE}/cancel`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId: id })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      showToast(`Reservation #${id} successfully cancelled.`, 'success');
-      await syncCoreEngine();
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: parseInt(id) })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to cancel');
     } else {
-      showToast(data.error || 'Could not cancel reservation.', 'error');
+      const idx = appState.bookings.findIndex(b => String(b.bookingId || b.id) === String(id));
+      if (idx !== -1) {
+        const removed = appState.bookings.splice(idx, 1)[0];
+        logEvent('BOOKING_CANCELLED', `Reservation #${id} for ${removed.guestName} was cancelled.`);
+        saveLocalState();
+      }
     }
+
+    showToastNotification(`Reservation #${id} cancelled.`, 'success');
+    await syncWithCoreEngine();
   } catch (err) {
-    showToast('Backend error cancelling reservation.', 'error');
+    showToastNotification(err.message || 'Could not cancel reservation.', 'error');
   }
 }
 
-// Table Status Toggle (Scene 4)
-async function handleToggleTableStatus(id, status) {
+// 3. Table Status Flip
+async function handleToggleTableStatus(id, targetStatus) {
   try {
-    const res = await fetch(`${API_BASE}/tables/status`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      showToast(`Table #${id} status updated to ${status}.`, 'success');
-      await syncCoreEngine();
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/tables/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: targetStatus })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Status update failed');
     } else {
-      showToast(data.error || 'Failed to update table status.', 'error');
+      const tbl = appState.tables.find(t => t.id === id);
+      if (tbl) {
+        tbl.status = targetStatus;
+        logEvent('TABLE_STATUS', `Table #${id} status changed to ${targetStatus}.`);
+        saveLocalState();
+      }
     }
+
+    showToastNotification(`Table #${id} is now ${targetStatus}.`, 'success');
+    closeTableDrawer();
+    await syncWithCoreEngine();
   } catch (err) {
-    showToast('Server communication error.', 'error');
+    showToastNotification(err.message || 'Error updating table status.', 'error');
   }
 }
 
-// Delete Table (Scene 4)
+// 4. Delete Table
 async function handleDeleteTable(id) {
-  if (!confirm(`Are you sure you want to delete Table #${id}?`)) return;
+  if (!confirm(`Delete Table #${id} permanently?`)) return;
 
   try {
-    const res = await fetch(`${API_BASE}/tables/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      showToast(`Table #${id} deleted from restaurant.`, 'success');
-      await syncCoreEngine();
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/tables/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Delete failed');
     } else {
-      showToast(data.error || 'Cannot delete table.', 'error');
+      const idx = appState.tables.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        appState.tables.splice(idx, 1);
+        logEvent('TABLE_DELETED', `Table #${id} removed from fleet.`);
+        saveLocalState();
+      }
     }
+
+    showToastNotification(`Table #${id} deleted.`, 'success');
+    closeTableDrawer();
+    await syncWithCoreEngine();
   } catch (err) {
-    showToast('Server error deleting table.', 'error');
+    showToastNotification(err.message || 'Cannot delete table.', 'error');
   }
 }
 
-// Walk-In Seater Form
-document.getElementById('form-quick-walkin-action').addEventListener('submit', async (e) => {
+// 5. Walk-In Seater
+document.getElementById('form-walkin-action').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const guestName = document.getElementById('walkin-guest-input').value.trim() || 'Walk-In Customer';
-  const guests = parseInt(document.getElementById('walkin-guests-count').value);
-  const tableId = parseInt(document.getElementById('walkin-table-select').value);
-  const date = state.selectedDate;
-  const time = state.selectedTime;
+  const guestName = document.getElementById('walkin-guest-name').value.trim() || 'Walk-In Guest';
+  const guests = parseInt(document.getElementById('walkin-guest-count').value);
+  const tableId = parseInt(document.getElementById('walkin-table-choice').value);
+  const date = appState.selectedDate;
+  const time = appState.selectedTime;
 
   try {
-    const res = await fetch(`${API_BASE}/bookings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestName, guests, date, time, tableId })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      showToast(`Walk-in customer seated at Table #${data.booking.tableId}!`, 'success');
-      modalQuickWalkin.classList.remove('open');
-      document.getElementById('form-quick-walkin-action').reset();
-      playSound('success');
-      await syncCoreEngine();
+    let result = null;
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestName, guests, date, time, tableId })
+      });
+      result = await res.json();
     } else {
-      showToast(data.error || 'No table available for walk-in party.', 'error');
+      let candidate = null;
+      if (tableId > 0) {
+        candidate = appState.tables.find(t => t.id === tableId && t.status === 'Available');
+      } else {
+        const suitable = appState.tables
+          .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
+          .sort((a, b) => a.capacity - b.capacity);
+        if (suitable.length > 0) candidate = suitable[0];
+      }
+
+      if (!candidate) throw new Error('No table available for walk-in party.');
+
+      const newBooking = {
+        id: 'WK-' + Math.floor(1000 + Math.random() * 9000),
+        bookingId: Math.floor(100 + Math.random() * 900),
+        guestName,
+        guests,
+        date,
+        time,
+        tableId: candidate.id,
+        occasion: 'Walk-In Dining'
+      };
+
+      appState.bookings.push(newBooking);
+      logEvent('WALKIN_SEATED', `Walk-in party "${guestName}" seated at Table #${candidate.id}.`);
+      saveLocalState();
+      result = { success: true, booking: newBooking };
+    }
+
+    if (result.success) {
+      showToastNotification(`Walk-in seated at Table #${result.booking.tableId}!`, 'success');
+      modalWalkinDialog.classList.remove('open');
+      document.getElementById('form-walkin-action').reset();
+      playAudioChime('success');
+      await syncWithCoreEngine();
+    } else {
+      showToastNotification(result.error || 'Could not seat walk-in.', 'error');
     }
   } catch (err) {
-    showToast('Error seating walk-in customer.', 'error');
+    showToastNotification(err.message || 'Error seating walk-in.', 'error');
   }
 });
 
-// Add Table Form
-document.getElementById('form-create-table-action').addEventListener('submit', async (e) => {
+// 6. Add Table Action
+document.getElementById('form-add-table-action').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = parseInt(document.getElementById('new-table-id-input').value);
-  const capacity = parseInt(document.getElementById('new-table-capacity-input').value);
-  const type = document.getElementById('new-table-type-input').value.trim();
+  const id = parseInt(document.getElementById('new-tbl-id-input').value);
+  const capacity = parseInt(document.getElementById('new-tbl-cap-input').value);
+  const type = document.getElementById('new-tbl-category-input').value.trim();
 
   try {
-    const res = await fetch(`${API_BASE}/tables`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, capacity, type })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      showToast(`Table #${id} successfully added!`, 'success');
-      modalAddTable.classList.remove('open');
-      document.getElementById('form-create-table-action').reset();
-      await syncCoreEngine();
+    if (appState.isBackendConnected) {
+      const res = await fetch(`${API_BASE}/tables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, capacity, type })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to add table');
     } else {
-      showToast(data.error || 'Could not add table.', 'error');
+      if (appState.tables.some(t => t.id === id)) {
+        throw new Error(`Table #${id} already exists!`);
+      }
+      appState.tables.push({ id, capacity, type, status: 'Available' });
+      logEvent('TABLE_ADDED', `New Table #${id} (${type}, ${capacity} seats) added to restaurant.`);
+      saveLocalState();
     }
+
+    showToastNotification(`Table #${id} added successfully!`, 'success');
+    modalTableDialog.classList.remove('open');
+    document.getElementById('form-add-table-action').reset();
+    await syncWithCoreEngine();
   } catch (err) {
-    showToast('Server error adding table.', 'error');
+    showToastNotification(err.message || 'Could not add table.', 'error');
   }
 });
 
-// Stepper buttons
-document.getElementById('btn-party-plus').addEventListener('click', () => {
-  playSound('pop');
-  const inp = document.getElementById('input-guest-count');
-  inp.value = Math.min(50, parseInt(inp.value || 1) + 1);
-});
+// ================= EVENT HANDLERS & NAVIGATION =================
 
-document.getElementById('btn-party-minus').addEventListener('click', () => {
-  playSound('pop');
-  const inp = document.getElementById('input-guest-count');
-  inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
-});
-
-// Time Slot Carousel
-timeSlotsCarousel.addEventListener('click', (e) => {
-  const btn = e.target.closest('.time-slot-btn');
-  if (btn) {
-    playSound('clink');
-    document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.selectedTime = btn.dataset.time;
-    document.getElementById('select-booking-time').value = state.selectedTime;
-    updateSlotAvailability();
-  }
-});
-
-// Date input & quick pills
-slotDateInput.addEventListener('change', () => {
-  state.selectedDate = slotDateInput.value.trim() || '24/05/2026';
-  document.getElementById('input-booking-date').value = state.selectedDate;
-  updateSlotAvailability();
-});
-
-document.querySelectorAll('.date-pill').forEach(btn => {
+// Sidebar Navigation
+document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
-    playSound('click');
-    document.querySelectorAll('.date-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const preset = btn.dataset.date;
-    if (preset === 'TODAY') {
-      const now = new Date();
-      state.selectedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
-    } else if (preset === 'TOMORROW') {
-      const tm = new Date();
-      tm.setDate(tm.getDate() + 1);
-      state.selectedDate = `${String(tm.getDate()).padStart(2,'0')}/${String(tm.getMonth()+1).padStart(2,'0')}/${tm.getFullYear()}`;
-    } else {
-      state.selectedDate = preset;
-    }
-    slotDateInput.value = state.selectedDate;
-    document.getElementById('input-booking-date').value = state.selectedDate;
-    updateSlotAvailability();
+    playAudioChime('click');
+    switchAppView(btn.dataset.view);
   });
 });
 
-zoneFilterSelect.addEventListener('change', () => {
-  state.selectedZone = zoneFilterSelect.value;
-  renderFloorPlanCanvas();
+document.getElementById('btn-view-all-reservations').addEventListener('click', () => switchAppView('reservations'));
+document.getElementById('btn-nav-create-res').addEventListener('click', () => switchAppView('booking'));
+
+// Theme Toggle
+themeModeToggle.addEventListener('click', () => {
+  appState.currentTheme = appState.currentTheme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', appState.currentTheme);
+  localStorage.setItem(STORAGE_KEYS.THEME, appState.currentTheme);
+  themeToggleIcon.setAttribute('data-lucide', appState.currentTheme === 'light' ? 'sun' : 'moon');
+  if (window.lucide) window.lucide.createIcons();
+  showToastNotification(`Theme switched to ${appState.currentTheme} mode.`, 'info');
 });
 
-reservationsSearchQuery.addEventListener('input', renderAllReservationsTable);
-
-document.getElementById('btn-sync-engine').addEventListener('click', () => {
-  syncCoreEngine();
-  showToast('Synchronized with C++ Core Engine.', 'info');
+// Sound Toggle
+soundFeedbackToggle.addEventListener('click', () => {
+  appState.soundEnabled = !appState.soundEnabled;
+  soundToggleIcon.setAttribute('data-lucide', appState.soundEnabled ? 'volume-2' : 'volume-x');
+  if (window.lucide) window.lucide.createIcons();
+  showToastNotification(appState.soundEnabled ? 'Audio feedback enabled.' : 'Audio muted.', 'info');
 });
 
-document.getElementById('btn-sound-toggle').addEventListener('click', () => {
-  state.soundEnabled = !state.soundEnabled;
-  soundIconSymbol.textContent = state.soundEnabled ? '🔊' : '🔇';
-  showToast(state.soundEnabled ? 'Sound enabled.' : 'Sound muted.', 'info');
+// Stepper
+document.getElementById('btn-party-inc').addEventListener('click', () => {
+  playAudioChime('click');
+  const inp = document.getElementById('form-guest-count');
+  inp.value = Math.min(30, parseInt(inp.value || 1) + 1);
 });
 
-// Modals
-document.getElementById('btn-quick-walkin').addEventListener('click', () => modalQuickWalkin.classList.add('open'));
-document.getElementById('btn-close-walkin-modal').addEventListener('click', () => modalQuickWalkin.classList.remove('open'));
-document.getElementById('btn-cancel-walkin-modal').addEventListener('click', () => modalQuickWalkin.classList.remove('open'));
-
-document.getElementById('btn-add-new-table-modal').addEventListener('click', () => modalAddTable.classList.add('open'));
-document.getElementById('btn-close-table-modal').addEventListener('click', () => modalAddTable.classList.remove('open'));
-document.getElementById('btn-cancel-table-modal').addEventListener('click', () => modalAddTable.classList.remove('open'));
-
-document.getElementById('btn-close-receipt-action').addEventListener('click', () => modalBookingReceipt.classList.remove('open'));
-document.getElementById('btn-print-receipt-action').addEventListener('click', () => {
-  window.print();
+document.getElementById('btn-party-dec').addEventListener('click', () => {
+  playAudioChime('click');
+  const inp = document.getElementById('form-guest-count');
+  inp.value = Math.max(1, parseInt(inp.value || 2) - 1);
 });
 
-// Auto-sync every 3.5s
-setInterval(syncCoreEngine, 3500);
+// Occasion Pills
+document.querySelectorAll('.occ-pill-btn').forEach(pill => {
+  pill.addEventListener('click', () => {
+    playAudioChime('click');
+    document.querySelectorAll('.occ-pill-btn').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    appState.selectedOccasion = pill.dataset.occ;
+  });
+});
 
-// Initial call
-syncCoreEngine();
+// Quick Experience Shortcuts
+document.querySelectorAll('.exp-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playAudioChime('clink');
+    const guests = parseInt(btn.dataset.guests);
+    const type = btn.dataset.type;
+    document.getElementById('form-guest-count').value = guests;
+
+    const candidate = appState.tables.find(t => t.type.toLowerCase().includes(type.toLowerCase()) && appState.availableTableIds.includes(t.id));
+    if (candidate) {
+      formTableSelect.value = String(candidate.id);
+    } else {
+      formTableSelect.value = '0';
+    }
+  });
+});
+
+// Slot Chips Bar
+headerSlotChips.addEventListener('click', (e) => {
+  const chip = e.target.closest('.slot-chip');
+  if (chip) {
+    playAudioChime('click');
+    document.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    appState.selectedTime = chip.dataset.time;
+    document.getElementById('form-booking-time').value = appState.selectedTime;
+    evaluateSlotState();
+    renderMasterView();
+  }
+});
+
+// Global Date Field
+globalDateInput.addEventListener('change', () => {
+  appState.selectedDate = globalDateInput.value.trim() || '24/05/2026';
+  document.getElementById('form-booking-date').value = appState.selectedDate;
+  evaluateSlotState();
+  renderMasterView();
+});
+
+// Zone Pills on Floor Plan
+document.querySelectorAll('.zone-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    playAudioChime('click');
+    document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    appState.selectedZone = pill.dataset.zone;
+    renderFloorPlan(masterFloorCanvas, true);
+    if (window.lucide) window.lucide.createIcons();
+  });
+});
+
+// Search & Filter in Reservations
+reservationsSearchInput.addEventListener('input', renderReservationsTable);
+reservationsStatusFilter.addEventListener('change', renderReservationsTable);
+
+// Drawer Actions
+drawerBtnSeatWalkin.addEventListener('click', () => {
+  if (appState.activeDrawerTable) {
+    document.getElementById('walkin-table-choice').value = String(appState.activeDrawerTable.id);
+    modalWalkinDialog.classList.add('open');
+    closeTableDrawer();
+  }
+});
+
+drawerBtnToggleStatus.addEventListener('click', async () => {
+  if (appState.activeDrawerTable) {
+    const target = appState.activeDrawerTable.status === 'Available' ? 'Maintenance' : 'Available';
+    await handleToggleTableStatus(appState.activeDrawerTable.id, target);
+  }
+});
+
+drawerBtnReleaseTable.addEventListener('click', async () => {
+  if (appState.activeDrawerTable) {
+    const booking = appState.bookings.find(b => b.tableId === appState.activeDrawerTable.id && b.date === appState.selectedDate && b.time === appState.selectedTime);
+    if (booking) {
+      await handleCancelReservation(booking.bookingId || booking.id);
+    }
+  }
+});
+
+document.getElementById('btn-close-drawer').addEventListener('click', closeTableDrawer);
+drawerBackdrop.addEventListener('click', closeTableDrawer);
+
+// Modals Trigger
+document.getElementById('btn-open-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
+document.getElementById('btn-floor-walkin-seat').addEventListener('click', () => modalWalkinDialog.classList.add('open'));
+document.getElementById('btn-close-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
+document.getElementById('btn-cancel-walkin-dialog').addEventListener('click', () => modalWalkinDialog.classList.remove('open'));
+
+document.getElementById('btn-floor-add-table').addEventListener('click', () => modalTableDialog.classList.add('open'));
+document.getElementById('btn-open-add-table-dialog').addEventListener('click', () => modalTableDialog.classList.add('open'));
+document.getElementById('btn-close-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
+document.getElementById('btn-cancel-table-dialog').addEventListener('click', () => modalTableDialog.classList.remove('open'));
+
+document.getElementById('btn-close-pass-action').addEventListener('click', () => modalReceiptPass.classList.remove('open'));
+document.getElementById('btn-print-pass-action').addEventListener('click', () => window.print());
+
+document.getElementById('manual-sync-btn').addEventListener('click', () => {
+  syncWithCoreEngine();
+  showToastNotification('State synchronized.', 'info');
+});
+
+// Mobile Sidebar Toggle
+document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
+  appSidebar.classList.toggle('mobile-open');
+});
+
+// Auto Background Polling every 3.5s
+setInterval(syncWithCoreEngine, 3500);
+
+// Initialize Theme & First Load
+document.documentElement.setAttribute('data-theme', appState.currentTheme);
+syncWithCoreEngine();
