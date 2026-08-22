@@ -1,20 +1,20 @@
 /* ==========================================================================
-   THE ROYAL SPICE 4.5 PRO — MASTER LUXURY 3D DESIGN SYSTEM
+   THE ROYAL SPICE 4.8 PRO — MASTER LUXURY 3D DESIGN SYSTEM
    Tactile 3D Buttons, Three.js WebGL Stage & 2 Curated Luxury Themes
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   THEME 1: MIDNIGHT SAPPHIRE (DARK BLUE - DEFAULT)
+   THEME 1: MIDNIGHT OBSIDIAN & SAPPHIRE (DARK BLUE - DEFAULT)
    -------------------------------------------------------------------------- */
 :root, [data-theme="dark-blue"] {
-  --bg-app: #070d1f;
-  --bg-sidebar: #040814;
+  --bg-app: #030712;
+  --bg-sidebar: #02040a;
   --bg-sidebar-hover: rgba(245, 158, 11, 0.08);
-  --bg-surface: #0f1a36;
-  --bg-surface-hover: #16244a;
-  --bg-canvas: #09122a;
-  --bg-input: #132042;
-  --bg-glass: rgba(15, 26, 54, 0.92);
+  --bg-surface: #0a1020;
+  --bg-surface-hover: #121c38;
+  --bg-canvas: #060a16;
+  --bg-input: #0e162c;
+  --bg-glass: rgba(10, 16, 32, 0.94);
 
   --text-main: #f8fafc;
   --text-body: #cbd5e1;
@@ -22,8 +22,8 @@
   --text-sidebar: #cbd5e1;
   --text-sidebar-muted: #64748b;
 
-  --border-subtle: #1e2f58;
-  --border-input: #294073;
+  --border-subtle: #1a2744;
+  --border-input: #24355c;
   --border-focus: #f59e0b;
 
   /* 24k Imperial Gold & Cyan Neon Accents */
@@ -53,22 +53,22 @@
   --radius-md: 16px;
   --radius-lg: 24px;
 
-  --shadow-card: 0 10px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 12px 36px 0 rgba(0, 0, 0, 0.55);
   --shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.85);
 }
 
 /* --------------------------------------------------------------------------
-   THEME 2: PRISTINE LUXURY WHITE (LIGHT)
+   THEME 2: CHAMPAGNE ALABASTER (LUXURY LIGHT)
    -------------------------------------------------------------------------- */
 [data-theme="white"] {
-  --bg-app: #f8fafc;
+  --bg-app: #faf8f5;
   --bg-sidebar: #0f172a;
   --bg-sidebar-hover: rgba(255, 255, 255, 0.08);
   --bg-surface: #ffffff;
-  --bg-surface-hover: #f1f5f9;
-  --bg-canvas: #f1f5f9;
+  --bg-surface-hover: #f5f2eb;
+  --bg-canvas: #f2eee6;
   --bg-input: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.96);
 
   --text-main: #0f172a;
   --text-body: #334155;
@@ -76,8 +76,8 @@
   --text-sidebar: #cbd5e1;
   --text-sidebar-muted: #94a3b8;
 
-  --border-subtle: #e2e8f0;
-  --border-input: #cbd5e1;
+  --border-subtle: #e2ded5;
+  --border-input: #d1cbc0;
   --border-focus: #b45309;
 
   --primary-500: #b45309;
@@ -97,7 +97,7 @@
   --c-maintenance: #dc2626;
   --c-maintenance-bg: #fee2e2;
 
-  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 6px 24px -2px rgba(15, 23, 42, 0.08);
   --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
 }
 
@@ -324,7 +324,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(6, 9, 17, 0.55);
+  background: rgba(3, 7, 18, 0.6);
   backdrop-filter: blur(4px);
   z-index: 115;
   opacity: 0;
@@ -502,8 +502,8 @@ body {
 
 /* Tactile 3D Gold Primary Button */
 .btn-primary, .btn-3d {
-  background: linear-gradient(180deg, #fbbF24 0%, #d97706 100%);
-  color: #0b132b;
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #030712;
   font-weight: 800;
   border: 1px solid #f59e0b;
   box-shadow: 0 4px 14px var(--primary-glow), 0 2px 0 #b45309, inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -663,7 +663,7 @@ body {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   overflow: hidden;
-  background: #060b18;
+  background: #030712;
   min-height: 480px;
 }
 
@@ -680,7 +680,7 @@ body {
 .three-hover-tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(11, 19, 43, 0.95);
+  background: rgba(10, 16, 32, 0.95);
   border: 1px solid var(--primary-500);
   box-shadow: 0 8px 24px var(--primary-glow);
   border-radius: var(--radius-xs);
@@ -914,7 +914,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(6, 9, 17, 0.55);
+  background: rgba(3, 7, 18, 0.6);
   backdrop-filter: blur(4px);
   z-index: 145;
   opacity: 0;

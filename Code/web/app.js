@@ -1,5 +1,5 @@
 // ==========================================================================
-// THE ROYAL SPICE 4.5 PRO — MASTER CONTROLLER
+// THE ROYAL SPICE 4.8 PRO — MASTER CONTROLLER
 // Three.js WebGL 3D Spatial Floor Plan, AI Sommelier & 2-Theme Engine
 // ==========================================================================
 
@@ -213,7 +213,7 @@ function applyTheme(themeName) {
 
   // Update Three.js 3D scene background if initialized
   if (threeScene) {
-    threeScene.background = new THREE.Color(themeName === 'white' ? 0xe2e8f0 : 0x060b18);
+    threeScene.background = new THREE.Color(themeName === 'white' ? 0xf2eee6 : 0x030712);
   }
 }
 
@@ -276,12 +276,13 @@ let threeScene, threeCamera, threeRenderer, tableMeshes = [];
 let raycaster, mouseVector, hoveredTableMesh = null;
 let isDragging3D = false, prevMouseX = 0, prevMouseY = 0;
 let cameraRadius = 14, cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3.5;
+let targetTheta = cameraTheta, targetPhi = cameraPhi, targetRadius = cameraRadius;
 
 function initThreeScene() {
   if (!threeCanvasContainer || !window.THREE) return;
 
   threeScene = new THREE.Scene();
-  threeScene.background = new THREE.Color(appState.currentTheme === 'white' ? 0xe2e8f0 : 0x060b18);
+  threeScene.background = new THREE.Color(appState.currentTheme === 'white' ? 0xf2eee6 : 0x030712);
 
   const aspect = threeCanvasContainer.clientWidth / (threeCanvasContainer.clientHeight || 480);
   threeCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
@@ -298,11 +299,11 @@ function initThreeScene() {
   mouseVector = new THREE.Vector2();
 
   // Ambient Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  const ambientLight = new THREE.AmbientLight(0xffeedd, 0.8);
   threeScene.add(ambientLight);
 
   // Main Chandelier Directional Light
-  const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+  const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.4);
   dirLight.position.set(10, 20, 10);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 1024;
@@ -312,9 +313,9 @@ function initThreeScene() {
   // Dining Room Parquet Floor Mesh
   const floorGeo = new THREE.PlaneGeometry(24, 18);
   const floorMat = new THREE.MeshStandardMaterial({
-    color: appState.currentTheme === 'white' ? 0xd1d5db : 0x0b1329,
-    roughness: 0.3,
-    metalness: 0.2
+    color: appState.currentTheme === 'white' ? 0xd1d5db : 0x080e1e,
+    roughness: 0.25,
+    metalness: 0.25
   });
   const floorMesh = new THREE.Mesh(floorGeo, floorMat);
   floorMesh.rotation.x = -Math.PI / 2;
@@ -332,9 +333,16 @@ function initThreeScene() {
   // Mouse & Orbit Events
   setup3DInteractionEvents();
 
-  // Animation Loop
+  // Animation Loop with Inertial Damping
   function animate() {
     requestAnimationFrame(animate);
+
+    // Smooth camera damping
+    cameraTheta += (targetTheta - cameraTheta) * 0.12;
+    cameraPhi += (targetPhi - cameraPhi) * 0.12;
+    cameraRadius += (targetRadius - cameraRadius) * 0.12;
+    update3DCameraPosition();
+
     threeRenderer.render(threeScene, threeCamera);
   }
   animate();
@@ -374,7 +382,7 @@ function rebuild3DTables() {
 
     const statusHex = statusColors[liveStatus] || 0x10b981;
 
-    // Table Top Mesh
+    // Table Top Mesh (Wood / Marble)
     let topGeo;
     if (tbl.capacity <= 2) {
       topGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.15, 32);
@@ -387,7 +395,7 @@ function rebuild3DTables() {
     }
 
     const tableMat = new THREE.MeshStandardMaterial({
-      color: liveStatus === 'Maintenance' ? 0x475569 : 0x1e293b,
+      color: liveStatus === 'Maintenance' ? 0x334155 : 0x1e293b,
       roughness: 0.2,
       metalness: 0.4
     });
@@ -397,7 +405,7 @@ function rebuild3DTables() {
     topMesh.receiveShadow = true;
     group.add(topMesh);
 
-    // Table Pedestal Leg
+    // Table Pedestal Leg (Brass / Gold)
     const legGeo = new THREE.CylinderGeometry(0.15, 0.25, 1.0, 16);
     const legMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.8, roughness: 0.2 });
     const legMesh = new THREE.Mesh(legGeo, legMat);
@@ -415,6 +423,13 @@ function rebuild3DTables() {
     const pointLight = new THREE.PointLight(statusHex, 1.8, 4.0);
     pointLight.position.y = 1.4;
     group.add(pointLight);
+
+    // Place Plates / Table Setting Meshes
+    const plateGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16);
+    const plateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+    const plate1 = new THREE.Mesh(plateGeo, plateMat);
+    plate1.position.set(0, 1.08, 0.35);
+    group.add(plate1);
 
     // Positioning
     const posX = tbl.x !== undefined ? tbl.x : (tbl.id % 3 - 1) * 5;
@@ -448,9 +463,8 @@ function setup3DInteractionEvents() {
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
 
-      cameraTheta -= deltaX * 0.008;
-      cameraPhi = Math.max(0.2, Math.min(Math.PI / 2.1, cameraPhi - deltaY * 0.008));
-      update3DCameraPosition();
+      targetTheta -= deltaX * 0.008;
+      targetPhi = Math.max(0.2, Math.min(Math.PI / 2.1, targetPhi - deltaY * 0.008));
       return;
     }
 
@@ -491,8 +505,7 @@ function setup3DInteractionEvents() {
 
   threeCanvasContainer.addEventListener('wheel', (e) => {
     e.preventDefault();
-    cameraRadius = Math.max(6, Math.min(26, cameraRadius + e.deltaY * 0.015));
-    update3DCameraPosition();
+    targetRadius = Math.max(6, Math.min(26, targetRadius + e.deltaY * 0.015));
   });
 
   threeCanvasContainer.addEventListener('click', () => {
@@ -1046,11 +1059,11 @@ document.getElementById('btn-toggle-3d-view').addEventListener('click', () => {
 });
 
 // 3D Camera Buttons
-document.getElementById('btn-camera-orbit-left').addEventListener('click', () => { cameraTheta -= 0.3; update3DCameraPosition(); });
-document.getElementById('btn-camera-orbit-right').addEventListener('click', () => { cameraTheta += 0.3; update3DCameraPosition(); });
-document.getElementById('btn-camera-zoom-in').addEventListener('click', () => { cameraRadius = Math.max(6, cameraRadius - 1.5); update3DCameraPosition(); });
-document.getElementById('btn-camera-zoom-out').addEventListener('click', () => { cameraRadius = Math.min(26, cameraRadius + 1.5); update3DCameraPosition(); });
-document.getElementById('btn-camera-reset').addEventListener('click', () => { cameraRadius = 14; cameraTheta = Math.PI / 4; cameraPhi = Math.PI / 3.5; update3DCameraPosition(); });
+document.getElementById('btn-camera-orbit-left').addEventListener('click', () => { targetTheta -= 0.35; });
+document.getElementById('btn-camera-orbit-right').addEventListener('click', () => { targetTheta += 0.35; });
+document.getElementById('btn-camera-zoom-in').addEventListener('click', () => { targetRadius = Math.max(6, targetRadius - 2.0); });
+document.getElementById('btn-camera-zoom-out').addEventListener('click', () => { targetRadius = Math.min(26, targetRadius + 2.0); });
+document.getElementById('btn-camera-reset').addEventListener('click', () => { targetRadius = 14; targetTheta = Math.PI / 4; targetPhi = Math.PI / 3.5; });
 
 // Stepper
 document.getElementById('btn-party-inc').addEventListener('click', () => {
@@ -1209,4 +1222,4 @@ window.addEventListener('DOMContentLoaded', () => {
   initThreeScene();
 });
 
-console.log('⚜️ The Royal Spice 4.5 Pro Initialized with Three.js 3D WebGL Engine.');
+console.log('⚜️ The Royal Spice 4.8 Pro Initialized with Three.js 3D WebGL Engine.');
