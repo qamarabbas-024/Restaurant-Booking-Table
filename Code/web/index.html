@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Royal Spice — Michelin 3-Star Spatial Restaurant Operations, CAD Table Floor Plan, AI Sommelier & VIP Reservation OS">
-  <title>The Royal Spice — Spatial Restaurant & Table Management OS</title>
+  <meta name="description" content="The Royal Spice — Photorealistic 3D Spatial Restaurant Operations, WebGL Table Floor Plan, AI Sommelier & VIP Reservation OS">
+  <title>The Royal Spice — 3D Spatial Restaurant & Table Management OS</title>
   
   <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +13,9 @@
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js WebGL 3D Spatial Graphics Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   
   <!-- Master Stylesheet -->
   <link rel="stylesheet" href="style.css">
@@ -37,8 +40,8 @@
           <span>Live Dashboard</span>
         </button>
         <button class="nav-item" data-view="floorplan">
-          <i data-lucide="map"></i>
-          <span>CAD Floor Plan</span>
+          <i data-lucide="box"></i>
+          <span>3D Floor Plan</span>
           <span class="nav-pill green" id="nav-open-tables-pill">5 Open</span>
         </button>
         <button class="nav-item" data-view="reservations">
@@ -88,7 +91,7 @@
           <div class="user-avatar">QA</div>
           <div class="user-meta">
             <strong>Host Stand</strong>
-            <small>Table Manager v4.0</small>
+            <small>Table Manager v4.5</small>
           </div>
         </div>
       </div>
@@ -159,7 +162,7 @@
             <i data-lucide="refresh-cw"></i>
           </button>
 
-          <button class="btn btn-primary" id="btn-open-walkin-dialog">
+          <button class="btn btn-primary btn-3d" id="btn-open-walkin-dialog">
             <i data-lucide="user-plus"></i>
             <span>Walk-In</span>
           </button>
@@ -283,12 +286,12 @@
         </section>
 
         <!-- ============================================================= -->
-        <!-- VIEW 2: PHOTOREALISTIC CAD FLOOR PLAN (HEART OF THE PRODUCT)  -->
+        <!-- VIEW 2: THREE.JS PHOTOREALISTIC 3D FLOOR PLAN                  -->
         <!-- ============================================================= -->
         <section class="view-panel" id="view-floorplan">
           <div class="surface-card floor-master-card">
             
-            <!-- Floor Plan Filter & Zone Bar -->
+            <!-- Floor Plan Filter & 3D Camera Bar -->
             <div class="card-top-bar floor-control-header">
               <div class="zone-filter-pills" id="floor-zone-pills">
                 <button class="zone-pill active" data-zone="ALL">All Dining Rooms</button>
@@ -299,20 +302,42 @@
               </div>
 
               <div class="floor-action-controls">
+                <!-- 3D Camera Controls -->
+                <button class="btn btn-secondary btn-sm" id="btn-toggle-3d-view" title="Toggle 3D WebGL vs 2D CAD">
+                  <i data-lucide="box"></i>
+                  <span id="btn-3d-view-label">3D WebGL View</span>
+                </button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-orbit-left" title="Orbit Left"><i data-lucide="rotate-ccw"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-orbit-right" title="Orbit Right"><i data-lucide="rotate-cw"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-zoom-in" title="Zoom In"><i data-lucide="zoom-in"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-zoom-out" title="Zoom Out"><i data-lucide="zoom-out"></i></button>
+                <button class="btn btn-secondary btn-sm btn-icon" id="btn-camera-reset" title="Reset Camera"><i data-lucide="compass"></i></button>
+
                 <button class="btn btn-secondary btn-sm" id="btn-floor-add-table">+ Add Table</button>
-                <button class="btn btn-primary btn-sm" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
+                <button class="btn btn-primary btn-sm btn-3d" id="btn-floor-walkin-seat">⚡ Seat Walk-In</button>
               </div>
             </div>
 
-            <!-- Interactive Architectural Dining Room Floor Plan Grid -->
-            <div class="floor-plan-full-canvas" id="master-floor-canvas">
-              <!-- Dynamically rendered CAD table geometries -->
+            <!-- Photorealistic Three.js 3D WebGL Canvas Container -->
+            <div class="three-viewport-stage" id="three-viewport-stage">
+              <div id="three-canvas-container" class="three-canvas-container"></div>
+              
+              <!-- 3D Table Hover Overlay Tooltip -->
+              <div class="three-hover-tooltip" id="three-hover-tooltip" style="display:none;">
+                <div class="tooltip-title" id="tt-title">Table #1</div>
+                <div class="tooltip-body" id="tt-body">Capacity: 2 &bull; Available</div>
+              </div>
+
+              <!-- 2D CAD Floor Plan Fallback View -->
+              <div class="floor-plan-full-canvas" id="master-floor-canvas" style="display:none;">
+                <!-- Dynamically rendered CAD table geometries -->
+              </div>
             </div>
 
             <div class="floor-footer-info">
               <div class="floor-hint">
                 <i data-lucide="info" class="icon-sm"></i>
-                <span>Click any physical table to open the <strong>Contextual Table Action Drawer</strong> (Seat Guests, Toggle Maintenance, View Booking Pass, or Release).</span>
+                <span>Drag to orbit 3D dining room &bull; Scroll to zoom &bull; Click any 3D table to open the <strong>Contextual Table Action Drawer</strong>.</span>
               </div>
               <div class="floor-stats-pill" id="floor-active-summary-pill">
                 5 Tables Available &bull; 0 Seated &bull; 0 Reserved
@@ -351,7 +376,7 @@
                   <i data-lucide="printer"></i>
                   <span>Host Run-Sheet</span>
                 </button>
-                <button class="btn btn-primary btn-sm" id="btn-nav-create-res">+ New Booking</button>
+                <button class="btn btn-primary btn-sm btn-3d" id="btn-nav-create-res">+ New Booking</button>
               </div>
             </div>
 
@@ -456,7 +481,7 @@
                   <input type="text" id="form-special-notes" class="form-input" placeholder="e.g. Window preference, Nut allergy, Sommelier wine pairing">
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-booking-action">
+                <button type="submit" class="btn btn-primary btn-block btn-lg btn-3d" id="btn-submit-booking-action">
                   <span>⚡ Confirm Reservation & Generate Pass</span>
                 </button>
 
@@ -585,7 +610,7 @@
                 <h3 class="card-title">Physical Table Fleet Configuration</h3>
                 <p class="card-subtitle">Manage table inventory, seating capacities, and operational maintenance states</p>
               </div>
-              <button class="btn btn-primary btn-sm" id="btn-open-add-table-dialog">+ Add Table</button>
+              <button class="btn btn-primary btn-sm btn-3d" id="btn-open-add-table-dialog">+ Add Table</button>
             </div>
 
             <div class="table-responsive-container">
@@ -679,7 +704,7 @@
 
       <!-- Quick Action Buttons for this Table -->
       <div class="drawer-actions-stack">
-        <button class="btn btn-primary btn-block" id="drawer-btn-seat-walkin">
+        <button class="btn btn-primary btn-block btn-3d" id="drawer-btn-seat-walkin">
           <i data-lucide="user-check"></i>
           <span>Seat Guest Here</span>
         </button>
@@ -729,7 +754,7 @@
 
     <form class="ai-input-bar" id="ai-chat-form">
       <input type="text" id="ai-chat-input" class="ai-input-field" placeholder="Ask Chef Auguste or type booking prompt..." autocomplete="off">
-      <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="send"></i></button>
+      <button type="submit" class="btn btn-primary btn-sm btn-3d"><i data-lucide="send"></i></button>
     </form>
   </div>
   <div class="ai-drawer-backdrop" id="ai-drawer-backdrop"></div>
@@ -763,7 +788,7 @@
         </div>
         <div class="modal-footer-btns">
           <button type="button" class="btn btn-secondary" id="btn-cancel-walkin-dialog">Cancel</button>
-          <button type="submit" class="btn btn-primary">⚡ Seat Guests Immediately</button>
+          <button type="submit" class="btn btn-primary btn-3d">⚡ Seat Guests Immediately</button>
         </div>
       </form>
     </div>
@@ -802,7 +827,7 @@
         </div>
         <div class="modal-footer-btns">
           <button type="button" class="btn btn-secondary" id="btn-cancel-table-dialog">Cancel</button>
-          <button type="submit" class="btn btn-primary">+ Add to Restaurant</button>
+          <button type="submit" class="btn btn-primary btn-3d">+ Add to Restaurant</button>
         </div>
       </form>
     </div>
@@ -844,7 +869,7 @@
             <i data-lucide="printer"></i>
             <span>Print Pass</span>
           </button>
-          <button class="btn btn-primary" id="btn-close-pass-action">
+          <button class="btn btn-primary btn-3d" id="btn-close-pass-action">
             <span>Accept & Close</span>
           </button>
         </div>
@@ -891,7 +916,7 @@
       </div>
       <div class="modal-footer-btns no-print">
         <button class="btn btn-secondary" id="btn-close-manifest">Close</button>
-        <button class="btn btn-primary" id="btn-print-manifest-action">
+        <button class="btn btn-primary btn-3d" id="btn-print-manifest-action">
           <i data-lucide="printer"></i>
           <span>Print Manifest</span>
         </button>

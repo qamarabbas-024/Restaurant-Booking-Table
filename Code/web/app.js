@@ -1,6 +1,6 @@
 // ==========================================================================
-// THE ROYAL SPICE 4.0 — MASTER RESTAURANT MANAGEMENT CONTROLLER
-// 2 Luxury Themes (Dark Blue & Pure White), CAD Floor Plan, AI Sommelier & CRM
+// THE ROYAL SPICE 4.5 PRO — MASTER CONTROLLER
+// Three.js WebGL 3D Spatial Floor Plan, AI Sommelier & 2-Theme Engine
 // ==========================================================================
 
 const API_BASE = 'http://localhost:8080/api';
@@ -15,12 +15,12 @@ const STORAGE_KEYS = {
 
 // Initial Seed Tables
 const DEFAULT_TABLES = [
-  { id: 1, capacity: 2, type: 'Couple Table', status: 'Available' },
-  { id: 2, capacity: 4, type: 'Family Booth', status: 'Available' },
-  { id: 3, capacity: 6, type: 'VIP Suite', status: 'Available' },
-  { id: 4, capacity: 8, type: 'Banquet Table', status: 'Available' },
-  { id: 5, capacity: 2, type: 'Couple Table', status: 'Available' },
-  { id: 6, capacity: 4, type: 'Family Booth', status: 'Available' }
+  { id: 1, capacity: 2, type: 'Couple Table', status: 'Available', x: -5, z: -3 },
+  { id: 2, capacity: 4, type: 'Family Booth', status: 'Available', x: 0, z: -3 },
+  { id: 3, capacity: 6, type: 'VIP Suite', status: 'Available', x: 5, z: -3 },
+  { id: 4, capacity: 8, type: 'Banquet Table', status: 'Available', x: -5, z: 3 },
+  { id: 5, capacity: 2, type: 'Couple Table', status: 'Available', x: 0, z: 3 },
+  { id: 6, capacity: 4, type: 'Family Booth', status: 'Available', x: 5, z: 3 }
 ];
 
 // Seed Visual Photo Menu
@@ -45,6 +45,7 @@ const appState = {
   currentView: 'dashboard',
   currentTheme: localStorage.getItem(STORAGE_KEYS.THEME) === 'white' ? 'white' : 'dark-blue',
   soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
+  is3DViewMode: true,
   selectedOccasion: 'Romantic Dinner',
   selectedZone: 'ALL',
   selectedDate: '24/05/2026',
@@ -54,7 +55,7 @@ const appState = {
   tables: JSON.parse(localStorage.getItem(STORAGE_KEYS.TABLES) || 'null') || DEFAULT_TABLES,
   bookings: JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKINGS) || 'null') || [],
   activity: JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVITY) || 'null') || [
-    { timestamp: '17:30', type: 'SYSTEM_INIT', message: 'Shift started. All table fixtures calibrated.' },
+    { timestamp: '17:30', type: 'SYSTEM_INIT', message: 'Shift started. 3D WebGL spatial engine initialized.' },
     { timestamp: '17:35', type: 'TABLE_STATUS', message: 'VIP Suite prepared for dinner service.' }
   ],
   availableTableIds: [],
@@ -92,6 +93,8 @@ const miniUpcomingCount = document.getElementById('mini-upcoming-count');
 const dashboardFloorPreview = document.getElementById('dashboard-floor-preview');
 const dashboardUpcomingList = document.getElementById('dashboard-upcoming-list');
 const dashboardMiniActivity = document.getElementById('dashboard-mini-activity');
+const threeCanvasContainer = document.getElementById('three-canvas-container');
+const threeHoverTooltip = document.getElementById('three-hover-tooltip');
 const masterFloorCanvas = document.getElementById('master-floor-canvas');
 const floorActiveSummaryPill = document.getElementById('floor-active-summary-pill');
 const masterReservationsTbody = document.getElementById('master-reservations-tbody');
@@ -158,7 +161,7 @@ function playAudioChime(type) {
 
     if (type === 'click') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(920, now);
       gain.gain.setValueAtTime(0.08, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
       osc.start(now);
@@ -191,7 +194,7 @@ function showToastNotification(message, type = 'info') {
   }, 3200);
 }
 
-// ================= 2-THEME ENGINE (DARK BLUE & PURE WHITE) =================
+// ================= 2-THEME ENGINE =================
 function applyTheme(themeName) {
   appState.currentTheme = themeName;
   document.documentElement.setAttribute('data-theme', themeName);
@@ -206,6 +209,11 @@ function applyTheme(themeName) {
       themeBtnLabel.textContent = 'Pure White';
     }
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  // Update Three.js 3D scene background if initialized
+  if (threeScene) {
+    threeScene.background = new THREE.Color(themeName === 'white' ? 0xe2e8f0 : 0x060b18);
   }
 }
 
@@ -242,7 +250,7 @@ function switchAppView(viewName) {
 
   const titles = {
     dashboard: 'Live Operations Dashboard',
-    floorplan: 'CAD Architectural Floor Plan & Table Command',
+    floorplan: 'Photorealistic 3D Spatial Floor Plan',
     reservations: 'Master Reservations Ledger',
     booking: 'Smart Reservation Allocation',
     menu: 'Michelin 3-Star Visual Dish Menu',
@@ -252,14 +260,9 @@ function switchAppView(viewName) {
   };
   if (currentViewTitle) currentViewTitle.textContent = titles[viewName] || 'The Royal Spice';
 
-  // Render view-specific data
-  if (viewName === 'menu') renderVisualMenu('ALL');
-  if (viewName === 'crm') renderVIPGuests();
-  if (viewName === 'floorplan') renderFloorPlan(masterFloorCanvas, true);
-  if (viewName === 'reservations') renderReservationsTable();
-  if (viewName === 'tables') renderFleetTableList();
-  if (viewName === 'activity') renderActivityTimeline();
-  if (viewName === 'booking') populateBookingFormDropdown();
+  if (viewName === 'floorplan') {
+    setTimeout(handleResize3DScene, 100);
+  }
 
   if (window.innerWidth <= 1024) {
     appSidebar.classList.remove('mobile-open');
@@ -267,6 +270,249 @@ function switchAppView(viewName) {
     if (backdrop) backdrop.classList.remove('active');
   }
 }
+
+// ================= THREE.JS PHOTOREALISTIC 3D ENGINE =================
+let threeScene, threeCamera, threeRenderer, tableMeshes = [];
+let raycaster, mouseVector, hoveredTableMesh = null;
+let isDragging3D = false, prevMouseX = 0, prevMouseY = 0;
+let cameraRadius = 14, cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3.5;
+
+function initThreeScene() {
+  if (!threeCanvasContainer || !window.THREE) return;
+
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(appState.currentTheme === 'white' ? 0xe2e8f0 : 0x060b18);
+
+  const aspect = threeCanvasContainer.clientWidth / (threeCanvasContainer.clientHeight || 480);
+  threeCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+  update3DCameraPosition();
+
+  threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  threeRenderer.setSize(threeCanvasContainer.clientWidth, threeCanvasContainer.clientHeight || 480);
+  threeRenderer.setPixelRatio(window.devicePixelRatio || 1);
+  threeRenderer.shadowMap.enabled = true;
+  threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  threeCanvasContainer.appendChild(threeRenderer.domElement);
+
+  raycaster = new THREE.Raycaster();
+  mouseVector = new THREE.Vector2();
+
+  // Ambient Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  threeScene.add(ambientLight);
+
+  // Main Chandelier Directional Light
+  const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 1024;
+  dirLight.shadow.mapSize.height = 1024;
+  threeScene.add(dirLight);
+
+  // Dining Room Parquet Floor Mesh
+  const floorGeo = new THREE.PlaneGeometry(24, 18);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: appState.currentTheme === 'white' ? 0xd1d5db : 0x0b1329,
+    roughness: 0.3,
+    metalness: 0.2
+  });
+  const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.receiveShadow = true;
+  threeScene.add(floorMesh);
+
+  // Grid Floor Details
+  const gridHelper = new THREE.GridHelper(24, 24, 0xf59e0b, 0x1e2f58);
+  gridHelper.position.y = 0.01;
+  threeScene.add(gridHelper);
+
+  // Build 3D Tables
+  rebuild3DTables();
+
+  // Mouse & Orbit Events
+  setup3DInteractionEvents();
+
+  // Animation Loop
+  function animate() {
+    requestAnimationFrame(animate);
+    threeRenderer.render(threeScene, threeCamera);
+  }
+  animate();
+}
+
+function update3DCameraPosition() {
+  if (!threeCamera) return;
+  threeCamera.position.x = cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+  threeCamera.position.y = cameraRadius * Math.cos(cameraPhi);
+  threeCamera.position.z = cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+  threeCamera.lookAt(0, 0, 0);
+}
+
+function rebuild3DTables() {
+  if (!threeScene) return;
+
+  // Clear existing table meshes
+  tableMeshes.forEach(mesh => threeScene.remove(mesh));
+  tableMeshes = [];
+
+  const statusColors = {
+    Available: 0x10b981,
+    Reserved: 0xf59e0b,
+    Seated: 0x38bdf8,
+    Cleaning: 0xa855f7,
+    Maintenance: 0xef4444
+  };
+
+  appState.tables.forEach(tbl => {
+    let liveStatus = tbl.status;
+    const booking = appState.bookings.find(b => b.tableId === tbl.id && b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
+    if (tbl.status === 'Maintenance') liveStatus = 'Maintenance';
+    else if (booking) liveStatus = booking.status === 'Seated' ? 'Seated' : 'Reserved';
+
+    const group = new THREE.Group();
+    group.userData = { table: tbl, booking: booking, status: liveStatus };
+
+    const statusHex = statusColors[liveStatus] || 0x10b981;
+
+    // Table Top Mesh
+    let topGeo;
+    if (tbl.capacity <= 2) {
+      topGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.15, 32);
+    } else if (tbl.capacity <= 4) {
+      topGeo = new THREE.BoxGeometry(2.2, 0.15, 1.4);
+    } else if (tbl.capacity <= 6) {
+      topGeo = new THREE.CylinderGeometry(1.8, 1.8, 0.15, 32);
+    } else {
+      topGeo = new THREE.BoxGeometry(3.6, 0.15, 1.6);
+    }
+
+    const tableMat = new THREE.MeshStandardMaterial({
+      color: liveStatus === 'Maintenance' ? 0x475569 : 0x1e293b,
+      roughness: 0.2,
+      metalness: 0.4
+    });
+    const topMesh = new THREE.Mesh(topGeo, tableMat);
+    topMesh.position.y = 1.0;
+    topMesh.castShadow = true;
+    topMesh.receiveShadow = true;
+    group.add(topMesh);
+
+    // Table Pedestal Leg
+    const legGeo = new THREE.CylinderGeometry(0.15, 0.25, 1.0, 16);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.8, roughness: 0.2 });
+    const legMesh = new THREE.Mesh(legGeo, legMat);
+    legMesh.position.y = 0.5;
+    legMesh.castShadow = true;
+    group.add(legMesh);
+
+    // Glowing 3D Status Lantern
+    const lanternGeo = new THREE.SphereGeometry(0.18, 16, 16);
+    const lanternMat = new THREE.MeshBasicMaterial({ color: statusHex });
+    const lanternMesh = new THREE.Mesh(lanternGeo, lanternMat);
+    lanternMesh.position.y = 1.35;
+    group.add(lanternMesh);
+
+    const pointLight = new THREE.PointLight(statusHex, 1.8, 4.0);
+    pointLight.position.y = 1.4;
+    group.add(pointLight);
+
+    // Positioning
+    const posX = tbl.x !== undefined ? tbl.x : (tbl.id % 3 - 1) * 5;
+    const posZ = tbl.z !== undefined ? tbl.z : (Math.floor(tbl.id / 3) - 1) * 5;
+    group.position.set(posX, 0, posZ);
+
+    threeScene.add(group);
+    tableMeshes.push(group);
+  });
+}
+
+function setup3DInteractionEvents() {
+  if (!threeCanvasContainer) return;
+
+  threeCanvasContainer.addEventListener('mousedown', (e) => {
+    isDragging3D = true;
+    prevMouseX = e.clientX;
+    prevMouseY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => { isDragging3D = false; });
+
+  threeCanvasContainer.addEventListener('mousemove', (e) => {
+    const rect = threeCanvasContainer.getBoundingClientRect();
+    mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    if (isDragging3D) {
+      const deltaX = e.clientX - prevMouseX;
+      const deltaY = e.clientY - prevMouseY;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+
+      cameraTheta -= deltaX * 0.008;
+      cameraPhi = Math.max(0.2, Math.min(Math.PI / 2.1, cameraPhi - deltaY * 0.008));
+      update3DCameraPosition();
+      return;
+    }
+
+    // Raycast table hover
+    if (threeCamera && raycaster) {
+      raycaster.setFromCamera(mouseVector, threeCamera);
+      const intersects = raycaster.intersectObjects(tableMeshes, true);
+
+      if (intersects.length > 0) {
+        let parentGroup = intersects[0].object;
+        while (parentGroup.parent && parentGroup.parent !== threeScene) {
+          parentGroup = parentGroup.parent;
+        }
+
+        if (hoveredTableMesh !== parentGroup) {
+          if (hoveredTableMesh) hoveredTableMesh.position.y = 0;
+          hoveredTableMesh = parentGroup;
+          hoveredTableMesh.position.y = 0.35;
+
+          const data = hoveredTableMesh.userData;
+          if (threeHoverTooltip) {
+            threeHoverTooltip.style.display = 'block';
+            threeHoverTooltip.style.left = `${e.clientX - rect.left}px`;
+            threeHoverTooltip.style.top = `${e.clientY - rect.top}px`;
+            document.getElementById('tt-title').textContent = `Table #${data.table.id} (${data.table.type})`;
+            document.getElementById('tt-body').textContent = `Capacity: ${data.table.capacity} &bull; Status: ${data.status}`;
+          }
+        }
+      } else {
+        if (hoveredTableMesh) {
+          hoveredTableMesh.position.y = 0;
+          hoveredTableMesh = null;
+        }
+        if (threeHoverTooltip) threeHoverTooltip.style.display = 'none';
+      }
+    }
+  });
+
+  threeCanvasContainer.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    cameraRadius = Math.max(6, Math.min(26, cameraRadius + e.deltaY * 0.015));
+    update3DCameraPosition();
+  });
+
+  threeCanvasContainer.addEventListener('click', () => {
+    if (hoveredTableMesh && hoveredTableMesh.userData) {
+      playAudioChime('click');
+      const { table, booking, status } = hoveredTableMesh.userData;
+      openTableDrawer(table, booking, status);
+    }
+  });
+}
+
+function handleResize3DScene() {
+  if (!threeRenderer || !threeCamera || !threeCanvasContainer) return;
+  const width = threeCanvasContainer.clientWidth || 800;
+  const height = threeCanvasContainer.clientHeight || 480;
+  threeCamera.aspect = width / height;
+  threeCamera.updateProjectionMatrix();
+  threeRenderer.setSize(width, height);
+}
+window.addEventListener('resize', handleResize3DScene);
 
 // ================= CORE DATA EVALUATION =================
 function evaluateSlotState() {
@@ -293,18 +539,15 @@ function evaluateSlotState() {
   if (miniUpcomingCount) miniUpcomingCount.textContent = slotBookings.length;
 
   renderUpcomingArrivalsList(slotBookings);
+  rebuild3DTables();
 }
 
-// ================= PHOTOREALISTIC CAD FLOOR PLAN =================
-function renderFloorPlan(canvasElement, isMaster = false) {
+// ================= 2D CAD FALLBACK & DRAWER =================
+function renderFloorPlan(canvasElement) {
   if (!canvasElement) return;
   canvasElement.innerHTML = '';
 
-  const tablesToRender = isMaster && appState.selectedZone !== 'ALL'
-    ? appState.tables.filter(t => t.type === appState.selectedZone)
-    : appState.tables;
-
-  tablesToRender.forEach(tbl => {
+  appState.tables.forEach(tbl => {
     let liveStatus = tbl.status;
     const booking = appState.bookings.find(b => b.tableId === tbl.id && b.date === appState.selectedDate && b.time === appState.selectedTime && b.status !== 'Cancelled');
 
@@ -313,51 +556,14 @@ function renderFloorPlan(canvasElement, isMaster = false) {
 
     const pod = document.createElement('div');
     pod.className = `cad-table-pod status-${liveStatus.toLowerCase()}`;
-
-    // Generate CAD Architectural Geometry Visual
-    let geoHtml = '';
-    if (tbl.capacity <= 2) {
-      geoHtml = `
-        <div class="cad-geo-round">
-          <div class="cad-chair-top"></div>
-          <span>T-${tbl.id}</span>
-          <div class="cad-chair-bottom"></div>
-        </div>
-      `;
-    } else if (tbl.capacity <= 4) {
-      geoHtml = `
-        <div class="cad-geo-booth">
-          <div class="cad-booth-seat-top"></div>
-          <span>BOOTH #${tbl.id}</span>
-          <div class="cad-booth-seat-bottom"></div>
-        </div>
-      `;
-    } else if (tbl.capacity <= 6) {
-      geoHtml = `
-        <div class="cad-geo-suite">
-          <span>👑 VIP #${tbl.id}</span>
-        </div>
-      `;
-    } else {
-      geoHtml = `
-        <div class="cad-geo-booth" style="width: 140px; border-color: var(--primary-500);">
-          <div class="cad-booth-seat-top" style="width: 130px;"></div>
-          <span>BANQUET #${tbl.id}</span>
-          <div class="cad-booth-seat-bottom" style="width: 130px;"></div>
-        </div>
-      `;
-    }
-
     pod.innerHTML = `
       <div class="cad-pod-header">
         <span class="cad-table-num">Table #${tbl.id}</span>
-        <span class="cad-status-tag" style="background:var(--c-${liveStatus.toLowerCase()}-bg, rgba(255,255,255,0.1)); color:var(--c-${liveStatus.toLowerCase()});">${liveStatus}</span>
+        <span class="cad-status-tag">${liveStatus}</span>
       </div>
-
       <div class="cad-geometry-visual">
-        ${geoHtml}
+        <div class="cad-geo-round"><span>T-${tbl.id}</span></div>
       </div>
-
       <div class="cad-pod-meta">
         <span><strong>${tbl.capacity} Seats</strong> &bull; ${tbl.type}</span>
         ${booking ? `<span style="color:var(--primary-500); font-weight:700;">★ ${booking.name}</span>` : `<span style="color:var(--c-available);">Available</span>`}
@@ -410,13 +616,12 @@ function renderUpcomingArrivalsList(slotBookings) {
   dashboardUpcomingList.innerHTML = '';
 
   if (slotBookings.length === 0) {
-    dashboardUpcomingList.innerHTML = `<div style="text-align:center; padding: 24px; color:var(--text-muted); font-size:12.5px;">No reservations scheduled for ${appState.selectedTime}. Walk-in seating available.</div>`;
+    dashboardUpcomingList.innerHTML = `<div style="text-align:center; padding: 24px; color:var(--text-muted); font-size:12.5px;">No reservations scheduled for ${appState.selectedTime}. Walk-in seating ready.</div>`;
     return;
   }
 
   slotBookings.forEach(b => {
     const item = document.createElement('div');
-    item.className = 'arrival-row';
     item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-canvas); border-radius:var(--radius-xs); border:1px solid var(--border-subtle); margin-bottom:8px;';
     item.innerHTML = `
       <div>
@@ -622,8 +827,6 @@ window.handleToggleTableStatus = async function(tableId, targetStatus) {
 
     showToastNotification(`Table #${tableId} set to ${targetStatus}.`, 'info');
     evaluateSlotState();
-    renderFloorPlan(dashboardFloorPreview, false);
-    renderFloorPlan(masterFloorCanvas, true);
     renderFleetTableList();
     closeTableDrawer();
   }
@@ -635,8 +838,6 @@ window.handleCancelReservation = async function(bookingId) {
   localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(appState.bookings));
   showToastNotification(`Reservation cancelled successfully.`, 'info');
   evaluateSlotState();
-  renderFloorPlan(dashboardFloorPreview, false);
-  renderFloorPlan(masterFloorCanvas, true);
   renderReservationsTable();
   closeTableDrawer();
 };
@@ -673,7 +874,6 @@ if (masterBookingForm) {
     const special = document.getElementById('form-special-notes').value.trim();
     let chosenTableId = parseInt(formTableSelect.value);
 
-    // Smart Best-Fit Algorithm
     if (chosenTableId === 0) {
       const candidates = appState.tables
         .filter(t => t.status === 'Available' && t.capacity >= guests && !appState.occupiedTableIds.includes(t.id))
@@ -723,8 +923,6 @@ if (masterBookingForm) {
     modalReceiptPass.classList.add('open');
 
     evaluateSlotState();
-    renderFloorPlan(dashboardFloorPreview, false);
-    renderFloorPlan(masterFloorCanvas, true);
     masterBookingForm.reset();
   });
 }
@@ -763,8 +961,6 @@ if (formWalkinAction) {
     modalWalkinDialog.classList.remove('open');
     showToastNotification(`Walk-in guest ${name} seated at Table #${chosenId}.`, 'success');
     evaluateSlotState();
-    renderFloorPlan(dashboardFloorPreview, false);
-    renderFloorPlan(masterFloorCanvas, true);
   });
 }
 
@@ -797,8 +993,6 @@ async function syncWithCoreEngine() {
   }
 
   evaluateSlotState();
-  renderFloorPlan(dashboardFloorPreview, false);
-  renderFloorPlan(masterFloorCanvas, true);
 }
 
 // ================= EVENT LISTENERS =================
@@ -820,7 +1014,7 @@ document.getElementById('btn-mobile-toggle').addEventListener('click', () => {
   }
 });
 
-// Theme Toggle Button (Dark Blue <-> Pure White)
+// 2-Theme Switch Button
 btnThemeToggle.addEventListener('click', () => {
   playAudioChime('click');
   const nextTheme = appState.currentTheme === 'white' ? 'dark-blue' : 'white';
@@ -840,6 +1034,23 @@ soundFeedbackToggle.addEventListener('click', () => {
     showToastNotification('Audio feedback MUTED.', 'info');
   }
 });
+
+// 3D View Toggle (WebGL 3D vs 2D CAD)
+document.getElementById('btn-toggle-3d-view').addEventListener('click', () => {
+  playAudioChime('click');
+  appState.is3DViewMode = !appState.is3DViewMode;
+  document.getElementById('btn-3d-view-label').textContent = appState.is3DViewMode ? '3D WebGL View' : '2D CAD Blueprint';
+  threeCanvasContainer.style.display = appState.is3DViewMode ? 'block' : 'none';
+  masterFloorCanvas.style.display = appState.is3DViewMode ? 'none' : 'grid';
+  if (!appState.is3DViewMode) renderFloorPlan(masterFloorCanvas);
+});
+
+// 3D Camera Buttons
+document.getElementById('btn-camera-orbit-left').addEventListener('click', () => { cameraTheta -= 0.3; update3DCameraPosition(); });
+document.getElementById('btn-camera-orbit-right').addEventListener('click', () => { cameraTheta += 0.3; update3DCameraPosition(); });
+document.getElementById('btn-camera-zoom-in').addEventListener('click', () => { cameraRadius = Math.max(6, cameraRadius - 1.5); update3DCameraPosition(); });
+document.getElementById('btn-camera-zoom-out').addEventListener('click', () => { cameraRadius = Math.min(26, cameraRadius + 1.5); update3DCameraPosition(); });
+document.getElementById('btn-camera-reset').addEventListener('click', () => { cameraRadius = 14; cameraTheta = Math.PI / 4; cameraPhi = Math.PI / 3.5; update3DCameraPosition(); });
 
 // Stepper
 document.getElementById('btn-party-inc').addEventListener('click', () => {
@@ -914,7 +1125,7 @@ document.querySelectorAll('.zone-pill').forEach(pill => {
     document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
     appState.selectedZone = pill.dataset.zone;
-    renderFloorPlan(masterFloorCanvas, true);
+    rebuild3DTables();
   });
 });
 
@@ -927,8 +1138,6 @@ headerSlotChips.addEventListener('click', (e) => {
     chip.classList.add('active');
     appState.selectedTime = chip.dataset.time;
     evaluateSlotState();
-    renderFloorPlan(dashboardFloorPreview, false);
-    renderFloorPlan(masterFloorCanvas, true);
   }
 });
 
@@ -958,8 +1167,6 @@ drawerBackdrop.addEventListener('click', closeTableDrawer);
 globalDateInput.addEventListener('change', () => {
   appState.selectedDate = globalDateInput.value.trim() || '24/05/2026';
   evaluateSlotState();
-  renderFloorPlan(dashboardFloorPreview, false);
-  renderFloorPlan(masterFloorCanvas, true);
 });
 
 // Search & Filter in Reservations
@@ -982,8 +1189,7 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
 
 // Pre-render ALL view components on load
 evaluateSlotState();
-renderFloorPlan(dashboardFloorPreview, false);
-renderFloorPlan(masterFloorCanvas, true);
+renderFloorPlan(dashboardFloorPreview);
 renderVisualMenu('ALL');
 renderVIPGuests();
 renderReservationsTable();
@@ -994,9 +1200,13 @@ populateBookingFormDropdown();
 // Auto Background Polling every 3.5s
 setInterval(syncWithCoreEngine, 3500);
 
-// Initialize Platform
+// Initialize Platform & Three.js 3D Scene
 applyTheme(appState.currentTheme);
 updateSoundToggleUI();
 syncWithCoreEngine();
 
-console.log('⚜️ The Royal Spice 4.0 Pro Initialized with 2 Curated Themes.');
+window.addEventListener('DOMContentLoaded', () => {
+  initThreeScene();
+});
+
+console.log('⚜️ The Royal Spice 4.5 Pro Initialized with Three.js 3D WebGL Engine.');
